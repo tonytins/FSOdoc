@@ -14,9 +14,15 @@ namespace FSO.Server.Clients
 {
     public class AuthClient : AbstractHttpClient
     {
-        public AuthClient(string baseUrl) : base(baseUrl) {
+        public AuthClient(string baseUrl) : base(baseUrl)
+        {
         }
 
+        /// <summary>
+        /// Authenticates a user with the server using the provided credentials.
+        /// </summary>
+        /// <param name="input">An <see cref="AuthRequest"/> object containing the authentication request data.</param>
+        /// <returns>An <see cref="AuthResult"/> object representing the result of the authentication.</returns>
         public AuthResult Authenticate(AuthRequest input)
         {
             var client = Client();
@@ -27,7 +33,6 @@ namespace FSO.Server.Clients
                             .AddQueryParameter("serviceID", input.ServiceID)
                             .AddQueryParameter("version", input.Version)
                             .AddQueryParameter("clientid", input.ClientID);
-
 
             var response = client.Execute(request);
             var result = new AuthResult();
@@ -60,7 +65,8 @@ namespace FSO.Server.Clients
                             break;
                     }
                 }
-            } else
+            }
+            else
             {
                 result.ReasonCode = "36 301";
             }

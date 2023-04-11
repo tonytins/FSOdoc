@@ -27,7 +27,7 @@ namespace FSO.Server.Common
                     var str = Reader.ReadLine();
                     var split = str.LastIndexOf('-');
 
-                    result.Name= str;
+                    result.Name = str;
                     if (split != -1)
                     {
                         result.Name = str.Substring(0, split);
