@@ -46,11 +46,21 @@ namespace FSO.Server.Servers.City.Domain
 
         private IDataService DataService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JobMatchmaker"/> class.
+        /// </summary>
+        /// <param name="dataService">The data service to be used.</param>
         public JobMatchmaker(IDataService dataService)
         {
             DataService = dataService;
         }
 
+        /// <summary>
+        /// Tries to get a job lot for the specified avatar.
+        /// </summary>
+        /// <param name="requestID">The request ID for the job.</param>
+        /// <param name="avatarID">The avatar ID for the job.</param>
+        /// <returns>The real ID of the job lot if successful, null otherwise.</returns>
         public uint? TryGetJobLot(uint requestID, uint avatarID)
         {
             //todo: fail when job unavailable.
@@ -65,7 +75,7 @@ namespace FSO.Server.Servers.City.Domain
                 }
 
                 var code = requestID - 0x200;
-                var jobtype = (code-1) / 0x10;
+                var jobtype = (code - 1) / 0x10;
                 var jobgrade = (code - 1) % 0x10;
                 List<JobEntry> instances = null;
                 if (!JobTypeToInstance.TryGetValue(requestID, out instances))
@@ -113,6 +123,10 @@ namespace FSO.Server.Servers.City.Domain
             }
         }
 
+        /// <summary>
+        /// Gets the next available real ID for a job instance.
+        /// </summary>
+        /// <returns>The next available real ID.</returns>
         private uint GetRealID()
         {
             lock (this)
@@ -128,6 +142,10 @@ namespace FSO.Server.Servers.City.Domain
             }
         }
 
+        /// <summary>
+        /// Removes a job lot instance from the dictionaries.
+        /// </summary>
+        /// <param name="instanceID">The instance ID to remove.</param>
         public void RemoveJobLot(uint instanceID)
         {
             lock (this)
@@ -146,6 +164,9 @@ namespace FSO.Server.Servers.City.Domain
         }
     }
 
+    /// <summary>
+    /// Represents a job entry with its associated properties.
+    /// </summary>
     public class JobEntry
     {
         public uint RealID = 0x300;

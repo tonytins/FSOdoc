@@ -36,6 +36,11 @@ namespace FSO.Server.Servers.Api
         public delegate void APIRequestShutdownDelegate(uint time, ShutdownType type);
         public delegate void APIBroadcastMessageDelegate(string sender, string title, string message);
 
+        /// <summary>
+        /// Initializes a new instance of the ApiServer class.
+        /// </summary>
+        /// <param name="config">The configuration object for the API server.</param>
+        /// <param name="kernel">The dependency injection kernel used by the API server.</param>
         public ApiServer(ApiServerConfiguration config, IKernel kernel)
         {
             this.Config = config;
@@ -45,6 +50,9 @@ namespace FSO.Server.Servers.Api
             Kernel.Bind<ApiServerConfiguration>().ToConstant(config);
         }
 
+        /// <summary>
+        /// Starts the API server.
+        /// </summary>
         public override void Start()
         {
             LOG.Info("Starting API server");
@@ -53,7 +61,7 @@ namespace FSO.Server.Servers.Api
             configuration.UrlReservations.CreateAutomatically = true;
             var uris = new List<Uri>();
 
-            foreach(var path in Config.Bindings)
+            foreach (var path in Config.Bindings)
             {
                 uris.Add(new Uri(path));
             }
@@ -62,39 +70,65 @@ namespace FSO.Server.Servers.Api
             Nancy.Start();
         }
 
+        /// <summary>
+        /// Shuts down the API server.
+        /// </summary>
         public override void Shutdown()
         {
-            if(Nancy != null)
+            if (Nancy != null)
             {
                 Nancy.Stop();
             }
         }
 
+        /// <summary>
+        /// Requests a shutdown of the API server.
+        /// </summary>
+        /// <param name="time">The time in seconds until the shutdown should occur.</param>
+        /// <param name="type">The type of shutdown to perform.</param>
         public void RequestShutdown(uint time, ShutdownType type)
         {
             OnRequestShutdown?.Invoke(time, type);
         }
 
+        /// <summary>
+        /// Broadcasts a message to all connected clients.
+        /// </summary>
+        /// <param name="sender">The sender of the message.</param>
+        /// <param name="title">The title of the message.</param>
+        /// <param name="message">The content of the message.</param>
         public void BroadcastMessage(string sender, string title, string message)
         {
             OnBroadcastMessage?.Invoke(sender, title, message);
         }
 
+        /// <summary>
+        /// Attaches a debugger to the API server.
+        /// </summary>
+        /// <param name="debugger">The debugger to attach.</param>
         public override void AttachDebugger(IServerDebugger debugger)
         {
         }
     }
 
-
     class CustomNancyBootstrap : NinjectNancyBootstrapper
     {
         private IKernel Kernel;
 
+        /// <summary>
+        /// Initializes a new instance of the CustomNancyBootstrap class.
+        /// </summary>
+        /// <param name="kernel">The dependency injection kernel used by the Nancy bootstrap.</param>
         public CustomNancyBootstrap(IKernel kernel)
         {
             this.Kernel = kernel;
         }
 
+        /// <summary>
+        /// Configures the application during startup.
+        /// </summary>
+        /// <param name="container">The dependency injection container.</param>
+        /// <param name="pipelines">The Nancy request pipelines.</param>
         protected override void ApplicationStartup(IKernel container, IPipelines pipelines)
         {
             base.ApplicationStartup(container, pipelines);
