@@ -15,10 +15,10 @@ using FSO.SimAntics.Model;
 
 namespace FSO.SimAntics.Primitives
 {
-
     public class VMDrop : VMPrimitiveHandler
     {
-        private static LotTilePos[] Positions = { 
+        // Array of LotTilePos representing different positions around the object to drop the item
+        private static LotTilePos[] Positions = {
             new LotTilePos(0, -16, 0), //NORTH
             new LotTilePos(16, -16, 0), //NORTHWEST
             new LotTilePos(16, 0, 0), //WEST
@@ -28,6 +28,13 @@ namespace FSO.SimAntics.Primitives
             new LotTilePos(-16, 0, 0), //EAST
             new LotTilePos(-16, -16, 0) //NORTHEAST
         };
+
+        /// <summary>
+        /// Executes the VMDrop primitive handler.
+        /// </summary>
+        /// <param name="context">The VMStackFrame context.</param>
+        /// <param name="args">The VMPrimitiveOperand args.</param>
+        /// <returns>The VMPrimitiveExitCode indicating the result of the execution.</returns>
         public override VMPrimitiveExitCode Execute(VMStackFrame context, VMPrimitiveOperand args)
         {
             var obj = context.Caller;
@@ -42,6 +49,7 @@ namespace FSO.SimAntics.Primitives
             {
                 int j = (i % 2 == 1) ? ((Positions.Length - 1) - i / 2) : i / 2;
 
+                // Change the position of the drop item relative to the object's direction and position
                 var posChange = drop.MultitileGroup.ChangePosition(basePos + Positions[(j + intDir) % 8], obj.Direction, context.VM.Context, VMPlaceRequestFlags.Default);
                 if (posChange.Status == VMPlacementError.Success)
                 {
@@ -56,14 +64,28 @@ namespace FSO.SimAntics.Primitives
     public class VMDropOperand : VMPrimitiveOperand
     {
         #region VMPrimitiveOperand Members
+
+        /// <summary>
+        /// Reads the operand from a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to read from.</param>
         public void Read(byte[] bytes)
         {
             using (var io = IoBuffer.FromBytes(bytes, ByteOrder.LITTLE_ENDIAN))
             {
+                // No data to read for VMDropOperand
             }
         }
 
-        public void Write(byte[] bytes) { }
+        /// <summary>
+        /// Writes the operand to a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to write to.</param>
+        public void Write(byte[] bytes)
+        {
+            // No data to write for VMDropOperand
+        }
+
         #endregion
     }
 }

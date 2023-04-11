@@ -7,11 +7,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace FSO.Server.Domain
 {
+    /// <summary>
+    /// Represents a Ninject module for configuring bindings in the server domain.
+    /// </summary>
     public class ServerDomainModule : NinjectModule
     {
+        /// <summary>
+        /// Loads the module and configures bindings.
+        /// </summary>
         public override void Load()
         {
             Bind<IShardsDomain>().To<Shards>().InSingletonScope();

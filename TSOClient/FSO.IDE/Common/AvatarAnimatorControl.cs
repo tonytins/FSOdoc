@@ -12,9 +12,17 @@ using FSO.Client;
 
 namespace FSO.IDE.Common
 {
+    /// <summary>
+    /// Represents a partial class for the AvatarAnimatorControl, which is a FSOUIControl used to display avatar animations.
+    /// </summary>
     public partial class AvatarAnimatorControl : FSOUIControl
     {
         private UIAvatarAnimator Renderer;
+
+        /// <summary>
+        /// Shows the specified animation on the AvatarAnimatorControl.
+        /// </summary>
+        /// <param name="anim">The name of the animation to show.</param>
         public void ShowAnim(string anim)
         {
             if (FSOUI == null)

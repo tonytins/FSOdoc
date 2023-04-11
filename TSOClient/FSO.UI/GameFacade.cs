@@ -28,35 +28,95 @@ namespace FSO.Client
     /// </summary>
     public class GameFacade
     {
-        public static ContentStrings Strings; //todo: cross tso/ts1
+        /// <summary>
+        /// Represents the content strings used in the game. //todo: cross tso/ts1
+        /// </summary>
+        public static ContentStrings Strings;
+
+        /// <summary>
+        /// Represents the UI layer used in the game.
+        /// </summary>
         public static UILayer Screens;
+
+        /// <summary>
+        /// Represents the 3D layer used in the game.
+        /// </summary>
         public static _3DLayer Scenes;
+
+        /// <summary>
+        /// Represents the graphics device used in the game.
+        /// </summary>
         public static GraphicsDevice GraphicsDevice;
+
+        /// <summary>
+        /// Represents the graphics device manager used in the game.
+        /// </summary>
         public static GraphicsDeviceManager GraphicsDeviceManager;
+
+        /// <summary>
+        /// Represents the common game object used in the game.
+        /// </summary>
         public static Common.Rendering.Framework.Game Game;
+
         //public static TSOClientTools DebugWindow;
+
+        /// <summary>
+        /// Represents the main font used in the game.
+        /// </summary>
         public static Font MainFont;
+
+        /// <summary>
+        /// Represents the Edith font used in the game.
+        /// </summary>
         public static Font EdithFont;
+
+        /// <summary>
+        /// Represents the last update state of the game.
+        /// </summary>
         public static UpdateState LastUpdateState;
+
+        /// <summary>
+        /// Represents the game thread used in the game.
+        /// </summary>
         public static Thread GameThread;
+
+        /// <summary>
+        /// Represents the focus status of the game.
+        /// </summary>
         public static bool Focus = true;
+
+        /// <summary>
+        /// Represents the current city name in the game.
+        /// </summary>
         public static string CurrentCityName = "";
 
+        /// <summary>
+        /// Represents the Linux status of the game.
+        /// </summary>
         public static bool Linux;
+
+        /// <summary>
+        /// Represents the DirectX status of the game.
+        /// </summary>
         public static bool DirectX;
+
+        /// <summary>
+        /// Represents the enable mod status of the game.
+        /// </summary>
         public static bool EnableMod;
 
+        /// <summary>
+        /// Represents the cursor manager used in the game.
+        /// </summary>
         public static CursorManager Cursor;
 
         //Entries received from city server, see UIPacketHandlers.OnCityTokenResponse()
 
+        /// <summary>
+        /// Initializes the game facade.
+        /// </summary>
         public static void Init()
         {
-        }
-
-        public static string GameFilePath(string relativePath)
-        {
-            return Path.Combine(GlobalSettings.Default.StartupPath, relativePath);
         }
 
         /// <summary>
@@ -68,7 +128,11 @@ namespace FSO.Client
             Game.Exit();
             Process.GetCurrentProcess().Kill();
         }
-        
+
+        /// <summary>
+        /// Gets the game run time as a TimeSpan.
+        /// </summary>
+        /// <returns>The game run time as a TimeSpan.</returns>
         public static TimeSpan GameRunTime
         {
             get
@@ -85,6 +149,8 @@ namespace FSO.Client
         }
     }
 
+    /// <summary>
+    /// Represents a basic event handler delegate.
+    /// </summary>
     public delegate void BasicEventHandler();
-
 }

@@ -26,7 +26,7 @@ namespace FSO.SimAntics.Primitives
             context.Thread.ScheduleIdleStart = 0;
 
             context.Args[operand.StackVarToDec] -= (short)((idleStart != 0 && idleStart < context.VM.Scheduler.CurrentTickID) ? (context.VM.Scheduler.CurrentTickID - idleStart) : 1);
-            
+
             //if we're main, attempt to run a queued interaction. We just idle if this fails.
             if (operand.AllowPush == 1 && !context.ActionTree && context.Thread.AttemptPush())
             {
@@ -65,27 +65,51 @@ namespace FSO.SimAntics.Primitives
 
     public class VMIdleForInputOperand : VMPrimitiveOperand
     {
+        /// <summary>
+        /// Gets or sets the stack variable to decrement.
+        /// </summary>
         public short StackVarToDec { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value indicating whether push is allowed.
+        /// </summary>
         public ushort AllowPush { get; set; }
 
         #region VMPrimitiveOperand Members
+
+        /// <summary>
+        /// Reads the operand from a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to read from.</param>
         public void Read(byte[] bytes)
         {
             using (var io = IoBuffer.FromBytes(bytes, ByteOrder.LITTLE_ENDIAN))
             {
+                // Read StackVarToDec from the byte array
                 StackVarToDec = io.ReadInt16();
+
+                // Read AllowPush from the byte array
                 AllowPush = io.ReadUInt16();
             }
         }
 
+        /// <summary>
+        /// Writes the operand to a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to write to.</param>
         public void Write(byte[] bytes)
         {
             using (var io = new BinaryWriter(new MemoryStream(bytes)))
             {
+                // Write StackVarToDec to the byte array
                 io.Write(StackVarToDec);
+
+                // Write AllowPush to the byte array
                 io.Write(AllowPush);
             }
         }
+
         #endregion
     }
+
 }

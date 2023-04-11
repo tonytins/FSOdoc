@@ -13,10 +13,16 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace FSO.Client.UI.Framework
 {
+    /// <summary>
+    /// Represents an abstract base class for game screens in a user interface.
+    /// </summary>
     public abstract class GameScreen : UIScreen
     {
         private bool m_Scale800x600;
 
+        /// <summary>
+        /// Gets or sets whether the screen should be scaled to 800x600 resolution.
+        /// </summary>
         public bool Scale800x600
         {
             get { return m_Scale800x600; }
@@ -34,6 +40,10 @@ namespace FSO.Client.UI.Framework
             }
         }
 
+        /// <summary>
+        /// Gets the bounds of the game screen.
+        /// </summary>
+        /// <returns>The bounds of the game screen as a Rectangle.</returns>
         public override Rectangle GetBounds()
         {
             if (m_Scale800x600)
@@ -44,3 +54,4 @@ namespace FSO.Client.UI.Framework
         }
     }
 }
+
