@@ -12,10 +12,13 @@ FreeSOdoc seeks to fix this documentation gap by utilizing AI to aid in generati
 
 ## Contributing
 
-Contributions are always welcome! If you are interested in improving the documentation of this project or have suggestions for enhancements, feel free to open issues or submit pull requests on the [GitHub repository](https://github.com/tonytins/FreeSOdoc). See the [CONTRIBUTING](./CONTRIBUTING.md) document for more details. 
+Contributions are always welcome! If you are interested in improving the documentation of this project or have suggestions for enhancements, feel free to open issues or submit pull requests on the [GitHub repository](https://github.com/tonytins/FreeSOdoc). See the [CONTRIBUTING](./CONTRIBUTING.md) page for more details.
 
 Let’s work together to make FreeSOdoc a comprehensive and accessible resource for the community.
 
+## FAQ
+
+See [FAQ](./FAQ.md) the page.
 
 ## Licensing
 
