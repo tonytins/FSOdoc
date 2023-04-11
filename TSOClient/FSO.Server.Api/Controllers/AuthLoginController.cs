@@ -34,6 +34,14 @@ namespace FSO.Server.Api.Controllers
         }
 
         // GET api/<controller>
+        /// <summary>
+        /// Handles authentication for login with provided username, password, version, and clientid parameters.
+        /// </summary>
+        /// <param name="username">The username for authentication</param>
+        /// <param name="password">The password for authentication</param>
+        /// <param name="version">The version for authentication</param>
+        /// <param name="clientid">The clientid for authentication</param>
+        /// <returns>HttpResponseMessage containing authentication response</returns>
         public HttpResponseMessage Get(string username, string password, string version, string clientid)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
@@ -93,8 +101,13 @@ namespace FSO.Server.Api.Controllers
             var content = "Valid=TRUE\r\nTicket=" + ticket.ticket_id.ToString() + "\r\n";
             return ApiResponse.Plain(HttpStatusCode.OK, content);
         }
-        
 
+
+        /// <summary>
+        /// Returns a function that generates an error response with the provided error code and message.
+        /// </summary>
+        /// <param name="code">The error code</param>
+        /// <param name="message">The error message</param>
         public static Func<HttpResponseMessage> printError(String code, String message)
         {
             StringBuilder result = new StringBuilder();

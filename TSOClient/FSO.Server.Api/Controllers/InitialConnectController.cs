@@ -13,51 +13,68 @@ using System.Web.Http;
 
 namespace FSO.Server.Api.Controllers
 {
+    /// <summary>
+    /// Controller for handling initial connection requests.
+    /// </summary>
     public class InitialConnectController : ApiController
     {
         private static Func<HttpResponseMessage> ERROR_MISSING_TOKEN = ApiResponse.XmlFuture(HttpStatusCode.OK, new XMLErrorMessage("501", "Token not found"));
         private static Func<HttpResponseMessage> ERROR_EXPIRED_TOKEN = ApiResponse.XmlFuture(HttpStatusCode.OK, new XMLErrorMessage("502", "Token has expired"));
 
+        /// <summary>
+        /// Handles GET request with no parameters.
+        /// </summary>
+        /// <returns>Error response indicating missing token.</returns>
         public HttpResponseMessage Get()
         {
             return ERROR_MISSING_TOKEN();
         }
 
+        /// <summary>
+        /// Handles GET request with ticket and version parameters.
+        /// </summary>
+        /// <param name="ticket">The ticket parameter.</param>
+        /// <param name="version">The version parameter.</param>
+        /// <returns>Response with authorization token and user information.</returns>
         public HttpResponseMessage Get(string ticket, string version)
         {
             var api = Api.INSTANCE;
 
-            if (ticket == null || ticket == ""){
+            if (ticket == null || ticket == "")
+            {
                 return ERROR_MISSING_TOKEN();
             }
 
             using (var db = api.DAFactory.Get())
             {
                 var dbTicket = db.AuthTickets.Get(ticket);
-                if (dbTicket == null){
+                if (dbTicket == null)
+                {
                     return ERROR_MISSING_TOKEN();
                 }
 
                 db.AuthTickets.Delete((string)ticket);
-                if (dbTicket.date + api.Config.AuthTicketDuration < Epoch.Now){
+                if (dbTicket.date + api.Config.AuthTicketDuration < Epoch.Now)
+                {
                     return ERROR_EXPIRED_TOKEN();
                 }
 
-                /** Is it a valid account? **/
+                // Is it a valid account?
                 var user = db.Users.GetById(dbTicket.user_id);
-                if (user == null){
+                if (user == null)
+                {
                     return ERROR_MISSING_TOKEN();
                 }
 
-                //Use JWT to create and sign an auth cookies
+                // Use JWT to create and sign an auth cookie
                 var session = new JWTUser()
                 {
                     UserID = user.user_id,
                     UserName = user.username
                 };
 
-                //TODO: This assumes 1 shard, when using multiple need to either have version download occour after
-                //avatar select, or rework the tables
+                // TODO: This assumes 1 shard, when using multiple need to either have version download occur after
+                // avatar select, or rework the tables
                 var shardOne = api.Shards.GetById(1);
 
                 var token = api.JWT.CreateToken(session);
@@ -78,7 +95,5 @@ namespace FSO.Server.Api.Controllers
                 return response;
             }
         }
-
     }
 }
- 

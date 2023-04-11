@@ -19,12 +19,19 @@ namespace FSO.Server.Api.Controllers
         private static Func<HttpResponseMessage> ERROR_BANNED = ApiResponse.XmlFuture(HttpStatusCode.OK, new XMLErrorMessage("506", "Your account has been banned."));
         private static Func<HttpResponseMessage> ERROR_MAINTAINANCE = ApiResponse.XmlFuture(HttpStatusCode.OK, new XMLErrorMessage("507", "The server is currently undergoing maintainance. Please try again later."));
 
+        /// <summary>
+        /// Gets the shard information and generates a response for connecting to the shard.
+        /// </summary>
+        /// <param name="shardName">The name of the shard.</param>
+        /// <param name="avatarId">The ID of the avatar.</param>
+        /// <returns>An HttpResponseMessage containing the connection information.</returns>
         public HttpResponseMessage Get(string shardName, string avatarId)
         {
             var api = Api.INSTANCE;
 
             var user = api.RequireAuthentication(Request);
-            if (avatarId == null){
+            if (avatarId == null)
+            {
                 //Using 0 to mean no avatar for CAS
                 avatarId = "0";
             }

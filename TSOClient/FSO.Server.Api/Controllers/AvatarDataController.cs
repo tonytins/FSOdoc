@@ -13,11 +13,15 @@ namespace FSO.Server.Api.Controllers
 {
     public class AvatarDataController : ApiController
     {
+        /// <summary>
+        /// Retrieves avatar data for a user.
+        /// </summary>
+        /// <returns>HttpResponseMessage containing XMLList of AvatarData</returns>
         public HttpResponseMessage Get()
         {
             var api = Api.INSTANCE;
             var user = api.RequireAuthentication(Request);
-            
+
             var result = new XMLList<AvatarData>("The-Sims-Online");
 
             using (var db = api.DAFactory.Get())

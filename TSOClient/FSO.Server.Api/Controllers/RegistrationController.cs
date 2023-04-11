@@ -9,17 +9,33 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Web.Http;
 
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text.RegularExpressions;
+using FSO.Server.Api.Utils;
+
 namespace FSO.Server.Api.Controllers
 {
+    /// <summary>
+    /// Controller for handling user registration.
+    /// </summary>
     public class RegistrationController : ApiController
     {
         private const int REGISTER_THROTTLE_SECS = 60;
 
         /// <summary>
-        /// Alphanumeric (lowercase), no whitespace or special chars, cannot start with an underscore.
+        /// Regular expression for validating username. Alphanumeric (lowercase), no whitespace or special chars, cannot start with an underscore.
         /// </summary>
         private static Regex USERNAME_VALIDATION = new Regex("^([a-z0-9]){1}([a-z0-9_]){2,23}$");
 
+        /// <summary>
+        /// Handles POST request for user registration.
+        /// </summary>
+        /// <param name="request">The HTTP request message.</param>
+        /// <param name="user">The registration model containing user information.</param>
+        /// <returns>HTTP response message.</returns>
         [HttpPost]
         public HttpResponseMessage Post(HttpRequestMessage request, [FromBody] RegistrationModel user)
         {
@@ -60,7 +76,7 @@ namespace FSO.Server.Api.Controllers
 
             using (var da = api.DAFactory.Get())
             {
-                //has this ip been banned?
+                // Check if the IP has been banned
                 var ban = da.Bans.GetByIP(ip);
                 if (ban != null)
                 {
@@ -71,12 +87,12 @@ namespace FSO.Server.Api.Controllers
                     });
                 }
 
-                //has this user registered a new account too soon after their last?
+                // Check if the user has registered a new account too soon after their last
                 var now = Epoch.Now;
                 var prev = da.Users.GetByRegisterIP(ip);
                 if (now - (prev.FirstOrDefault()?.register_date ?? 0) < REGISTER_THROTTLE_SECS)
                 {
-                    //cannot create a new account this soon.
+                    // Cannot create a new account this soon
                     return ApiResponse.Json(HttpStatusCode.OK, new RegistrationError()
                     {
                         error = "registration_failed",
@@ -93,7 +109,7 @@ namespace FSO.Server.Api.Controllers
                 userModel.is_moderator = isAdmin;
                 userModel.user_state = UserState.valid;
                 userModel.register_date = now;
-                userModel.is_banned = false;
+                userModel.is_banned;
                 userModel.register_ip = ip;
                 userModel.last_ip = ip;
 

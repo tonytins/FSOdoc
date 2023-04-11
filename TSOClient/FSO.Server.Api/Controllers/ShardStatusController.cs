@@ -12,6 +12,10 @@ namespace FSO.Server.Api.Controllers
 {
     public class ShardStatusController : ApiController
     {
+        /// <summary>
+        /// Retrieves the shard status information.
+        /// </summary>
+        /// <returns>HTTP response message containing the shard status information in XML format.</returns>
         public HttpResponseMessage Get()
         {
             var api = Api.INSTANCE;
@@ -22,6 +26,8 @@ namespace FSO.Server.Api.Controllers
             {
                 result.Add(shard);
             }
+
+            // Return HTTP response message with OK status code and shard status information in XML format
             return ApiResponse.Xml(HttpStatusCode.OK, result);
         }
     }
