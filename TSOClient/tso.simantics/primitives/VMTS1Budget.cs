@@ -8,25 +8,54 @@ using System.Threading.Tasks;
 
 namespace FSO.SimAntics.Primitives
 {
-    //like tso transfer funds, but really scaled back (only deduct from maxis)
+    /// <summary>
+    /// Represents a primitive handler for the VM transfer funds operation in TS1.
+    /// </summary>
+    /// <remarks>
+    /// This primitive handler is used to deduct funds from the budget of a family in The Sims 1 (TS1) game,
+    /// but with limited functionality compared to the original "transfer funds" operation. Only deductions
+    /// from Maxis are supported, and instead of subtracting, the operation actually adds the amount to the budget.
+    /// </remarks>
     public class VMTS1Budget : VMPrimitiveHandler
     {
+        /// <summary>
+        /// Executes the VM transfer funds operation.
+        /// </summary>
+        /// <param name="context">The VM stack frame context.</param>
+        /// <param name="args">The operand containing the amount to transfer and other flags.</param>
+        /// <returns>The exit code indicating the result of the operation.</returns>
         public override VMPrimitiveExitCode Execute(VMStackFrame context, VMPrimitiveOperand args)
         {
             var operand = (VMTransferFundsOperand)args;
             var amount = VMMemory.GetBigVariable(context, operand.GetAmountOwner(), (short)operand.AmountData);
 
-            if ((operand.Flags & VMTransferFundsFlags.Subtract) > 0) amount = -amount; //instead of subtracting, we're adding
-                                                                                       //weird terms for the flags here but ts1 is inverted
-                                                                                       //amount contains the amount we are subtracting from the budget.
+            if ((operand.Flags & VMTransferFundsFlags.Subtract) > 0)
+            {
+                // Instead of subtracting, we're adding, because TS1 has inverted flags.
+                amount = -amount;
+            }
 
             var oldBudget = context.VM.CurrentFamily?.Budget ?? 0;
             var newBudget = oldBudget - amount;
-            if (oldBudget < 0) return VMPrimitiveExitCode.GOTO_FALSE;
-            if ((operand.Flags & VMTransferFundsFlags.JustTest) == 0 && context.VM.CurrentFamily != null) context.VM.CurrentFamily.Budget = newBudget;
+
+            if (oldBudget < 0)
+            {
+                // If the old budget is negative, return false.
+                return VMPrimitiveExitCode.GOTO_FALSE;
+            }
+
+            if ((operand.Flags & VMTransferFundsFlags.JustTest) == 0 && context.VM.CurrentFamily != null)
+            {
+                // If the JustTest flag is not set, update the budget of the current family.
+                context.VM.CurrentFamily.Budget = newBudget;
+            }
+
+            // Return true.
             return VMPrimitiveExitCode.GOTO_TRUE;
 
-            //ts1 does have expense types, which could be used for expenses monitoring (i do not think ts1 had this)
+            // Note: TS1 does have expense types, which could be used for expenses monitoring,
+            // but it is not supported in this implementation.
         }
     }
 }
+

@@ -88,7 +88,7 @@ namespace FSO.SimAntics.Primitives
                     var items = inventory.FirstOrDefault(x => x.GUID == operand.GUID && x.Type == operand.TokenType);
                     var itemcount = (short)(items?.Count ?? 0);
                     context.Thread.TempRegisters[0] = itemcount;
-                    return (itemcount >= count)? VMPrimitiveExitCode.GOTO_TRUE : VMPrimitiveExitCode.GOTO_FALSE;
+                    return (itemcount >= count) ? VMPrimitiveExitCode.GOTO_TRUE : VMPrimitiveExitCode.GOTO_FALSE;
                 case VMTS1InventoryMode.HasTokenOfType: //ignores guid
                     if (inventory == null) return VMPrimitiveExitCode.GOTO_FALSE;
                     var items2 = inventory.Where(x => x.Type == operand.TokenType).ToList();
@@ -100,19 +100,45 @@ namespace FSO.SimAntics.Primitives
         }
     }
 
+    /// <summary>
+    /// Represents an operand used in VMPrimitive operations related to inventory operations in The Sims 1.
+    /// </summary>
     public class VMTS1InventoryOperationsOperand : VMPrimitiveOperand
     {
+        /// <summary>
+        /// Gets or sets the mode of the inventory operation.
+        /// </summary>
         public VMTS1InventoryMode Mode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the token type.
+        /// </summary>
         public byte TokenType; //token type
+
+        /// <summary>
+        /// Gets or sets unknown flags.
+        /// Bit 1: unknown
+        /// Bit 2: count in temp 0
+        /// Bit 4: unknown
+        /// Bit 8: result in param 0?
+        /// Bit 16: target object in temp 4 (???)
+        /// </summary>
         public byte Unknown3; //flags
-        //1 - unknown
-        //2 - count in temp 0
-        //4
-        //8 - result in param 0?
-        //16 - target object in temp 4 (???)
+
+        /// <summary>
+        /// Gets or sets unknown flags.
+        /// Bit 5: use object in temp 4
+        /// </summary>
         public byte Unknown4;
+
+        /// <summary>
+        /// Gets or sets the GUID (Global Unique Identifier).
+        /// </summary>
         public uint GUID;
 
+        /// <summary>
+        /// Gets a value indicating whether to count in temp 0.
+        /// </summary>
         public bool CountInTemp0
         {
             get
@@ -121,6 +147,9 @@ namespace FSO.SimAntics.Primitives
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether to use object in temp 4.
+        /// </summary>
         public bool UseObjectInTemp4
         {
             get
@@ -130,6 +159,10 @@ namespace FSO.SimAntics.Primitives
         }
 
         #region VMPrimitiveOperand Members
+        /// <summary>
+        /// Reads the operand from a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array containing the operand data.</param>
         public void Read(byte[] bytes)
         {
             using (var io = IoBuffer.FromBytes(bytes, ByteOrder.LITTLE_ENDIAN))
@@ -142,6 +175,10 @@ namespace FSO.SimAntics.Primitives
             }
         }
 
+        /// <summary>
+        /// Writes the operand to a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to write the operand data to.</param>
         public void Write(byte[] bytes)
         {
             using (var io = new BinaryWriter(new MemoryStream(bytes)))
@@ -156,6 +193,9 @@ namespace FSO.SimAntics.Primitives
         #endregion
     }
 
+    /// <summary>
+    /// Represents the inventory mode used in VMTS1InventoryOperationsOperand.
+    /// </summary>
     public enum VMTS1InventoryMode : byte
     {
         AddToken = 0, //add
@@ -164,4 +204,5 @@ namespace FSO.SimAntics.Primitives
         HasToken = 3, //count in temp0
         HasTokenOfType = 4, //count in temp0. ignores guid.
     }
+
 }

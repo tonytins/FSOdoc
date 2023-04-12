@@ -11,3 +11,15 @@ My long-term plan for FreeSOdoc is twofold. Firstly, I aim to document as much o
 Secondly, I plan to port over as many libraries as possible to the .NET SDK format, modernizing the codebase and ensuring compatibility with newer technologies and frameworks. This will help future-proof the project, and facilitate future development and improvements.
 
 Additionally, I will continue to explore the possibility of creating a small server for FreeSOdoc, separate from FreeSO, in order to provide a distinct identity and experience for users.
+
+## What is your vision for FreeSOdoc?
+
+My vision for FreeSOdoc revolves around three main aspects:
+
+1. **Names and Logos**: I have two potential names in mind for FreeSOdoc - "NewSO" (New Sims Online) as a homage to my original Sims fan site, New Sims 2, or "My Simulation" as a homage to an old Sims-themed RPG forum. I plan to create distinctive names and logos that reflect the purpose and identity of FreeSOdoc, making it easily recognizable and memorable.
+
+2. **Game Customization**: I aim to make game customization in FreeSOdoc more user-friendly, allowing users to easily modify and customize the game to suit their preferences. This may involve simplifying the customization process and providing clearer documentation on how to customize various aspects of the game.
+
+3. **Code Refactoring**: I believe that FreeSOdoc needs a serious refactoring effort to improve its performance and memory management. The commit history of the project reveals that it has been notorious for being a memory hog, and some flaws in the implementation of AI have been identified through AI-generated documentation. I plan to work on refactoring the codebase to optimize performance, enhance stability, and fix existing issues once I migrate things to .NET SDK.
+
+Of course, this is all easier said than done given the complexity and age.

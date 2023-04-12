@@ -13,29 +13,49 @@ using FSO.Files.Utils;
 
 namespace FSO.SimAntics.Primitives
 {
+    /// <summary>
+    /// Represents a primitive handler for testing if the caller's active interaction is with a stack object.
+    /// </summary>
     public class VMTestSimInteractingWith : VMPrimitiveHandler
     {
+        /// <summary>
+        /// Executes the VM primitive to test if the caller's active interaction is with a stack object.
+        /// </summary>
+        /// <param name="context">The VM stack frame context.</param>
+        /// <param name="args">The operand containing the required data for the operation (not used in this case).</param>
+        /// <returns>The exit code indicating the result of the operation.</returns>
         public override VMPrimitiveExitCode Execute(VMStackFrame context, VMPrimitiveOperand args)
         {
-            //if caller's active interaction is with stack object, return true.
+            // If the caller's active interaction is with the stack object, return true, else return false.
             var callerActive = context.Caller.Thread.Stack.LastOrDefault();
-            return (callerActive != null && callerActive.ActionTree && context.Caller.Thread.Queue[0].Callee == context.StackObject) 
-                ? VMPrimitiveExitCode.GOTO_TRUE:VMPrimitiveExitCode.GOTO_FALSE;
+            return (callerActive != null && callerActive.ActionTree && context.Caller.Thread.Queue[0].Callee == context.StackObject)
+                ? VMPrimitiveExitCode.GOTO_TRUE : VMPrimitiveExitCode.GOTO_FALSE;
         }
     }
 
+    /// <summary>
+    /// Represents an operand for the VMTestSimInteractingWith primitive, but does not contain any data.
+    /// </summary>
     public class VMTestSimInteractingWithOperand : VMPrimitiveOperand
     {
         #region VMPrimitiveOperand Members
+        /// <summary>
+        /// Reads the operand data from a byte array, but does nothing, as this operand has no data.
+        /// </summary>
+        /// <param name="bytes">The byte array containing the operand data.</param>
         public void Read(byte[] bytes)
         {
-            using (var io = IoBuffer.FromBytes(bytes, ByteOrder.LITTLE_ENDIAN))
-            {
-                //nothing! zip! zilch! nada!
-            }
+            // Nothing to read, as this operand has no data.
         }
 
-        public void Write(byte[] bytes) { }
+        /// <summary>
+        /// Writes the operand data to a byte array, but does nothing, as this operand has no data.
+        /// </summary>
+        /// <param name="bytes">The byte array to write the operand data to.</param>
+        public void Write(byte[] bytes)
+        {
+            // Nothing to write, as this operand has no data.
+        }
         #endregion
     }
 }
