@@ -13,7 +13,7 @@ Then provide the previously uncommented code you want to document. The AI will g
 You can continue where ChatGPT left off by providing the prompt:
 
 ```text
-While omitting the rest of the already commented code, resume providing documentation comments at [...]
+While omitting the existing code already written code for brevity, resume providing documentation comments at [...]
 ```
 
 And the AI will finish where it left off.

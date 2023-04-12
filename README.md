@@ -1,6 +1,6 @@
-# FreeSOdoc
+# FSOdoc
 
-FreeSOdoc is a fork of FreeSO that aims to address the lack of documentation in the original project. FreeSOdoc focuses on a specific snapshot (Aug 9, 2017) of FreeSO’s source code and uses the power of AI to generate comments and documentation to aid in understanding the logic behind the codebase.
+FSOdoc is a fork of FreeSO that aims to address the lack of documentation in the original project. FSOdoc focuses on a specific snapshot (Aug 9, 2017) of FreeSO’s source code and uses the power of AI to generate comments and documentation to aid in understanding the logic behind the codebase.
 
 ## Background
 
@@ -8,13 +8,13 @@ As a reimplementation of The Sims Online, FreeSO is a complex project that uses 
 
 ### Fixing the Documentation Gap
 
-FreeSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating comments and documentation for the previously uncommented sections of the code. The AI-powered commenting process provides a better understanding of the logic behind each individual method, which in turn helps to improve comprehension of the project as a whole. With FreeSOdoc, I finally have a means to address the lack of documentation without spending excessive hours and resources.
+FSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating comments and documentation for the previously uncommented sections of the code. The AI-powered commenting process provides a better understanding of the logic behind each individual method, which in turn helps to improve comprehension of the project as a whole. With FSOdoc, I finally have a means to address the lack of documentation without spending excessive hours and resources.
 
 ## Contributing
 
-Contributions are always welcome! If you are interested in improving the documentation of this project or have suggestions for enhancements, feel free to open issues or submit pull requests on the [GitHub repository](https://github.com/tonytins/FreeSOdoc). See the [CONTRIBUTING](./CONTRIBUTING.md) page for more details.
+Contributions are always welcome! If you are interested in improving the documentation of this project or have suggestions for enhancements, feel free to open issues or submit pull requests on the [GitHub repository](https://github.com/tonytins/FSOdoc). See the [CONTRIBUTING](./CONTRIBUTING.md) page for more details.
 
-Let’s work together to make FreeSOdoc a comprehensive and accessible resource for the community.
+Let’s work together to make FSOdoc a comprehensive and accessible resource for the community.
 
 ## FAQ
 
@@ -22,4 +22,4 @@ See [FAQ](./FAQ.md) the page.
 
 ## Licensing
 
-FreeSOdoc, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.
+FSOdoc, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.

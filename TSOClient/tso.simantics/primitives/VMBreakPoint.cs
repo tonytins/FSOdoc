@@ -15,10 +15,17 @@ using System.IO;
 
 namespace FSO.SimAntics.Primitives
 {
-    // Generally something bad has happened when this is called.
-
+    /// <summary>
+    /// Generally something bad has happened when this is called.
+    /// </summary>
     public class VMBreakPoint : VMPrimitiveHandler
     {
+        /// <summary>
+        /// Executes the VMPrimitiveHandler logic for a breakpoint.
+        /// </summary>
+        /// <param name="context">The VMStackFrame context.</param>
+        /// <param name="args">The VMPrimitiveOperand arguments.</param>
+        /// <returns>The exit code for the VMPrimitiveHandler.</returns>
         public override VMPrimitiveExitCode Execute(VMStackFrame context, VMPrimitiveOperand args)
         {
             //todo: check condition
@@ -28,10 +35,21 @@ namespace FSO.SimAntics.Primitives
 
     public class VMBreakPointOperand : VMPrimitiveOperand
     {
+        /// <summary>
+        /// Gets or sets the data value of the VMBreakPointOperand.
+        /// </summary>
         public short Data { get; set; }
+        /// <summary>
+        /// Gets or sets the variable scope of the VMBreakPointOperand.
+        /// </summary>
         public VMVariableScope Scope { get; set; }
 
         #region VMPrimitiveOperand Members
+
+        /// <summary>
+        /// Reads the byte array and sets the Data and Scope properties accordingly.
+        /// </summary>
+        /// <param name="bytes">The byte array to read.</param>
         public void Read(byte[] bytes)
         {
             using (var io = IoBuffer.FromBytes(bytes, ByteOrder.LITTLE_ENDIAN))
@@ -41,6 +59,10 @@ namespace FSO.SimAntics.Primitives
             }
         }
 
+        /// <summary>
+        /// Writes the Data and Scope properties to a byte array.
+        /// </summary>
+        /// <param name="bytes">The byte array to write.</param>
         public void Write(byte[] bytes)
         {
             using (var io = new BinaryWriter(new MemoryStream(bytes)))
