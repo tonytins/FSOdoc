@@ -14,6 +14,14 @@ namespace FSO.Server.Database.DA.AvatarClaims
         {
         }
 
+        /// <summary>
+        /// Claims ownership of an avatar for a new owner.
+        /// </summary>
+        /// <param name="id">The ID of the avatar claim to update.</param>
+        /// <param name="previousOwner">The previous owner of the avatar.</param>
+        /// <param name="newOwner">The new owner of the avatar.</param>
+        /// <param name="location">The location of the avatar.</param>
+        /// <returns>True if the claim was updated successfully, false otherwise.</returns>
         public bool Claim(int id, string previousOwner, string newOwner, uint location)
         {
             try
@@ -28,37 +36,60 @@ namespace FSO.Server.Database.DA.AvatarClaims
             }
         }
 
+        /// <summary>
+        /// Removes all remaining claims for an owner at a specific location.
+        /// </summary>
+        /// <param name="previousOwner">The previous owner of the avatar.</param>
+        /// <param name="location">The location of the avatar.</param>
         public void RemoveRemaining(string previousOwner, uint location)
         {
             Context.Connection.Query("DELETE FROM fso_avatar_claims WHERE location = @location AND owner = @previous_owner", new { previous_owner = previousOwner, location = location });
         }
 
-
+        /// <summary>
+        /// Deletes a specific avatar claim.
+        /// </summary>
+        /// <param name="id">The ID of the avatar claim to delete.</param>
+        /// <param name="owner">The owner of the avatar claim.</param>
         public void Delete(int id, string owner)
         {
             Context.Connection.Query("DELETE FROM fso_avatar_claims WHERE owner = @owner AND avatar_claim_id = @claim_id", new { owner = owner, claim_id = (int)id });
         }
 
+        /// <summary>
+        /// Deletes all avatar claims for a specific owner.
+        /// </summary>
+        /// <param name="owner">The owner of the avatar claims to delete.</param>
         public void DeleteAll(string owner)
         {
             Context.Connection.Query("DELETE FROM fso_avatar_claims WHERE owner = @owner", new { owner = owner });
         }
 
+        /// <summary>
+        /// Gets a specific avatar claim by ID.
+        /// </summary>
+        /// <param name="id">The ID of the avatar claim to retrieve.</param>
+        /// <returns>The avatar claim with the specified ID, or null if not found.</returns>
         public DbAvatarClaim Get(int id)
         {
             return Context.Connection.Query<DbAvatarClaim>("SELECT * FROM fso_avatar_claims WHERE avatar_claim_id = @claim_id", new { claim_id = (int)id }).FirstOrDefault();
         }
 
-        public DbAvatarClaim GetByAvatarID(uint id)
-        {
-            return Context.Connection.Query<DbAvatarClaim>("SELECT * FROM fso_avatar_claims WHERE avatar_id = @id", new { id = id }).FirstOrDefault();
-        }
-
+        /// <summary>
+        /// Retrieves all avatar claims associated with a specific owner.
+        /// </summary>
+        /// <param name="owner">The name of the owner to retrieve the avatar claims for.</param>
+        /// <returns>An enumerable collection of all avatar claims associated with the specified owner.</returns>
         public IEnumerable<DbAvatarClaim> GetAllByOwner(string owner)
         {
             return Context.Connection.Query<DbAvatarClaim>("SELECT * FROM fso_avatar_claims WHERE owner = @owner", new { owner = owner });
         }
 
+        /// <summary>
+        /// Attempts to create a new avatar claim.
+        /// </summary>
+        /// <param name="claim">The avatar claim to create.</param>
+        /// <returns>The ID of the newly created avatar claim, or null if the creation failed.</returns>
         public int? TryCreate(DbAvatarClaim claim)
         {
             try
