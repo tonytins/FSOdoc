@@ -11,13 +11,27 @@ using System.Threading.Tasks;
 
 namespace FSO.Server.Database.DA.Relationships
 {
+    /// <summary>
+    /// SqlRelationships is a class that implements the IRelationships interface
+    /// to provide data access operations for the fso_relationships table.
+    /// </summary>
     public class SqlRelationships : AbstractSqlDA, IRelationships
     {
 
+        /// <summary>
+        /// Constructs a new instance of SqlRelationships with the specified ISqlContext object.
+        /// </summary>
+        /// <param name="context">The ISqlContext object representing the database connection.</param>
         public SqlRelationships(ISqlContext context) : base(context)
         {
 
         }
+
+        /// <summary>
+        /// Deletes all relationships involving the specified entity from the fso_relationships table.
+        /// </summary>
+        /// <param name="entity_id">The ID of the entity whose relationships will be deleted.</param>
+        /// <returns>The number of rows affected by the DELETE operation.</returns>
         public int Delete(uint entity_id)
         {
             return Context.Connection.ExecuteScalar<int>(
@@ -26,6 +40,12 @@ namespace FSO.Server.Database.DA.Relationships
             );
         }
 
+        /// <summary>
+        /// Returns a list of all bidirectional relationships involving the specified entity
+        /// from the fso_relationships table.
+        /// </summary>
+        /// <param name="entity_id">The ID of the entity whose bidirectional relationships will be retrieved.</param>
+        /// <returns>A list of DbRelationship objects representing the bidirectional relationships involving the specified entity.</returns>
         public List<DbRelationship> GetBidirectional(uint entity_id)
         {
             return Context.Connection.Query<DbRelationship>(
@@ -34,6 +54,12 @@ namespace FSO.Server.Database.DA.Relationships
             ).ToList();
         }
 
+        /// <summary>
+        /// Returns a list of all outgoing relationships involving the specified entity
+        /// from the fso_relationships table.
+        /// </summary>
+        /// <param name="entity_id">The ID of the entity whose outgoing relationships will be retrieved.</param>
+        /// <returns>A list of DbRelationship objects representing the outgoing relationships involving the specified entity.</returns>
         public List<DbRelationship> GetOutgoing(uint entity_id)
         {
             return Context.Connection.Query<DbRelationship>(
@@ -41,6 +67,12 @@ namespace FSO.Server.Database.DA.Relationships
                 new { entity_id = entity_id }
             ).ToList();
         }
+
+        /// <summary>
+        /// Inserts or updates multiple DbRelationship objects in the fso_relationships table.
+        /// </summary>
+        /// <param name="entries">A list of DbRelationship objects to insert or update.</param>
+        /// <returns>The number of rows affected by the INSERT or UPDATE operation.</returns>
 
         public int UpdateMany(List<DbRelationship> entries)
         {
