@@ -14,9 +14,15 @@ The project has two goals:
 2. Serve as a guide for rewriting it on modern, cross-platform .NET (SDK-style
    projects, .NET 10 LTS at the time of writing) that runs on Windows,
    Linux, and macOS.
+3. Rewrite FreeSO's engine-free libraries in **Swift** as independent
+   packages under [NSOClient/](./NSOClient/): TSOFiles (file formats),
+   TSOContent (the content system), and SimAntics (the VM), matching the
+   2017 behavior.
 
-The output of both goals is Markdown under [doc/](./doc/). This is solo work
-held to production standards. Read this file first, then
+The first two goals produce Markdown under [doc/fso/](./doc/fso/). The third
+produces Swift packages, planned in [doc/roadmap.md](./doc/roadmap.md) and
+tracked in [doc/scorecard.md](./doc/scorecard.md). This is solo work held to
+production standards. Read this file first, then
 [README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/fso/README.md](./doc/fso/README.md).
 
 ## 1. Workspace map
@@ -114,9 +120,92 @@ space for brainstormed material and notes. Read it for context when it
 helps, but treat it as drafts rather than decisions, and don't depend on it
 from docs.
 
-## 2. Golden rules for the docs process
+## 2. Golden rules
 
-### The source is the ground truth
+### Never crash (outranks feature work)
+
+The NSOClient libraries read game files nobody controls: original installs,
+patched objects, user mods, and lot saves from servers. A truncated archive,
+a corrupt chunk, or a hostile save must produce an error the caller can act
+on, never a trap. Don't ship a feature by adding a crash path; fix a crash
+before building on top of it.
+
+- **Library code never traps.** No force unwraps (`!`), `try!`, `as!`,
+  implicitly unwrapped optionals, `fatalError`, `precondition`,
+  `preconditionFailure`, or `assert`-based control flow in `Sources/`.
+  Throw a typed error (`FAR3Error`, `IFFError`, and so on) and propagate it
+  with `try`; use `guard let … else { throw … }`. Unfinished features throw
+  rather than trap.
+- **No silent fallbacks for bad data.** Invalid input is reported, never
+  quietly replaced. The one exception is a tolerance the 2017 code had and
+  real files may rely on (such as `ByteReader.readBytes(upTo:)` for .NET's
+  short reads): keep it, and say so in the doc comment.
+- **File-derived numbers are hostile.** Check every size, offset, and count
+  read from a file against the bytes that remain before slicing or
+  allocating. Convert with checks, use `addingReportingOverflow` or clamp
+  for values that can grow, and check indices with `indices.contains`
+  before subscripting.
+- **Bound loops and recursion** that data can drive: decompression output,
+  nested containers, BHAV execution (the 2017 VM stops a thread after
+  500,000 instructions in one tick), call depth, and graph walks.
+- **Failures change nothing.** A reader that throws returns nothing partial.
+  Build results in locals and return them only when complete.
+- **Contain failures.** One bad file or entry must not stop a scan or a
+  content load: collect it and report it, as `InstallScanner` does. In
+  SimAntics, an error in one entity's thread is contained to that entity,
+  as in 2017.
+- **Prove it.** Every crash or bad-input fix comes with a small regression
+  test that failed before the fix.
+- **Checked by hand for now.** Until a lint runs in CI (scorecard TST-5),
+  run the search in [section 4](#4-before-you-finish-a-task) before
+  finishing.
+
+### Library rules
+
+These apply to everything under [NSOClient/](./NSOClient/).
+
+1. **Engine-free.** No MonoGame, AdaEngine, UI, rendering, audio playback,
+   logging, or printing in library targets. Decode to plain values (RGBA
+   pixels, PCM samples, typed chunks) and report through errors and
+   results. Command-line executables such as `tsofiles-check` may print.
+2. **The 2017 snapshot is the specification.** Read the C# before writing
+   the Swift, match its behavior on valid input (quirks included), and name
+   the C# type a Swift type ports in its doc comment. Differ only to avoid a
+   crash, to reject hostile input, or to fix a clear bug, and record each
+   difference in the doc comment and in the scorecard's "Known differences
+   from 2017".
+3. **Deterministic.** SimAntics must give the same results on every
+   machine for lockstep play: wrap 16-bit arithmetic (`&+`, `&-`, `&*`),
+   never iterate a `Dictionary` or `Set` in VM logic (Swift randomizes hash
+   seeds per process), process entities in object ID order, take randomness
+   only from the VM's seed, never read the clock, and review any floating
+   point that feeds simulation state.
+4. **Values, not shared state.** Model data as `Sendable` structs and enums
+   that are immutable once loaded. Archives are values over memory-mapped
+   bytes. No singletons: where 2017 used `Content.Get()` or `HITVM.Get()`,
+   pass the dependency in.
+5. **Independent packages.** Each package builds and tests on its own.
+   Dependencies point one way through local paths (TSOFiles, then
+   TSOContent, then SimAntics). Foundation is allowed; don't declare
+   `platforms:`. Any other new dependency needs the owner's approval.
+6. **No EA data in the repository.** Tests build synthetic files in code
+   (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
+   files read `TSO_GAME_DIR` and skip when it isn't set.
+7. **Tests are the gate.** Swift Testing (`import Testing`, `@Test`), never
+   XCTest. Cover every kept quirk and every error path, keep tests
+   deterministic, and use `@Test(arguments:)` for shared checks.
+8. **Public API is documented, and breaking changes are said out loud.**
+   Every public declaration gets a documentation comment. Removing or
+   renaming public API, or adding a case to a public enum such as an error,
+   breaks callers in the other packages: update them and call it out.
+9. **Follow the [Swift guidelines](./.agents/skills/swift-guidelines/SKILL.md)**,
+   and match the surrounding code when they disagree.
+10. **Measure before optimizing.** Time a release build against a real
+    install (`tsofiles-check` prints counts; `time` it) before and after.
+
+### Documenting the 2017 snapshot
+
+#### The source is the ground truth
 
 - **Read the code before you describe it.** Every claim about behavior
   must come from the source in this repo, not from memory of FreeSO,
@@ -141,7 +230,7 @@ from docs.
   belongs to EA/Maxis and isn't in this repo. Document formats and how the
   code reads them, but never paste or reconstruct game data.
 
-### Separate the two goals
+#### Separate the two goals
 
 Each doc keeps "how it works" apart from "how to rewrite it":
 
@@ -151,7 +240,7 @@ Each doc keeps "how it works" apart from "how to rewrite it":
   layout, which APIs and packages replace the old ones, and what to check.
   Follow the [.NET guidelines skill](./.agents/skills/dotnet-guidelines/SKILL.md).
 
-### Cross-platform is the bar
+#### Cross-platform is the bar
 
 The rewrite guidance must run on Windows, Linux, and macOS. For every
 subsystem, call out what blocks that and propose a replacement:
@@ -173,7 +262,7 @@ subsystem, call out what blocks that and propose a replacement:
   database schema, or reading the original game files must be called out,
   not slipped in.
 
-### Don't run dotnet
+#### Don't run dotnet
 
 Don't run the `dotnet` command, `msbuild`, `mono`, or `nuget`. The
 snapshot doesn't build as-is on Linux, so findings come from reading code,
@@ -217,7 +306,37 @@ This covers the docs and any C# shown in them.
 
 ## 4. Before you finish a task
 
-There's no build to run, so checking the docs is the gate.
+### NSOClient work
+
+```sh
+for package in TSOFiles TSOContent SimAntics; do  # every package, even ones you didn't touch
+    swift build --package-path "NSOClient/$package" &&
+    swift test --package-path "NSOClient/$package"
+done
+grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources  # must print nothing
+swift run --package-path NSOClient/TSOFiles -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
+```
+
+- Every package must build with no new warnings and pass all tests.
+- Look over your diff for force unwraps (`!`) by eye; the search above can't
+  tell them apart from `!=` and `!condition`.
+- If you touched a reader and `TSO_GAME_DIR` is set, the scan must still
+  report 0 failures. Without an install, say that you couldn't run it.
+- In SimAntics, check new code against the determinism rule: no
+  `Dictionary` or `Set` iteration, wrapping arithmetic only.
+
+Then bring the docs up to date in the same change:
+
+- [doc/scorecard.md](./doc/scorecard.md): flip the rows you moved, with
+  their new evidence; update the summary counts and the "As of" line; add
+  any new difference from 2017 under "Known differences".
+- [doc/roadmap.md](./doc/roadmap.md): update the milestone row's done
+  percentage and remaining estimate, the alpha gate if a row changed, the
+  current focus, and the status line, and add a revision-history row.
+- [doc/fso/](./doc/fso/README.md) only if the port showed that a page
+  describes the 2017 code wrongly.
+
+### Documentation work
 
 ```sh
 # every relative link in doc/ points at something that exists
@@ -233,14 +352,18 @@ git status --short -- TSOClient Charvatia FSOInstaller Other
 - Fix every broken link, and confirm the `git status` check prints nothing.
 - Re-read the source behind any claim you changed, and confirm the cited
   paths, types, and members exist.
-- Keep [doc/fso/README.md](./doc/fso/README.md) up to date: link new docs, and
-  update the coverage list (which projects are documented and which aren't
-  yet).
-- After NSOClient work, update [doc/scorecard.md](./doc/scorecard.md) (statuses
-  with evidence, summary counts, the "As of" line) and [doc/roadmap.md](./doc/roadmap.md)
-  (milestone rows, alpha gate, revision history).
+- Keep [doc/fso/README.md](./doc/fso/README.md) up to date: link new docs,
+  and update the coverage list (which projects are documented and which
+  aren't yet).
+
+### Always
+
 - Update this file if the workspace layout or these rules change.
 - Leave `README.md`, `FAQ.md`, and `CONTRIBUTING.md` alone unless asked.
+
+Describe only what works today. Sessions can end abruptly, so keep every
+package building and its tests green at every step; the roadmap's revision
+history and the git log are how the next session picks up.
 
 ## 5. Calling things out
 
@@ -254,6 +377,9 @@ The owner often reviews changes alone, so make review easy:
   original TSO files.
 - State new dependencies and framework choices, with the alternative you
   weighed, as judgment calls for the owner to decide.
+- For NSOClient, list every deliberate difference from the 2017 behavior,
+  and say which checks ran: the tests, and whether the real-install scan
+  did.
 - If you notice a risk in the snapshot, such as a security issue, a
   committed secret, or a licensing question for a third-party library,
   report it. Don't fix it in the source as part of a docs change.
