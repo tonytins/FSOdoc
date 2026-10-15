@@ -21,8 +21,8 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 | [Fidelity](#fidelity) | 2 | 1 | 3 | install scan and real-data invariants clean; no replay oracle |
 | [Determinism](#determinism) | 0 | 0 | 5 | |
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
-| [Tests and tooling](#tests-and-tooling) | 4 | 3 | 0 | |
-| [Platforms](#platforms) | 1 | 0 | 3 | |
+| [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
+| [Platforms](#platforms) | 3 | 0 | 1 | |
 | [Known differences from 2017](#known-differences-from-2017) | | | | 8 deliberate |
 | [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
 
@@ -140,7 +140,7 @@ or a lint when it does.
 | TST-1 | Swift Testing in every package | done | `import Testing` in all test targets |
 | TST-2 | Synthetic fixtures only, no EA data in the repository | done | `Tests/TSOFilesTests/Support/ByteWriter.swift` builds archives, RefPack streams, and IFFs in code |
 | TST-3 | Each package builds and tests on its own | done | `swift build` and `swift test` per package; path dependencies resolve |
-| TST-4 | CI runs all three packages on every push | partial | `.github/workflows/swift.yml`: builds and tests each package on Linux x86_64 and ARM64 (`swift:6.3` container) and on macOS, for pushes and pull requests that touch `NSOClient/`. Not yet confirmed by a run on GitHub |
+| TST-4 | CI runs all three packages on every push | done | `.github/workflows/swift.yml`: builds and tests each package on Linux x86_64 and ARM64 (`swift:6.3` container) and on macOS, for pushes and pull requests that touch `NSOClient/`. Run 38812498011 (commit `9fe95212`) passed all three jobs |
 | TST-5 | Lint for REL-2 and DET-2 (SwiftLint custom rules or a script) | partial | The CI workflow fails on `try!`, `as!`, `fatalError`, or `precondition` in library sources. Not covered: force unwraps (`!`), and DET-2 (no SimAntics code yet) |
 | TST-6 | Real-file tests gated on `TSO_GAME_DIR` | done | `RealInstallTests` runs when `TSO_GAME_DIR` is set and is skipped otherwise; no game data in the repository |
 | TST-7 | Script that extracts the TSO installer's cabinets into a game folder | partial | `NSOClient/scripts/extract.sh`: detects Microsoft (cabextract) or InstallShield (unshield) cabinets, accepts a folder, a cabinet, or a .zip, tests integrity first, finds the folder holding `tuning.dat`, optional `--lowercase` and `--check`. Tested on hand-built Microsoft cabinets (extraction, lower-casing, .zip input, damaged and foreign files, usage errors). Not yet tested: spanned cabinet sets, InstallShield (unshield isn't installed here), the real installer |
@@ -152,8 +152,8 @@ No `platforms:` are declared (owner decision); this tracks where the packages ar
 | Id | Target | Status | Note |
 |---|---|---|---|
 | PLAT-1 | Linux x86_64 | done | Swift 6.3.3, all tests pass |
-| PLAT-2 | Linux ARM64 | missing | Covered by CI (TST-4) once a run passes |
-| PLAT-3 | macOS | missing | Covered by CI (TST-4) once a run passes |
+| PLAT-2 | Linux ARM64 | done | CI job `Linux (aarch64)`, `swift:6.3` container |
+| PLAT-3 | macOS | done | CI job `macOS` on `macos-latest`. With no `platforms:` declared, builds target macOS 10.13, so APIs newer than that can't be used (the first run failed on `FileHandle.read(upToCount:)`) |
 | PLAT-4 | Windows | missing | Untested; Foundation on Windows is the least tested |
 
 ## Known differences from 2017
