@@ -1,0 +1,77 @@
+name: Swift
+
+# Builds and tests the NSOClient packages. Each package is independent, so
+# each one builds and tests on its own, as AGENTS.md section 4 asks.
+# Real-install tests skip themselves here: CI has no TSO_GAME_DIR, and no
+# game data may be stored in the repository.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "NSOClient/**"
+      - ".github/workflows/swift.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "NSOClient/**"
+      - ".github/workflows/swift.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: swift:6.3
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and test each package
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in TSOFiles TSOContent SimAntics; do
+            echo "::group::$package"
+            swift build --package-path "NSOClient/$package"
+            swift test --package-path "NSOClient/$package"
+            echo "::endgroup::"
+          done
+
+      - name: Check library sources for trap patterns
+        shell: bash
+        run: |
+          # AGENTS.md "Never crash": no try!, as!, fatalError, or precondition in Sources.
+          if grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources; then
+            echo "::error::Trap patterns found in library sources"
+            exit 1
+          fi
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Show the Swift version
+        run: swift --version
+
+      - name: Build and test each package
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in TSOFiles TSOContent SimAntics; do
+            echo "::group::$package"
+            swift build --package-path "NSOClient/$package"
+            swift test --package-path "NSOClient/$package"
+            echo "::endgroup::"
+          done
