@@ -98,10 +98,10 @@ public struct InstallScanner: Sendable {
 
     // MARK: Private
 
+    /// Mapping the file reads only the pages touched, so this costs about the same as
+    /// reading 12 bytes, and unlike `FileHandle.read(upToCount:)` it needs no macOS 10.15.
     private static func containerKind(of url: URL) throws -> ContainerKind? {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        return ContainerKind(header: try handle.read(upToCount: 12) ?? Data())
+        ContainerKind(header: try Data(contentsOf: url, options: .alwaysMapped).prefix(12))
     }
 
     private func scanContainer(_ kind: ContainerKind, at url: URL, path: String, into report: inout ScanReport) {
