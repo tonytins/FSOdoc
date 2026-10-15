@@ -5,7 +5,7 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 38 passed, TSOContent 1
+**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 55 passed, TSOContent 1
 passed, SimAntics 1 passed.
 
 Status values: `done` (works and is tested), `partial` (works with gaps, named in the note),
@@ -15,15 +15,15 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Formats](#formats) | 6 | 0 | 15 | 642 Swift source lines; 38 test cases; 0 real files read |
+| [Formats](#formats) | 7 | 0 | 14 | 55 test cases; real install: 94 containers and 82,131 entries read, 0 failures |
 | [Content](#content) | 0 | 0 | 9 | |
 | [SimAntics](#simantics) | 1 | 0 | 14 | 0 of about 70 primitives |
-| [Fidelity](#fidelity) | 0 | 1 | 4 | no real-file corpus run; no replay oracle |
+| [Fidelity](#fidelity) | 1 | 1 | 3 | install scan clean on a real TSO install; no replay oracle |
 | [Determinism](#determinism) | 0 | 0 | 5 | |
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
-| [Tests and tooling](#tests-and-tooling) | 3 | 0 | 3 | |
+| [Tests and tooling](#tests-and-tooling) | 3 | 1 | 3 | |
 | [Platforms](#platforms) | 1 | 0 | 3 | |
-| [Known differences from 2017](#known-differences-from-2017) | | | | 4 deliberate |
+| [Known differences from 2017](#known-differences-from-2017) | | | | 5 deliberate |
 | [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
 
 ## Formats
@@ -36,10 +36,10 @@ Package: [TSOFiles](../NSOClient/TSOFiles/). Ports `TSOClient/tso.files` (see
 | FMT-1 | Bounds-checked binary reader, both byte orders, .NET-compatible ASCII | done | `Binary/ByteReader.swift`, `Binary/ASCII.swift`; `ByteReaderTests` (7 tests: byte orders, signed values, 24-bit, end of data, `readBytes(upTo:)`, slices, ASCII replacement) |
 | FMT-2 | RefPack decompression matching `Decompresser.Decompress` | done | `Compression/RefPack.swift`; `RefPackTests` covers all four command forms, the 6-byte passthrough, output growth, 0xFD continuing, 0xFC stop, and two error paths |
 | FMT-3 | FAR1 archives, variants 1a and 1b | done | `Archives/FAR1Archive.swift`; `FAR1ArchiveTests` (both variants, bad version, truncated manifest, out-of-bounds entry) |
-| FMT-4 | FAR3 archives with asset IDs and RefPack entries | done | `Archives/FAR3Archive.swift`; `FAR3ArchiveTests` (ID packing, raw and compressed entries, non-RefPack fallback, duplicate names and IDs, wrong type ID) |
+| FMT-4 | FAR3 archives with asset IDs and RefPack entries | done | `Archives/FAR3Archive.swift`; `FAR3ArchiveTests` (ID packing, raw and compressed entries, non-RefPack fallback, duplicate names, entries sharing a file ID, wrong type ID) |
 | FMT-5 | IFF container: header, chunk records, lookups | done | `IFF/IFFFile.swift`; `IFFFileTests` (10 tests incl. trailing byte, short final chunk, bad sizes, 2.0 header) |
 | FMT-6 | Reference snapshot constant | done | `ReferenceSnapshot.swift`; `ReferenceSnapshotTests` |
-| FMT-7 | DBPF archives | missing | Xanadu |
+| FMT-7 | DBPF archives | done | `Archives/DBPFArchive.swift`; `DBPFArchiveTests` (versions 1.0 and 2.0, lookup ID packing, first-wins IDs, missing types, truncation, out-of-bounds entries) |
 | FMT-8 | Behavior chunks: `BHAV`, `BCON`, `TRCN`, `TPRP` | missing | Pixie Point |
 | FMT-9 | String chunks: `STR#`, `CTSS`, `TTAs` with language sets and code pages | missing | Pixie Point |
 | FMT-10 | Object chunks: `OBJD`, `OBJf`, `OBJT`, `OBJM`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | missing | Pixie Point |
@@ -101,7 +101,7 @@ How we know the Swift code behaves like the 2017 code.
 
 | Id | Target | Status | Note |
 |---|---|---|---|
-| FID-1 | Install scan: every FAR1, FAR3, and IFF in a TSO install opens without error | missing | Needs a scan tool and `TSO_GAME_DIR` (roadmap decision 5) |
+| FID-1 | Install scan: every FAR1, FAR3, DBPF, and IFF in a TSO install opens without error | done | `tsofiles-check` on the owner's install (2026-10-15, 1.5 GB): 12 FAR1, 47 FAR3, 6 DBPF, 29 IFF; 82,131 entries read and decompressed, including 1,554 IFFs inside FAR1 archives; 0 failures, in under 7 seconds (release build). The first run found the FAR3 file ID issue fixed as DIFF-5. Forcing FAR1 variant `a` fails on `objspf*.far`, confirming the variant handling |
 | FID-2 | Each ported reader keeps the 2017 behavior on valid input, with quirks tested | partial | Done for FMT-1 to FMT-5 (quirks listed under [known differences](#known-differences-from-2017) and in each type's doc comment); applies to every later format |
 | FID-3 | Byte-level comparison of decoded output against the 2017 readers on real files | missing | Needs the 2017 build or recorded dumps (roadmap decision 2) |
 | FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | missing | West Darrington |
@@ -142,6 +142,7 @@ or a lint when it does.
 | TST-4 | CI runs all three packages on every push | missing | |
 | TST-5 | Lint for REL-2 and DET-2 (SwiftLint custom rules or a script) | missing | |
 | TST-6 | Real-file tests gated on `TSO_GAME_DIR` | missing | Roadmap decision 5 |
+| TST-7 | Script that extracts the TSO installer's cabinets into a game folder | partial | `NSOClient/scripts/extract-tso-installer.sh`: detects Microsoft (cabextract) or InstallShield (unshield) cabinets, accepts a folder, a cabinet, or a .zip, tests integrity first, finds the folder holding `tuning.dat`, optional `--lowercase` and `--check`. Tested on hand-built Microsoft cabinets (extraction, lower-casing, .zip input, damaged and foreign files, usage errors). Not yet tested: spanned cabinet sets, InstallShield (unshield isn't installed here), the real installer |
 
 ## Platforms
 
@@ -164,6 +165,7 @@ Deliberate, documented in the code. Each keeps valid-file behavior the same.
 | DIFF-2 | Archives are values over memory-mapped bytes, not shared readers | `FAR1Archive`, `FAR3Archive` | Removes the `isReadingSomething` race that silently returned empty archives |
 | DIFF-3 | IFF keeps chunk types the old reader skipped | `IFFFile` | Nothing is lost before typed parsing |
 | DIFF-4 | Seeking past the end of the data throws; .NET allowed it and then read nothing | `ByteReader.seek(to:)` | Surfaces bad offsets at their source |
+| DIFF-5 | FAR3 lookups by asset ID use file ID and type ID together; repeated file IDs no longer fail | `FAR3Archive.entry(id:)` | `packingslips/packingslips.dat` repeats 5,240 file IDs across type IDs (all 32,711 pairs unique). The 2017 reader indexed by file ID alone, with the comment "isn't this a bad idea?", and would throw; FreeSO never opens that file. Results are identical for every archive FreeSO loads |
 
 ## Open bugs
 

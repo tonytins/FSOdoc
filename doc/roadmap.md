@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (milestones renamed: Charvatia to Xanadu, Grantley Grove to Pixie Point, Pixie Point to West Darrington); earlier: major (first version: milestones Albertstown to Virginia Islands, alpha gate, estimates from C# line counts) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (alpha gate row 1 passes: clean scan of a real TSO install; FAR3 indexed by full asset ID; estimates unchanged) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -32,7 +32,7 @@ is `partial, not blocking`.
 
 | Core job | Works end to end? | Evidence | Hours to pass |
 |---|---|---|---|
-| Open every FAR1, FAR3, and IFF file in a TSO install | no | Container readers exist and pass synthetic tests (scorecard FMT-1 to FMT-5); no run against a real install yet | 5–10 (Xanadu remainder plus a corpus scan tool) |
+| Open every FAR1, FAR3, DBPF, and IFF file in a TSO install | yes | `tsofiles-check` on a real install: 94 containers, 82,131 entries, 0 failures (scorecard FID-1). The first run found `packingslips.dat` repeating file IDs across types; FAR3 now looks entries up by full asset ID (scorecard DIFF-5) | 0 |
 | Load one object with its behavior, strings, tuning, and sprites | no | IFF chunk records only; no typed chunks, no content provider | 90–130 (Pixie Point, Hyde Park, King Canyons, Ocean's Edge in part) |
 | Load one avatar: mesh, skeleton, animation, outfit, appearance | no | Not started | 50–75 (Nichol's Notch, Ocean's Edge in part) |
 | Run a lot headless for one in-game day without a SimAntics error | no | `TickRate` only | 300–480 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
@@ -45,15 +45,13 @@ is `partial, not blocking`.
 
 In order:
 
-1. **Finish Xanadu:** DBPF, then a `tsofiles-check` command that opens every archive and IFF under a
-   TSO install and reports failures (scorecard FID-1). It's the first contact with real files.
-2. **Pixie Point, behavior first:** `BHAV`, `BCON`, `TRCN`, `TPRP`, `STR#`/`CTSS`, `OBJD`, `OBJf`, `TTAB`/`TTAs`,
+1. **Pixie Point, behavior first:** `BHAV`, `BCON`, `TRCN`, `TPRP`, `STR#`/`CTSS`, `OBJD`, `OBJf`, `TTAB`/`TTAs`,
    `SLOT`, `GLOB`. SimAntics needs these before anything else.
-3. **Decide how to record 2017 replays** (decision 2). Every SimAntics milestone depends on it for
+2. **Decide how to record 2017 replays** (decision 2). Every SimAntics milestone depends on it for
    evidence.
-4. **King Canyons, then the object path of Ocean's Edge:** PIFF patching, OTF, then `WorldObjectProvider` and semi-globals, so
+3. **King Canyons, then the object path of Ocean's Edge:** PIFF patching, OTF, then `WorldObjectProvider` and semi-globals, so
    one object loads end to end.
-5. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
+4. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
    with `VMExpression` as the first primitive.
 
 ## Milestones
@@ -71,7 +69,7 @@ criteria met, not lines written.
 | Milestone | Scope | C# lines | Plan size (h) | Done | Remaining (h, 2026-10-15) | Notes |
 |---|---|---:|---|---|---|---|
 | Albertstown | Scaffolding: three packages, Swift 6 mode, Swift Testing | 0 | 1–2 | 100% | 0 | Path dependencies TSOContent → TSOFiles, SimAntics → TSOContent, TSOFiles. No `platforms:` (owner decision). |
-| Xanadu | Binary reading and containers: ByteReader, FAR1, FAR3, RefPack, IFF container, DBPF | 1,859 | 12–19 | 85% | 2–4 | Done: everything but DBPF, 38 test cases. Kept quirks: RefPack short input and growth, 0xFD to 0xFF, FAR3 duplicate IDs, IFF trailing byte. Missing: DBPF. |
+| Xanadu | Binary reading and containers: ByteReader, FAR1, FAR3, RefPack, IFF container, DBPF, install scanner | 1,859 | 12–19 | 100% | 0 | Done: all containers, plus `InstallScanner` and the `tsofiles-check` command (exit 0 clean, 1 failures, 2 usage); 55 test cases. Kept quirks: RefPack short input and growth, 0xFD to 0xFF, FAR3 duplicate IDs, IFF trailing byte, DBPF version arithmetic and first-wins IDs. Real install: 0 failures over 82,131 entries. |
 | Pixie Point | Typed IFF chunks (behavior, strings, objects, interactions, slots, neighborhood) | 2,806 | 19–28 | 0% | 19–28 | Behavior chunks first. Field-encoded chunks (`IffFieldEncode`) for TS1 data last. |
 | Hyde Park | Sprites and images: `SPR#`, `SPR2`, `PALT`, `DGRP`, `BMP_`, `THMB`, BMP, TGA, PNG to RGBA | 3,543 | 24–35 | 0% | 24–35 | Decode to plain RGBA plus SPR2 depth, no textures. Includes TargaImagePCL's TGA reader. |
 | King Canyons | Patching and tables: PIFF apply and encode, OTF, `tuning.dat`, `datadefinition.dat`, INI | 802 | 5–8 | 0% | 5–8 | PIFF encoding only if the editor is planned (decision 4). |
@@ -86,19 +84,18 @@ criteria met, not lines written.
 | The Billabong | Lockstep: net commands, ticks, server and client drivers, resync | 3,987 | 50–80 | 0% | 50–80 | Byte-level compatibility with 2017 commands is decision 3. |
 | Upper Shankelston | EOD plugin handlers | 5,217 | 65–105 | 0% | 65–105 | Server-side logic only; panels belong to a client. |
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
-| | **Total** | **≈ 53,000** | **≈ 575–920** | **≈ 2% ready** | **≈ 565–900** | |
+| | **Total** | **≈ 53,000** | **≈ 575–920** | **≈ 2% ready** | **≈ 563–896** | |
 
 ## Upcoming milestones, ranked
 
 | Rank | Next milestone | Closes | Estimate (h) |
 |---|---|---|---|
-| 0 | DBPF and the install scan tool | Xanadu, FID-1 | 5–10 |
-| 1 | Behavior and string chunks | Pixie Point (first half) | 10–15 |
-| 2 | Replay harness | West Darrington, decision 2 | 15–30 |
-| 3 | One object end to end: rest of Pixie Point, King Canyons, object path of Ocean's Edge | alpha row 2 | 40–60 |
-| 4 | VM core with `VMExpression` | Queen Margaret's (first pass) | 60–100 |
-| 5 | Sprites and images | Hyde Park | 24–35 |
-| 6 | Avatars: Vitaboy formats and providers | Nichol's Notch, Ocean's Edge avatar path | 30–45 |
+| 0 | Behavior and string chunks | Pixie Point (first half) | 10–15 |
+| 1 | Replay harness | West Darrington, decision 2 | 15–30 |
+| 2 | One object end to end: rest of Pixie Point, King Canyons, object path of Ocean's Edge | alpha row 2 | 40–60 |
+| 3 | VM core with `VMExpression` | Queen Margaret's (first pass) | 60–100 |
+| 4 | Sprites and images | Hyde Park | 24–35 |
+| 5 | Avatars: Vitaboy formats and providers | Nichol's Notch, Ocean's Edge avatar path | 30–45 |
 
 ## Critical path
 
@@ -141,5 +138,7 @@ follow Queen Margaret's. The long poles are Queen Margaret's (VM core) and Ranch
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | Alpha gate row 1 passes: `tsofiles-check` reads a real TSO install (94 containers, 82,131 entries) with 0 failures. The first run failed on `packingslips.dat`, which repeats file IDs across type IDs; FAR3 lookups now use the full asset ID (identical results for every archive FreeSO loads). Estimates unchanged. |
+| 2026-10-15 | minor | Xanadu done: `DBPFArchive` (both header layouts, first-wins IDs) and `InstallScanner` with the `tsofiles-check` command. 55 test cases. The real-install run is the remaining step for alpha gate row 1. Estimates unchanged. |
 | 2026-10-15 | minor | Renamed milestones at the owner's request: Charvatia is now Xanadu, Grantley Grove is now Pixie Point, and the replay harness (formerly Pixie Point) is now West Darrington. Estimates unchanged. |
 | 2026-10-15 | major | First version: scope, alpha gate (pre-alpha, ≈ 2%), milestones Albertstown to Virginia Islands sized from C# line counts, ranked next steps, owner decisions, risks. Albertstown done; Xanadu at 85% (DBPF missing). |

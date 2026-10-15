@@ -181,12 +181,18 @@ func persistContainer(refPack stream: Data, decompressedSize: UInt32, compressio
         #expect(archive.entries.count == 2)
     }
 
-    @Test func rejectsARepeatedFileID() {
-        let bytes = makeFAR3([
-            FAR3Fixture(name: "a", id: AssetID(fileID: 5, typeID: 1), stored: Data([1]), decompressedSize: 1),
-            FAR3Fixture(name: "b", id: AssetID(fileID: 5, typeID: 2), stored: Data([2]), decompressedSize: 1),
-        ])
-        #expect(throws: FAR3Error.duplicateFileID(5)) { try FAR3Archive(bytes: bytes) }
+    @Test func findsEntriesThatShareAFileIDByTheirFullAssetID() throws {
+        // packingslips.dat repeats file IDs across type IDs; the 2017 reader failed to open it.
+        let first = AssetID(fileID: 5, typeID: 1)
+        let second = AssetID(fileID: 5, typeID: 2)
+        let archive = try FAR3Archive(bytes: makeFAR3([
+            FAR3Fixture(name: "", id: first, stored: Data([1]), decompressedSize: 1),
+            FAR3Fixture(name: "", id: second, stored: Data([2]), decompressedSize: 1),
+        ]))
+
+        #expect(try archive.data(for: first) == Data([1]))
+        #expect(try archive.data(for: second) == Data([2]))
+        #expect(archive.entry(fileID: 5)?.assetID == first, "a file ID alone finds the first entry")
     }
 
     @Test func rejectsAFAR1Archive() {

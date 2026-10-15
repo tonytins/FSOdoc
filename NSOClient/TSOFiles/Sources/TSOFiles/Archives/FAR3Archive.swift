@@ -57,6 +57,7 @@ public struct FAR3Archive: Sendable {
     private let bytes: Data
     private let entryIndexByName: [String: Int]
     private let entryIndexByFileID: [UInt32: Int]
+    private let entryIndexByAssetID: [AssetID: Int]
 
     /// Reads an archive from memory.
     public init(bytes: Data) throws(FAR3Error) {
@@ -68,22 +69,23 @@ public struct FAR3Archive: Sendable {
         }
         guard let manifest else { throw .notAFAR3Archive }
 
+        // Every index keeps the first entry for its key. The 2017 reader indexed by file ID
+        // alone and threw on a repeated one; some archives (packingslips.dat) repeat file IDs
+        // across type IDs, so lookups by asset ID use both.
         var byName: [String: Int] = [:]
         var byFileID: [UInt32: Int] = [:]
+        var byAssetID: [AssetID: Int] = [:]
         for (index, entry) in manifest.enumerated() {
-            // The 2017 reader keeps the first entry for a name...
             if byName[entry.fileName] == nil { byName[entry.fileName] = index }
-            // ...but fails on a repeated file ID (Dictionary.Add throws).
-            guard byFileID[entry.assetID.fileID] == nil else {
-                throw .duplicateFileID(entry.assetID.fileID)
-            }
-            byFileID[entry.assetID.fileID] = index
+            if byFileID[entry.assetID.fileID] == nil { byFileID[entry.assetID.fileID] = index }
+            if byAssetID[entry.assetID] == nil { byAssetID[entry.assetID] = index }
         }
 
         self.entries = manifest
         self.bytes = bytes
         self.entryIndexByName = byName
         self.entryIndexByFileID = byFileID
+        self.entryIndexByAssetID = byAssetID
     }
 
     /// Reads an archive from a file, memory-mapping it.
@@ -98,15 +100,14 @@ public struct FAR3Archive: Sendable {
         entryIndexByName[fileName].map { entries[$0] }
     }
 
-    /// The entry with the given file ID.
+    /// The first entry with the given file ID, whatever its type.
     public func entry(fileID: UInt32) -> Entry? {
         entryIndexByFileID[fileID].map { entries[$0] }
     }
 
-    /// The entry with the given asset ID. Both the file ID and the type ID must match.
+    /// The first entry with the given asset ID. Both the file ID and the type ID must match.
     public func entry(id: AssetID) -> Entry? {
-        guard let entry = entry(fileID: id.fileID), entry.assetID.typeID == id.typeID else { return nil }
-        return entry
+        entryIndexByAssetID[id].map { entries[$0] }
     }
 
     // MARK: Data
@@ -212,8 +213,6 @@ public enum FAR3Error: Error, Equatable, Sendable {
     case notAFAR3Archive
     /// The header, manifest, or an entry ends early.
     case truncated(EndOfDataError)
-    /// Two entries share a file ID. The 2017 reader fails on this too.
-    case duplicateFileID(UInt32)
     /// No entry has the requested ID.
     case entryNotFound(AssetID)
     /// An entry's RefPack data is corrupt.
