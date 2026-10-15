@@ -1,7 +1,7 @@
 # FSOdoc documentation
 
 These pages explain the FreeSO source code as of August 9, 2017 (the
-snapshot in [`TSOClient/`](../TSOClient/)), and how to rewrite it on
+snapshot in [`TSOClient/`](../../TSOClient/)), and how to rewrite it on
 modern, cross-platform .NET. Each page has two parts: **How it works
 (2017)** describes the code as it is, and **Modern .NET rewrite** says
 what to change.
@@ -66,6 +66,6 @@ forks, because the submodules aren't checked out in this repository.
   `../TSOClient/tso.simantics/VM.cs`.
 - Types and members are named exactly as in the code.
 - Code samples under "Modern .NET rewrite" are sketches. They follow the
-  [.NET guidelines skill](../.agents/skills/dotnet-guidelines/SKILL.md)
+  [.NET guidelines skill](../../.agents/skills/dotnet-guidelines/SKILL.md)
   and have not been compiled.
-- The rules for writing these pages are in [AGENTS.md](../AGENTS.md).
+- The rules for writing these pages are in [AGENTS.md](../../AGENTS.md).

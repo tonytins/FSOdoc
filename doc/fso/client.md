@@ -12,8 +12,8 @@ library, **FSO.UI** (`TSOClient/FSO.UI`), whose code mostly lives in
 
 ### Startup
 
-1. [`Program.Main`](../TSOClient/tso.client/Program.cs) creates
-   [`FSOProgram`](../TSOClient/tso.client/FSOProgram.cs) and calls
+1. [`Program.Main`](../../TSOClient/tso.client/Program.cs) creates
+   [`FSOProgram`](../../TSOClient/tso.client/FSOProgram.cs) and calls
    `InitWithArguments`:
    - registers an `AssemblyResolve` handler and a crash handler that
      shows a WinForms `MessageBox`;
@@ -28,10 +28,10 @@ library, **FSO.UI** (`TSOClient/FSO.UI`), whose code mostly lives in
      binary at run time;
    - fills `FSOEnvironment` and `GlobalSettings` (content folders, game
      path, version from `version.txt`).
-2. [`GameStartProxy.Start`](../TSOClient/tso.client/GameStartProxy.cs)
+2. [`GameStartProxy.Start`](../../TSOClient/tso.client/GameStartProxy.cs)
    creates and runs `TSOGame`. It exists so that `Program` itself never
    references MonoGame types before the linker has chosen a binary.
-3. [`TSOGame.Initialize`](../TSOClient/tso.client/TSOGame.cs) creates the
+3. [`TSOGame.Initialize`](../../TSOClient/tso.client/TSOGame.cs) creates the
    Ninject kernel (`RegulatorsModule`, `NetworkModule`, `CacheModule`,
    later `ClientDomainModule`), initializes content with the
    `GraphicsDevice`, creates the 3D scene layer and the UI layer, starts
@@ -41,7 +41,7 @@ library, **FSO.UI** (`TSOClient/FSO.UI`), whose code mostly lives in
    from `Content/OGL/` or `Content/DX/`. If they're missing, the game
    exits silently.
 
-Settings live in [`GlobalSettings`](../TSOClient/FSO.UI/GlobalSettings.cs),
+Settings live in [`GlobalSettings`](../../TSOClient/FSO.UI/GlobalSettings.cs),
 an `IniConfig` stored as `config.ini` in `FSOEnvironment.UserDir`
 (the working directory's `Content/` folder on desktop).
 
@@ -49,22 +49,22 @@ an `IniConfig` stored as `config.ini` in `FSOEnvironment.UserDir`
 
 Two static classes give global access:
 
-- [`GameFacade`](../TSOClient/FSO.UI/GameFacade.cs) (in FSO.UI): the
+- [`GameFacade`](../../TSOClient/FSO.UI/GameFacade.cs) (in FSO.UI): the
   game, screens (`UILayer`), scenes, graphics device, fonts, cursor,
   strings, and platform flags.
-- [`FSOFacade`](../TSOClient/tso.client/FSOFacade.cs): the Ninject kernel
+- [`FSOFacade`](../../TSOClient/tso.client/FSOFacade.cs): the Ninject kernel
   and the `GameController`.
 
 ### Screens and controllers
 
-[`GameController`](../TSOClient/tso.client/GameController.cs) moves the
+[`GameController`](../../TSOClient/tso.client/GameController.cs) moves the
 player between screens: loading, login, person selection, Create-a-Sim,
 the city (`CoreGameScreen`), sandbox mode, and credits. It also handles
 disconnects and fatal errors.
 
-Each screen in [`UI/Screens/`](../TSOClient/tso.client/UI/Screens/) is a
+Each screen in [`UI/Screens/`](../../TSOClient/tso.client/UI/Screens/) is a
 view. Its logic is in a matching controller in
-[`Controllers/`](../TSOClient/tso.client/Controllers/), created by
+[`Controllers/`](../../TSOClient/tso.client/Controllers/), created by
 Ninject with the view and services injected (for example
 `CoreGameScreenController(CoreGameScreen view, Network network, IClientDataService dataService, ...)`).
 Panels such as the lot page and person page follow the same pattern
@@ -73,7 +73,7 @@ Panels such as the lot page and person page follow the same pattern
 ### Regulators
 
 Network workflows are written as state machines called regulators,
-derived from [`AbstractRegulator`](../TSOClient/FSO.Server.Clients/Framework/AbstractRegulator.cs)
+derived from [`AbstractRegulator`](../../TSOClient/FSO.Server.Clients/Framework/AbstractRegulator.cs)
 (in FSO.Server.Clients). A regulator declares named states with allowed
 transitions and data triggers:
 
@@ -91,9 +91,9 @@ happened.
 
 | Regulator | Workflow |
 | --- | --- |
-| [`LoginRegulator`](../TSOClient/tso.client/Regulators/LoginRegulator.cs) | Auth login, initial connect (version check), avatar data, shard status. |
-| [`CityConnectionRegulator`](../TSOClient/tso.client/Regulators/CityConnectionRegulator.cs) | Select city, get a shard ticket, open the Aries socket, answer `RequestClientSession`, wait for the host, load avatar data. |
-| [`LotConnectionRegulator`](../TSOClient/tso.client/Regulators/LotConnectionRegulator.cs) | Find lot through the city, connect to the lot server, then stream VM ticks (`LotCommandStream`). |
+| [`LoginRegulator`](../../TSOClient/tso.client/Regulators/LoginRegulator.cs) | Auth login, initial connect (version check), avatar data, shard status. |
+| [`CityConnectionRegulator`](../../TSOClient/tso.client/Regulators/CityConnectionRegulator.cs) | Select city, get a shard ticket, open the Aries socket, answer `RequestClientSession`, wait for the host, load avatar data. |
+| [`LotConnectionRegulator`](../../TSOClient/tso.client/Regulators/LotConnectionRegulator.cs) | Find lot through the city, connect to the lot server, then stream VM ticks (`LotCommandStream`). |
 | `CreateASimRegulator` | Create an avatar on the city server. |
 | `PurchaseLotRegulator` | Buy a lot. |
 
@@ -103,22 +103,22 @@ When a lot connection reaches its command stream, `CoreGameScreen`
 creates a LotView `World`, a `VMClientDriver`, and a `VM`. The driver's
 `OnClientCommand` sends the player's commands to the lot server as
 `FSOVMCommand` packets. `FSOVMTickBroadcast` packets from the server feed
-the driver. [`UILotControl`](../TSOClient/tso.client/UI/Panels/UILotControl.cs)
+the driver. [`UILotControl`](../../TSOClient/tso.client/UI/Panels/UILotControl.cs)
 handles input on the lot (pie menus, object selection, build and buy
 tools) and turns it into VM commands. See
 [simantics.md](./simantics.md#multiplayer-deterministic-lockstep).
 
-[`SandboxGameScreen`](../TSOClient/tso.client/UI/Screens/SandboxGameScreen.cs)
+[`SandboxGameScreen`](../../TSOClient/tso.client/UI/Screens/SandboxGameScreen.cs)
 does the same offline, with an in-process `VMServerDriver`.
 
 ### UI framework (FSO.UI)
 
-- [`UIElement`](../TSOClient/FSO.UI/Framework/UIElement.cs) is the base
+- [`UIElement`](../../TSOClient/FSO.UI/Framework/UIElement.cs) is the base
   for everything: position, scale, opacity, and per-frame
   `Update(UpdateState)` and `Draw(UISpriteBatch)`.
-  [`UIContainer`](../TSOClient/FSO.UI/Framework/UIContainer.cs) holds
+  [`UIContainer`](../../TSOClient/FSO.UI/Framework/UIContainer.cs) holds
   children, and `UICachedContainer` renders them to a texture.
-- [`UILayer`](../TSOClient/FSO.UI/UILayer.cs) is the graphics layer that
+- [`UILayer`](../../TSOClient/FSO.UI/UILayer.cs) is the graphics layer that
   draws the current `UIScreen`, dialogs, and tooltips.
 - **UIScript.** TSO describes most windows in `.uis` files under
   `gamedata/uiscripts/` in the original install.
@@ -128,16 +128,16 @@ does the same offline, with an in-process `VMServerDriver`.
   controls and assigns each one to the C# property with the same name on
   the owning class, using reflection. Panels declare those properties
   (`public UIButton ChatHistoryScrollUpButton { get; set; }`).
-- Controls in [`Controls/`](../TSOClient/FSO.UI/Controls/): buttons,
+- Controls in [`Controls/`](../../TSOClient/FSO.UI/Controls/): buttons,
   labels, images (with nine-slice), list boxes, sliders, the
   1,300-line `UITextEdit`, dialogs, alerts, and grid viewers.
 - `UITween` animates element properties, and `TextRenderer` lays out
   text with the bitmap fonts.
-- [`UIFileIDs`](../TSOClient/FSO.UI/UIFileIDs.cs) lists the 64-bit asset
+- [`UIFileIDs`](../../TSOClient/FSO.UI/UIFileIDs.cs) lists the 64-bit asset
   IDs of the original UI graphics.
 
 The client's own panels are in
-[`tso.client/UI/Panels/`](../TSOClient/tso.client/UI/Panels/): the
+[`tso.client/UI/Panels/`](../../TSOClient/tso.client/UI/Panels/): the
 control panel (`UIUCP`), live, buy, build, and house modes, the gizmo
 (city search and top 100), chat, messaging, the person and lot pages,
 options, and dialogs. EOD (object plugin) UIs are in `UI/Panels/EODs/`,
@@ -147,7 +147,7 @@ one per server-side handler.
 
 `GameController.StartDebugTools` and the debug menu open WinForms tools
 from FSO.UI's `Debug/` folder. Most of those files are excluded from the
-build (see below). [`IDEHook`](../TSOClient/FSO.UI/Debug/IDEHook.cs) lets
+build (see below). [`IDEHook`](../../TSOClient/FSO.UI/Debug/IDEHook.cs) lets
 the Volcanic IDE ([tools.md](./tools.md)) inject itself into a running
 game and attach to its VM.
 
@@ -171,7 +171,7 @@ xamarin.android?". FSODroid references it in place of the real
 | --- | --- |
 | `FSOProgram`, `Program` | WinForms `MessageBox` on crash; `WinFormsClipboard` |
 | `WindowsLocator` | Registry lookup |
-| [`UITTSContext`](../TSOClient/tso.client/UI/Model/UITTSContext.cs) | `System.Speech` text-to-speech for chat. `FSOProgram` only enables it when not on Linux or macOS. |
+| [`UITTSContext`](../../TSOClient/tso.client/UI/Model/UITTSContext.cs) | `System.Speech` text-to-speech for chat. `FSOProgram` only enables it when not on Linux or macOS. |
 | `InputManager` (FSO.Common) | Declares `user32.dll` `MapVirtualKey`, but never calls it |
 | `MonogameLinker` | Chooses between per-OS MonoGame binaries copied next to the executable |
 | `tso.client` folder | Checked-in `sdl2.dll`, `soft_oal.dll`, `OpenTK.dll`, `NVorbis.dll` (Windows native or prebuilt) |

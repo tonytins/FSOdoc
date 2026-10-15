@@ -11,7 +11,7 @@ it is WinForms on .NET Framework.
 `TSOClient/FSO.IDE` builds `Volcanic.exe`, a WinForms editor for objects
 and SimAntics code. It runs the real game inside it:
 
-1. [`Program.Main`](../TSOClient/FSO.IDE/Program.cs) loads the client
+1. [`Program.Main`](../../TSOClient/FSO.IDE/Program.cs) loads the client
    assembly by reflection, finds `FSO.Client.GameStartProxy` (falling
    back to `Simitone.Windows.GameStartProxy`, from a separate TS1-focused
    project), and runs `FSOProgram.InitWithArguments`.

@@ -23,12 +23,12 @@ selection.
 
 ### Two transports
 
-1. **HTTP** for login and city selection. [`AuthClient`](../TSOClient/FSO.Server.Clients/AuthClient.cs)
-   and [`CityClient`](../TSOClient/FSO.Server.Clients/CityClient.cs) use
+1. **HTTP** for login and city selection. [`AuthClient`](../../TSOClient/FSO.Server.Clients/AuthClient.cs)
+   and [`CityClient`](../../TSOClient/FSO.Server.Clients/CityClient.cs) use
    RestSharp. Responses are XML in TSO's original formats (the types in
    `CitySelector/`).
 2. **TCP** for everything in game, framed by **Aries** and carried by
-   Mina.NET. [`AriesClient`](../TSOClient/FSO.Server.Clients/AriesClient.cs)
+   Mina.NET. [`AriesClient`](../../TSOClient/FSO.Server.Clients/AriesClient.cs)
    is the client end. The client keeps two: one named `City` and one named
    `Lot` (see `NetworkModule` in the client).
 
@@ -56,7 +56,7 @@ with `FindLotResponse` (address and ticket). The client then opens the
 
 ### Aries framing
 
-[`AriesProtocolDecoder`](../TSOClient/FSO.Server.Protocol/Aries/AriesProtocolDecoder.cs)
+[`AriesProtocolDecoder`](../../TSOClient/FSO.Server.Protocol/Aries/AriesProtocolDecoder.cs)
 reads a 12-byte little-endian header: packet type, timestamp, payload
 size. Then:
 
@@ -76,10 +76,10 @@ then fills itself through `IoBufferDeserializable.Deserialize`.
 
 | Family | Folder | Used between | Purpose |
 | --- | --- | --- | --- |
-| Aries | [`Aries/Packets`](../TSOClient/FSO.Server.Protocol/Aries/Packets/) | all | Session setup and challenge-response. |
-| Voltron | [`Voltron/Packets`](../TSOClient/FSO.Server.Protocol/Voltron/Packets/) | client and city | TSO's original messages: chat, find player, ignore list, announcements, and the data service and database wrappers. `VoltronPacketType` lists about 780 lines of original TSO type codes, most not implemented. |
-| Electron | [`Electron/Packets`](../TSOClient/FSO.Server.Protocol/Electron/Packets/) | client and city or lot | FreeSO's own messages: create a Sim, find and purchase lots, roommates, instant messages, moderation, and the VM transport (`FSOVMCommand`, `FSOVMTickBroadcast`, `FSOVMDirectToClient`, `FSOVMProtocolMessage`). |
-| Gluon | [`Gluon/Packets`](../TSOClient/FSO.Server.Protocol/Gluon/Packets/) | server and server | Health pings, lot capacity, task requests, claim transfers, shard shutdown, and lot client termination. |
+| Aries | [`Aries/Packets`](../../TSOClient/FSO.Server.Protocol/Aries/Packets/) | all | Session setup and challenge-response. |
+| Voltron | [`Voltron/Packets`](../../TSOClient/FSO.Server.Protocol/Voltron/Packets/) | client and city | TSO's original messages: chat, find player, ignore list, announcements, and the data service and database wrappers. `VoltronPacketType` lists about 780 lines of original TSO type codes, most not implemented. |
+| Electron | [`Electron/Packets`](../../TSOClient/FSO.Server.Protocol/Electron/Packets/) | client and city or lot | FreeSO's own messages: create a Sim, find and purchase lots, roommates, instant messages, moderation, and the VM transport (`FSOVMCommand`, `FSOVMTickBroadcast`, `FSOVMDirectToClient`, `FSOVMProtocolMessage`). |
+| Gluon | [`Gluon/Packets`](../../TSOClient/FSO.Server.Protocol/Gluon/Packets/) | server and server | Health pings, lot capacity, task requests, claim transfers, shard shutdown, and lot client termination. |
 
 Lot simulation traffic is the bytes produced by the SimAntics net
 drivers (see [simantics.md](./simantics.md#multiplayer-deterministic-lockstep)),
@@ -88,14 +88,14 @@ wrapped in the `FSOVM*` Electron packets.
 ### Server-to-server authentication
 
 Gluon connections authenticate with a challenge-response in
-[`ChallengeResponse`](../TSOClient/FSO.Server.Protocol/Utils/ChallengeResponse.cs):
+[`ChallengeResponse`](../../TSOClient/FSO.Server.Protocol/Utils/ChallengeResponse.cs):
 the host sends a random salt and an iteration count (4,000 to 5,000), and
 the caller answers with PBKDF2 (`Rfc2898DeriveBytes`, SHA-1) over the
 shared secret, followed by HMAC-SHA1.
 
 ### TLS
 
-[`SslClientFilter`](../TSOClient/FSO.Server.Protocol/Utils/SslClientFilter.cs)
+[`SslClientFilter`](../../TSOClient/FSO.Server.Protocol/Utils/SslClientFilter.cs)
 is a custom Mina TLS filter. It authenticates the server against the
 hard-coded host name `auth.east.ea.com` (the original EA server). In
 `AriesClient.Connect` the lines that add it are commented out, so the client connects in plain text. The server
@@ -105,13 +105,13 @@ shard ticket, is not encrypted.
 
 ### The data service
 
-[`DataService`](../TSOClient/FSO.Server.DataService/DataService.cs) is a
+[`DataService`](../../TSOClient/FSO.Server.DataService/DataService.cs) is a
 typed, observable cache of game objects (`Avatar`, `Lot`, `City`,
 `Relationship`, `Bookmark`, and others in `Model/`), shared by client
 and server:
 
 - The model is defined by TSO's `datadefinition.dat`
-  ([`TSODataDefinition`](../TSOClient/tso.files/formats/tsodata/TSODataDefinition.cs)):
+  ([`TSODataDefinition`](../../TSOClient/tso.files/formats/tsodata/TSODataDefinition.cs)):
   structs, fields, and "derived structs" (masked subsets of fields,
   `MaskedStruct`) that say which fields are sent in which situation.
 - Each C# model class is marked with `[DataServiceModel]` and its
@@ -130,7 +130,7 @@ and server:
 
 ### The database service
 
-[`DatabaseService`](../TSOClient/FSO.Common.DatabaseService/DatabaseService.cs)
+[`DatabaseService`](../../TSOClient/FSO.Common.DatabaseService/DatabaseService.cs)
 sends `DBRequestWrapperPDU` requests (top 100 lists, load avatar by ID,
 search) and returns a `Task<T>` that completes when the matching response
 arrives, matched by message ID. `DBRequestType` and `DBResponseType` list
@@ -140,7 +140,7 @@ TSO's original request codes.
 
 All binary packets use Mina.NET's `IoBuffer` with the `cTSO*` serializers
 from [FSO.Common](./common.md#wire-serialization).
-[`cTSOSerializer`](../TSOClient/FSO.Server.Protocol/Voltron/DataService/cTSOSerializer.cs)
+[`cTSOSerializer`](../../TSOClient/FSO.Server.Protocol/Voltron/DataService/cTSOSerializer.cs)
 is created eagerly as a singleton, because packets look it up statically
 instead of through dependency injection.
 

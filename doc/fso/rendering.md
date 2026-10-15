@@ -17,7 +17,7 @@ through the MonoGame content pipeline.
 ### Shaders and compiled content
 
 Effect and font sources are in
-[`tso.content/ContentSrc/`](../TSOClient/tso.content/ContentSrc/). There
+[`tso.content/ContentSrc/`](../../TSOClient/tso.content/ContentSrc/). There
 are three MonoGame Content Builder files:
 
 | File | Output | Platform |
@@ -36,23 +36,23 @@ leftovers of a manual build for Mono. The client picks `Content/OGL/` or
 
 ### LotView
 
-[`World`](../TSOClient/tso.world/World.cs) is a `_3DScene` (see
+[`World`](../../TSOClient/tso.world/World.cs) is a `_3DScene` (see
 [common.md](./common.md#game-and-rendering-framework)) that renders one
 lot. It holds:
 
-- a [`Blueprint`](../TSOClient/tso.world/model/Blueprint.cs): the
+- a [`Blueprint`](../../TSOClient/tso.world/model/Blueprint.cs): the
   rendering model of the lot (walls, floors, terrain, objects, rooms, and
   lights) that SimAntics fills and updates;
-- a [`WorldState`](../TSOClient/tso.world/WorldState.cs): camera
+- a [`WorldState`](../../TSOClient/tso.world/WorldState.cs): camera
   position, zoom (`WorldZoom`: near, medium, far), rotation
   (`WorldRotation`, four directions), current floor level, and lighting;
-- [`World2D`](../TSOClient/tso.world/World2D.cs) and
-  [`World3D`](../TSOClient/tso.world/World3D.cs), which draw the
+- [`World2D`](../../TSOClient/tso.world/World2D.cs) and
+  [`World3D`](../../TSOClient/tso.world/World3D.cs), which draw the
   sprite-based world and the 3D avatars on top.
 
 TSO's objects are pre-rendered sprites with per-pixel depth (SPR2 frames
 carry a z-buffer). `World2D` reproduces that with
-[`_2DWorldBatch`](../TSOClient/tso.world/utils/_2DWorldBatch.cs), a
+[`_2DWorldBatch`](../../TSOClient/tso.world/utils/_2DWorldBatch.cs), a
 sprite batch that writes color and depth so that sprites and 3D avatars
 sort correctly. To keep frame cost down, the static parts of the lot
 (terrain, floors, walls, and objects that aren't moving) are drawn once
@@ -76,11 +76,11 @@ Components draw each part of the lot:
 | `AvatarComponent` | A Vitaboy avatar placed in the lot. |
 | `SubWorldComponent` | A neighboring lot drawn around the current one. |
 
-[`LMap/`](../TSOClient/tso.world/LMap/) adds per-room lighting and shadow
-maps when `WorldConfig.AdvancedLighting` is on. [`WorldConfig`](../TSOClient/tso.world/WorldConfig.cs)
+[`LMap/`](../../TSOClient/tso.world/LMap/) adds per-room lighting and shadow
+maps when `WorldConfig.AdvancedLighting` is on. [`WorldConfig`](../../TSOClient/tso.world/WorldConfig.cs)
 holds the user's lighting, smooth zoom, and surrounding-lot settings.
 
-[`XmlHouse`](../TSOClient/tso.world/model/XmlHouse.cs) reads the
+[`XmlHouse`](../../TSOClient/tso.world/model/XmlHouse.cs) reads the
 original game's XML lot blueprints in `housedata/blueprints/`. The lot
 server loads job lots from them, and the client's debug export writes
 `house_00.xml` in the same format.
@@ -88,7 +88,7 @@ server loads job lots from them, and the client's debug export writes
 ### Vitaboy avatars
 
 Vitaboy is TSO's skeletal animation system. The data model in
-[`tso.vitaboy.model`](../TSOClient/tso.vitaboy.model/) chains together:
+[`tso.vitaboy.model`](../../TSOClient/tso.vitaboy.model/) chains together:
 
 ```text
 PurchasableOutfit -> Outfit (light/medium/dark skin) -> Appearance
@@ -103,13 +103,13 @@ equivalents used in hybrid mode.
 
 The engine:
 
-- [`Avatar`](../TSOClient/tso.vitaboy.engine/Avatar.cs) holds a skeleton
+- [`Avatar`](../../TSOClient/tso.vitaboy.engine/Avatar.cs) holds a skeleton
   and a set of bindings and draws them with the `Vitaboy` effect. Skinning
   is done on the GPU: the shader receives up to 50 bone matrices
   (`SkelBindings`).
-- [`SimAvatar`](../TSOClient/tso.vitaboy.engine/SimAvatar.cs) adds the
+- [`SimAvatar`](../../TSOClient/tso.vitaboy.engine/SimAvatar.cs) adds the
   head, body, hands, accessories, and skin tone.
-- [`Animator`](../TSOClient/tso.vitaboy.engine/Animator.cs) advances
+- [`Animator`](../../TSOClient/tso.vitaboy.engine/Animator.cs) advances
   animations and blends bone poses. During lot play, SimAntics keeps each
   avatar's current animation and frame in `VMAnimationState` and calls
   `Animator.SilentFrameProgress` every tick, so animation timing is part
@@ -119,7 +119,7 @@ The engine:
 
 The city view draws the whole city map (terrain, roads, and lot
 markers) when the player is not on a lot.
-[`Terrain`](../TSOClient/tso.client/Rendering/City/Terrain.cs)
+[`Terrain`](../../TSOClient/tso.client/Rendering/City/Terrain.cs)
 (about 1,650 lines) builds textures and atlases from the city's
 elevation, terrain type, road, and vertex color maps (from
 `CityMapsProvider`), handles zoom and panning, and draws lot thumbnails, requesting them through its controller.

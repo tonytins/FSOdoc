@@ -9,20 +9,20 @@ nearly every other project depends on it.
 
 ### Binary reading
 
-[`IoBuffer`](../TSOClient/tso.files/utils/IoBuffer.cs) wraps `BinaryReader`
+[`IoBuffer`](../../TSOClient/tso.files/utils/IoBuffer.cs) wraps `BinaryReader`
 with a switchable `ByteOrder` (big or little endian), fixed-length C
 strings, Pascal strings, and variable-length integers. Almost every format
-reader is built on it. [`IoWriter`](../TSOClient/tso.files/utils/IoWriter.cs)
+reader is built on it. [`IoWriter`](../../TSOClient/tso.files/utils/IoWriter.cs)
 is the writing counterpart, used where FreeSO saves files (IFF and PIFF).
-[`Endian`](../TSOClient/tso.files/Endian.cs) has byte-swap helpers.
+[`Endian`](../../TSOClient/tso.files/Endian.cs) has byte-swap helpers.
 
 ### Archives
 
 | Format | Type | Notes |
 | --- | --- | --- |
-| FAR1 | [`FAR1Archive`](../TSOClient/tso.files/FAR1/FAR1Archive.cs) | Magic `FAR!byAZ`, version 1. A manifest lists name, size, and offset. Used by the floor, wall, and semi-global content providers and `FAR1Provider`. |
-| FAR3 | [`FAR3Archive`](../TSOClient/tso.files/FAR3/FAR3Archive.cs) | Magic `FAR!byAZ`, version 3. Entries are keyed by file name and by a 32-bit file ID. Compressed entries use RefPack (`0xFB10`), decoded by [`Decompresser`](../TSOClient/tso.files/FAR3/Decompresser.cs), a port of DBPF4J. |
-| DBPF | [`DBPFFile`](../TSOClient/tso.files/formats/dbpf/DBPFFile.cs) | The later Maxis package format. In this snapshot only the audio content loader ([`tso.content/Audio.cs`](../TSOClient/tso.content/Audio.cs)) uses it, with group and type IDs from `tsosounddata.ini` and `tsoaudio.ini`. |
+| FAR1 | [`FAR1Archive`](../../TSOClient/tso.files/FAR1/FAR1Archive.cs) | Magic `FAR!byAZ`, version 1. A manifest lists name, size, and offset. Used by the floor, wall, and semi-global content providers and `FAR1Provider`. |
+| FAR3 | [`FAR3Archive`](../../TSOClient/tso.files/FAR3/FAR3Archive.cs) | Magic `FAR!byAZ`, version 3. Entries are keyed by file name and by a 32-bit file ID. Compressed entries use RefPack (`0xFB10`), decoded by [`Decompresser`](../../TSOClient/tso.files/FAR3/Decompresser.cs), a port of DBPF4J. |
+| DBPF | [`DBPFFile`](../../TSOClient/tso.files/formats/dbpf/DBPFFile.cs) | The later Maxis package format. In this snapshot only the audio content loader ([`tso.content/Audio.cs`](../../TSOClient/tso.content/Audio.cs)) uses it, with group and type IDs from `tsosounddata.ini` and `tsoaudio.ini`. |
 
 FAR3 entries carry a type ID and a file ID that together form the 64-bit
 asset IDs used throughout the content system (see [content.md](./content.md)).
@@ -35,7 +35,7 @@ that flag is `false`, so an archive opened while another thread is inside
 
 ### IFF: the object container
 
-[`IffFile`](../TSOClient/tso.files/formats/iff/IffFile.cs) reads the
+[`IffFile`](../../TSOClient/tso.files/formats/iff/IffFile.cs) reads the
 Maxis IFF container (the header must be one of the two
 `IFF FILE 2.x:TYPE FOLLOWED BY SIZE JAMIE DOORNBOS & MAXIS 1` strings).
 Each chunk has a 4-character type, a size, a 16-bit ID, flags, and a
@@ -46,7 +46,7 @@ skipped.
 Chunks are parsed lazily: `Read` stores the raw bytes, and the chunk's own
 `Read(IffFile, Stream)` runs the first time `Get<T>(id)` or `List<T>()`
 asks for it. Each chunk class derives from
-[`IffChunk`](../TSOClient/tso.files/formats/iff/AbstractIffChunk.cs).
+[`IffChunk`](../../TSOClient/tso.files/formats/iff/AbstractIffChunk.cs).
 
 | Chunk | Class | Purpose |
 | --- | --- | --- |
@@ -74,29 +74,29 @@ the original bytes are kept so the IDE can diff them into a PIFF.
 ### Patching with PIFF and OTF
 
 A PIFF is an IFF that holds a `PIFF` chunk naming a source IFF and a list
-of byte-level patches. [`PIFFRegistry.Init`](../TSOClient/tso.files/formats/iff/PIFFRegistry.cs)
+of byte-level patches. [`PIFFRegistry.Init`](../../TSOClient/tso.files/formats/iff/PIFFRegistry.cs)
 scans a directory for `*.piff` and `*.otf` files. When an IFF loads from a
 path, `IffFile.SetFilename` looks up the registered PIFFs for that file
 name and applies each through `IffFile.Patch`. PIFFs under a
 `User/` folder replace the shipped ones for the same source file. `*.otf`
 files found the same way replace the matching OTF by name when the
 object and semi-global providers load tuning.
-[`PiffEncoder`](../TSOClient/tso.files/formats/PiffEncoder.cs) builds a
+[`PiffEncoder`](../../TSOClient/tso.files/formats/PiffEncoder.cs) builds a
 PIFF from the differences between an edited IFF and its original.
 
 ### Other formats
 
 | Format | Type | Purpose |
 | --- | --- | --- |
-| OTF | [`OTFFile`](../TSOClient/tso.files/formats/OTF/OTFFile.cs) | Object tuning tables (an XML-like format). `VMMemory.GetTuningVariable` checks a BCON with the table's ID first and falls back to the OTF table. |
-| `tuning.dat` | [`Tuning`](../TSOClient/tso.files/Tuning.cs) | Global tuning constants, loaded by `Content`. |
-| `datadefinition.dat` | [`TSODataDefinition`](../TSOClient/tso.files/formats/tsodata/TSODataDefinition.cs) | Struct and field definitions behind the data service. Used by `FSO.Common.DataService` and the packet analyzer. See [protocol.md](./protocol.md). |
-| HIT family | [`HIT/`](../TSOClient/tso.files/HIT/) | `HITFile` (bytecode), `Hot` and `EVT` (event tables), `Hitlist`, `Track`, `HSM`, `FSC` (music sequences), `TLO`, `Patch`. See [audio.md](./audio.md). |
-| UTK | [`UTKFile2`](../TSOClient/tso.files/UTK/UTKFile2.cs) | Compressed voice audio, decoded to WAV. |
-| XA | [`XAFile`](../TSOClient/tso.files/XA/XAFile.cs) | Compressed sound effects, decoded to WAV. |
-| BMP, TGA, PNG | [`ImageLoader`](../TSOClient/tso.files/ImageLoader.cs) | Loads images into `Texture2D`. Bitmaps get magenta color-key masking. TGA goes through TargaImagePCL. |
-| INI | [`IniFile`](../TSOClient/tso.files/IniFile.cs) | Simple section and key reader. |
-| CUR/ANI | [`utils/CurLoader.cs`](../TSOClient/tso.files/utils/CurLoader.cs) | Cursor loading. |
+| OTF | [`OTFFile`](../../TSOClient/tso.files/formats/OTF/OTFFile.cs) | Object tuning tables (an XML-like format). `VMMemory.GetTuningVariable` checks a BCON with the table's ID first and falls back to the OTF table. |
+| `tuning.dat` | [`Tuning`](../../TSOClient/tso.files/Tuning.cs) | Global tuning constants, loaded by `Content`. |
+| `datadefinition.dat` | [`TSODataDefinition`](../../TSOClient/tso.files/formats/tsodata/TSODataDefinition.cs) | Struct and field definitions behind the data service. Used by `FSO.Common.DataService` and the packet analyzer. See [protocol.md](./protocol.md). |
+| HIT family | [`HIT/`](../../TSOClient/tso.files/HIT/) | `HITFile` (bytecode), `Hot` and `EVT` (event tables), `Hitlist`, `Track`, `HSM`, `FSC` (music sequences), `TLO`, `Patch`. See [audio.md](./audio.md). |
+| UTK | [`UTKFile2`](../../TSOClient/tso.files/UTK/UTKFile2.cs) | Compressed voice audio, decoded to WAV. |
+| XA | [`XAFile`](../../TSOClient/tso.files/XA/XAFile.cs) | Compressed sound effects, decoded to WAV. |
+| BMP, TGA, PNG | [`ImageLoader`](../../TSOClient/tso.files/ImageLoader.cs) | Loads images into `Texture2D`. Bitmaps get magenta color-key masking. TGA goes through TargaImagePCL. |
+| INI | [`IniFile`](../../TSOClient/tso.files/IniFile.cs) | Simple section and key reader. |
+| CUR/ANI | [`utils/CurLoader.cs`](../../TSOClient/tso.files/utils/CurLoader.cs) | Cursor loading. |
 
 ### Dead and case-split files
 

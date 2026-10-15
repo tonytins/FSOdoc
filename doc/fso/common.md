@@ -11,14 +11,14 @@ and Newtonsoft.Json.
 
 ### Process-wide state
 
-- [`FSOEnvironment`](../TSOClient/tso.common/FSOEnvironment.cs) is a set
+- [`FSOEnvironment`](../../TSOClient/tso.common/FSOEnvironment.cs) is a set
   of static fields the client fills at startup: content directories, the
   game thread, `DirectX` versus OpenGL, `Linux`, DPI scale, refresh rate,
   and mobile flags such as `SoftwareKeyboard`.
-- [`IniConfig`](../TSOClient/tso.common/IniConfig.cs) is an abstract
+- [`IniConfig`](../../TSOClient/tso.common/IniConfig.cs) is an abstract
   key-value settings file with defaults. The client's `GlobalSettings`
   (in FSO.UI) derives from it.
-- [`Log`](../TSOClient/tso.common/Log.cs) is a 1,000-line logging class
+- [`Log`](../../TSOClient/tso.common/Log.cs) is a 1,000-line logging class
   (`LogThis`) with its own file rotation. NLog and Common.Logging are
   referenced alongside it, so the codebase has three logging paths.
 
@@ -27,28 +27,28 @@ and Newtonsoft.Json.
 `rendering/framework/` holds a thin layer over MonoGame that the client and
 tools build on:
 
-- [`Game`](../TSOClient/tso.common/rendering/framework/Game.cs) derives
+- [`Game`](../../TSOClient/tso.common/rendering/framework/Game.cs) derives
   from MonoGame's `Game` and owns a
-  [`GameScreen`](../TSOClient/tso.common/rendering/framework/GameScreen.cs).
+  [`GameScreen`](../../TSOClient/tso.common/rendering/framework/GameScreen.cs).
 - `GameScreen` holds an ordered list of `IGraphicsLayer`s. Each frame it
-  builds an [`UpdateState`](../TSOClient/tso.common/rendering/framework/model/UpdateState.cs)
+  builds an [`UpdateState`](../../TSOClient/tso.common/rendering/framework/model/UpdateState.cs)
   (time, keyboard, mouse and touch, text input) and passes it to each
   layer, then draws the layers in order. The client uses two layers: the
   3D scene layer (`_3DLayer`) and the UI layer.
 - `_3DLayer`, `_3DScene`, `_3DComponent`, and the cameras
   (`BasicCamera`, `OrthographicCamera`, `ManualCamera`) form a minimal
   scene graph.
-- [`InputManager`](../TSOClient/tso.common/rendering/framework/io/InputManager.cs)
+- [`InputManager`](../../TSOClient/tso.common/rendering/framework/io/InputManager.cs)
   handles keyboard focus, text editing keys, and IME-style text input.
-- [`CursorManager`](../TSOClient/tso.common/rendering/framework/CursorManager.cs)
+- [`CursorManager`](../../TSOClient/tso.common/rendering/framework/CursorManager.cs)
   loads the original game's `.cur` and `.ani` cursors.
-- [`PPXDepthEngine`](../TSOClient/tso.common/utils/PPXDepthEngine.cs)
+- [`PPXDepthEngine`](../../TSOClient/tso.common/utils/PPXDepthEngine.cs)
   manages render targets for the 2D lot renderer's depth buffer, with a
   software fallback when multiple render targets aren't available.
 
 ### Threading
 
-[`GameThread`](../TSOClient/tso.common/utils/GameThread.cs) is the bridge
+[`GameThread`](../../TSOClient/tso.common/utils/GameThread.cs) is the bridge
 between background threads (network, content loading) and the MonoGame
 update loop. `NextUpdate` queues a callback for the next frame,
 `InUpdate` runs it now if already on the game thread, and `SetTimeout`
@@ -57,7 +57,7 @@ Most cross-thread work in the client goes through this class.
 
 ### Caching
 
-[`TimedReferenceController`](../TSOClient/tso.common/utils/TimedReferenceCache.cs)
+[`TimedReferenceController`](../../TSOClient/tso.common/utils/TimedReferenceCache.cs)
 keeps recently used objects alive in a ring of hash sets that rotates on
 a timer, so content survives a few seconds after its last use before the
 garbage collector can take it. `TimedReferenceCache<TKey, TValue>` is a
@@ -65,7 +65,7 @@ garbage collector can take it. `TimedReferenceCache<TKey, TValue>` is a
 and `IffFile` (through its finalizer) use this. Under DirectX the client
 switches it to `CacheType.PERMANENT`, which never releases anything.
 
-[`FileSystemCache`](../TSOClient/tso.common/utils/Cache/FileSystemCache.cs)
+[`FileSystemCache`](../../TSOClient/tso.common/utils/Cache/FileSystemCache.cs)
 is a disk cache, bound as `ICache` by the client's `CacheModule` and used
 by `ClientLotProvider` and the person selection screen.
 
@@ -74,7 +74,7 @@ by `ClientLotProvider` and the person selection screen.
 `Serialization/` implements the `cTSO*` value encoding used by the
 Voltron and data service protocols (see [protocol.md](./protocol.md)):
 
-- [`ModelSerializer`](../TSOClient/tso.common/Serialization/ModelSerializer.cs)
+- [`ModelSerializer`](../../TSOClient/tso.common/Serialization/ModelSerializer.cs)
   maps CLR types and `cTSO` type IDs to `ITypeSerializer`s.
 - `TypeSerializers/` has one serializer per wire type: integers, strings,
   booleans, vectors and maps of them, and `cTSOValueDecorated`, which
@@ -82,7 +82,7 @@ Voltron and data service protocols (see [protocol.md](./protocol.md)):
   implementing `IoBufferSerializable`.
 - `Primitives/` has the composite messages: `cTSOTopicUpdateMessage`,
   `cTSONetMessageStandard`, `cTSOProperty`, and `cTSOGenericData`.
-- [`IoBufferUtils`](../TSOClient/tso.common/Serialization/IoBufferUtils.cs)
+- [`IoBufferUtils`](../../TSOClient/tso.common/Serialization/IoBufferUtils.cs)
   adds Pascal string and other helpers to Mina.NET's `IoBuffer`.
 
 ### Utilities

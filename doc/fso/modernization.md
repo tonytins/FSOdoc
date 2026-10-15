@@ -3,7 +3,7 @@
 This guide plans a rewrite of the 2017 FreeSO snapshot onto modern,
 cross-platform .NET. It collects the "Modern .NET rewrite" sections of
 the other pages into one plan. It follows the
-[.NET guidelines skill](../.agents/skills/dotnet-guidelines/SKILL.md).
+[.NET guidelines skill](../../.agents/skills/dotnet-guidelines/SKILL.md).
 
 Nothing here has been built. Every code and project sample is a sketch.
 
@@ -256,7 +256,7 @@ before the phase that depends on it.
    desktop assumptions.
 7. **TS1 hybrid mode.** Keep it in the port? It doubles the content and
    audio paths. Recommended: keep the code, test TSO mode first.
-8. **Identity.** The [FAQ](../FAQ.md) mentions a possible separate server
+8. **Identity.** The [FAQ](../../FAQ.md) mentions a possible separate server
    and name. That affects default URLs, certificate names (the 2017 code
    uses `auth.east.ea.com`), and branding, so decide it before phase 4.
 

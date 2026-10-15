@@ -17,14 +17,14 @@ directly), FSO.Vitaboy, [FSO.HIT](./audio.md), and Mina.NET.
 
 | Type | Role |
 | --- | --- |
-| [`VM`](../TSOClient/tso.simantics/VM.cs) | One running lot. Owns the entities, the global state array, the scheduler, the network driver, and events the UI listens to (dialogs, chat, EOD messages, lot switching). |
-| [`VMContext`](../TSOClient/tso.simantics/VMContext.cs) | The lot's world: the primitive table, the clock, architecture, room map, object placement and collision queries, and the deterministic random number generator. |
-| [`VMArchitecture`](../TSOClient/tso.simantics/VMArchitecture.cs) | Walls, floors, terrain, and rooms per level, mirrored into the LotView `Blueprint`. |
-| [`VMEntity`](../TSOClient/tso.simantics/entities/VMEntity.cs) | Base for everything on the lot: object data, attributes, flags, relationships, a `VMThread`, and its world component. |
-| [`VMGameObject`](../TSOClient/tso.simantics/entities/VMGameObject.cs), [`VMAvatar`](../TSOClient/tso.simantics/entities/VMAvatar.cs) | Objects and Sims. Avatars add motives, animation, outfits, and skills. |
-| [`VMMultitileGroup`](../TSOClient/tso.simantics/entities/VMMultitileGroup.cs) | Ties the tiles of a multi-tile object together for moving and deleting. |
-| [`VMThread`](../TSOClient/tso.simantics/engine/VMThread.cs) | Per-entity interpreter: a stack of `VMStackFrame`s and the action (interaction) queue. |
-| [`VMScheduler`](../TSOClient/tso.simantics/Engine/VMScheduler.cs) | Decides which entities run on which tick. |
+| [`VM`](../../TSOClient/tso.simantics/VM.cs) | One running lot. Owns the entities, the global state array, the scheduler, the network driver, and events the UI listens to (dialogs, chat, EOD messages, lot switching). |
+| [`VMContext`](../../TSOClient/tso.simantics/VMContext.cs) | The lot's world: the primitive table, the clock, architecture, room map, object placement and collision queries, and the deterministic random number generator. |
+| [`VMArchitecture`](../../TSOClient/tso.simantics/VMArchitecture.cs) | Walls, floors, terrain, and rooms per level, mirrored into the LotView `Blueprint`. |
+| [`VMEntity`](../../TSOClient/tso.simantics/entities/VMEntity.cs) | Base for everything on the lot: object data, attributes, flags, relationships, a `VMThread`, and its world component. |
+| [`VMGameObject`](../../TSOClient/tso.simantics/entities/VMGameObject.cs), [`VMAvatar`](../../TSOClient/tso.simantics/entities/VMAvatar.cs) | Objects and Sims. Avatars add motives, animation, outfits, and skills. |
+| [`VMMultitileGroup`](../../TSOClient/tso.simantics/entities/VMMultitileGroup.cs) | Ties the tiles of a multi-tile object together for moving and deleting. |
+| [`VMThread`](../../TSOClient/tso.simantics/engine/VMThread.cs) | Per-entity interpreter: a stack of `VMStackFrame`s and the action (interaction) queue. |
+| [`VMScheduler`](../../TSOClient/tso.simantics/Engine/VMScheduler.cs) | Decides which entities run on which tick. |
 
 ### Ticks and timing
 
@@ -44,7 +44,7 @@ until their wake tick.
 ### Executing behavior
 
 BHAV code is assembled on first use into a `VMRoutine` by
-[`VMTranslator`](../TSOClient/tso.simantics/engine/translator/VMTranslator.cs),
+[`VMTranslator`](../../TSOClient/tso.simantics/engine/translator/VMTranslator.cs),
 which decodes each instruction's operand once. `VM.Assemble` caches
 routines, and `BHAVChanged` clears the cache when the IDE edits code.
 
@@ -66,7 +66,7 @@ infinite-loop guard at 500,000 instructions per tick) is caught in
 every 20 seconds, and the entity is reset. A game object that keeps
 failing inside that window is deleted instead.
 
-Primitives live in [`primitives/`](../TSOClient/tso.simantics/primitives/),
+Primitives live in [`primitives/`](../../TSOClient/tso.simantics/primitives/),
 one class each, registered in the `VMContext` constructor with their
 opcode and operand type. They cover expressions (`VMExpression`, the
 most-used one), animation, routing (`VMGotoRoutingSlot`,
@@ -75,7 +75,7 @@ motives, money (`VMTransferFunds`), inventory, the TSO-specific
 `VMGenericTSOCall`, and their TS1 equivalents.
 
 Variables are read and written through
-[`VMMemory`](../TSOClient/tso.simantics/engine/VMMemory.cs), which maps a
+[`VMMemory`](../../TSOClient/tso.simantics/engine/VMMemory.cs), which maps a
 `VMVariableScope` (params, locals, attributes, globals, object data,
 tuning, and others) to storage. Tuning reads a BCON, falling back to an
 OTF table (see [files.md](./files.md#patching-with-piff-and-otf)).
@@ -88,9 +88,9 @@ The pie menu offers interactions from each object's `TTAB`.
 the front of the queue, respecting priorities and interruption.
 
 Movement is handled by
-[`VMRoutingFrame`](../TSOClient/tso.simantics/engine/VMRoutingFrame.cs),
+[`VMRoutingFrame`](../../TSOClient/tso.simantics/engine/VMRoutingFrame.cs),
 a special stack frame that plans a path with
-[`VMRectRouter`](../TSOClient/tso.simantics/engine/Routing/VMRectRouter.cs)
+[`VMRectRouter`](../../TSOClient/tso.simantics/engine/Routing/VMRectRouter.cs)
 (free rectangles grown from obstacles) and walks the Sim along it,
 handling doors, blocked paths, and failure trees.
 
@@ -99,14 +99,14 @@ handling doors, blocked paths, and failure trees.
 The VM separates the lot from the outside world:
 
 - `VMTSOLotState`, `VMTSOAvatarState`, and `VMTSOObjectState` in
-  [`Model/TSOPlatform/`](../TSOClient/tso.simantics/Model/TSOPlatform/)
+  [`Model/TSOPlatform/`](../../TSOClient/tso.simantics/Model/TSOPlatform/)
   hold TSO-only state: roommates and permissions, budgets, jobs, and lot
   size.
-- [`IVMTSOGlobalLink`](../TSOClient/tso.simantics/Engine/TSOGlobalLink/IVMTSOGlobalLink.cs)
+- [`IVMTSOGlobalLink`](../../TSOClient/tso.simantics/Engine/TSOGlobalLink/IVMTSOGlobalLink.cs)
   is how the VM reaches persistent data: money transfers, object
   persistence, relationships, and plugin data. The lot server implements
   it against the database (`LotServerGlobalLink`, see [server.md](./server.md)).
-  [`VMTSOGlobalLinkStub`](../TSOClient/tso.simantics/Engine/TSOGlobalLink/VMTSOGlobalLinkStub.cs)
+  [`VMTSOGlobalLinkStub`](../../TSOClient/tso.simantics/Engine/TSOGlobalLink/VMTSOGlobalLinkStub.cs)
   is the offline version for sandbox mode, optionally backed by
   `VMTSOStandaloneDatabase`.
 
@@ -116,11 +116,11 @@ Every client simulates the whole lot. The server only orders inputs:
 
 1. A client action (interact, buy, move, chat) becomes a
    `VMNetCommandBodyAbstract` subclass in
-   [`NetPlay/Model/Commands/`](../TSOClient/tso.simantics/NetPlay/Model/Commands/).
-   [`VMClientDriver`](../TSOClient/tso.simantics/NetPlay/Drivers/VMClientDriver.cs)
+   [`NetPlay/Model/Commands/`](../../TSOClient/tso.simantics/NetPlay/Model/Commands/).
+   [`VMClientDriver`](../../TSOClient/tso.simantics/NetPlay/Drivers/VMClientDriver.cs)
    serializes it and raises `OnClientCommand` with the bytes. The client's
    lot connection sends them to the lot server.
-2. [`VMServerDriver`](../TSOClient/tso.simantics/NetPlay/Drivers/VMServerDriver.cs)
+2. [`VMServerDriver`](../../TSOClient/tso.simantics/NetPlay/Drivers/VMServerDriver.cs)
    collects commands, assigns them to the next tick with the current
    random seed, runs the tick itself, and broadcasts ticks in batches of
    four (`TICKS_PER_PACKET`) through its `OnTickBroadcast` event.
@@ -141,7 +141,7 @@ in-process with a stub global link and one local client.
 
 ### Saving: marshals
 
-[`Marshals/`](../TSOClient/tso.simantics/Marshals/) converts VM state to
+[`Marshals/`](../../TSOClient/tso.simantics/Marshals/) converts VM state to
 and from a binary form with `BinaryWriter` and `BinaryReader`, through the
 `VMSerializable` interface. `VM.Save` produces a `VMMarshal` (context,
 entities, threads, multitile groups, global state, platform state) at
@@ -156,10 +156,10 @@ surrounding lots.
 
 EODs ("Electronic Online Dialogs") are TSO's object minigames and job
 UIs. An object calls the Invoke Plugin primitive, and
-[`VMEODHost`](../TSOClient/tso.simantics/NetPlay/EODs/VMEODHost.cs) and
+[`VMEODHost`](../../TSOClient/tso.simantics/NetPlay/EODs/VMEODHost.cs) and
 `VMEODServer` route events between the object, the server-side handler,
 and each client's UI panel. Handlers live in
-[`NetPlay/EODs/Handlers/`](../TSOClient/tso.simantics/NetPlay/EODs/Handlers/):
+[`NetPlay/EODs/Handlers/`](../../TSOClient/tso.simantics/NetPlay/EODs/Handlers/):
 band, dance floor, dresser, card draw, paper chase, pizza maker, racks,
 scoreboard, signs, slots, timer, trunk, war game, and permission doors.
 Their client panels are in `tso.client/UI/Panels/EODs/`.

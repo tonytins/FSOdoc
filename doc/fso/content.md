@@ -15,20 +15,20 @@ installed, and the content system reads it in place.
 ### Locating the game
 
 The client finds the TSO install before anything else loads
-([`FSOProgram`](../TSOClient/tso.client/FSOProgram.cs)):
+([`FSOProgram`](../../TSOClient/tso.client/FSOProgram.cs)):
 
 | OS | Locator | Path |
 | --- | --- | --- |
-| Windows | [`WindowsLocator`](../TSOClient/tso.client/Utils/GameLocator/WindowsLocator.cs) | `HKLM\SOFTWARE\Maxis\The Sims Online\InstallDir` (32-bit registry view), else `C:\Program Files\Maxis\The Sims Online\TSOClient\` |
-| macOS | [`MacOSLocator`](../TSOClient/tso.client/Utils/GameLocator/MacOSLocator.cs) | `SpecialFolder.MyDocuments` + `/Documents/The Sims Online/TSOClient/` (Mono maps `MyDocuments` to the home folder on macOS) |
-| Linux | [`LinuxLocator`](../TSOClient/tso.client/Utils/GameLocator/LinuxLocator.cs) | `game/TSOClient/`, relative to the working directory |
+| Windows | [`WindowsLocator`](../../TSOClient/tso.client/Utils/GameLocator/WindowsLocator.cs) | `HKLM\SOFTWARE\Maxis\The Sims Online\InstallDir` (32-bit registry view), else `C:\Program Files\Maxis\The Sims Online\TSOClient\` |
+| macOS | [`MacOSLocator`](../../TSOClient/tso.client/Utils/GameLocator/MacOSLocator.cs) | `SpecialFolder.MyDocuments` + `/Documents/The Sims Online/TSOClient/` (Mono maps `MyDocuments` to the home folder on macOS) |
+| Linux | [`LinuxLocator`](../../TSOClient/tso.client/Utils/GameLocator/LinuxLocator.cs) | `game/TSOClient/`, relative to the working directory |
 
 macOS is detected by checking whether `/Users` exists, because Mono
 reported macOS as `PlatformID.Unix`.
 
 ### The `Content` singleton
 
-[`Content`](../TSOClient/tso.content/Content.cs) is a process-wide
+[`Content`](../../TSOClient/tso.content/Content.cs) is a process-wide
 singleton (`Content.Get()`). `Init` takes the game path and either a
 `GraphicsDevice` (client) or a `ContentMode.SERVER` flag (server, no
 textures). The constructor creates one provider per asset family, and
@@ -53,10 +53,10 @@ four generic providers in `framework/`:
 
 | Provider | Source |
 | --- | --- |
-| [`FAR3Provider<T>`](../TSOClient/tso.content/framework/FAR3Provider.cs) | FAR3 archives matched by a regex over `AllFiles`, such as `.*/meshes/.*\.dat`. |
-| [`FAR1Provider<T>`](../TSOClient/tso.content/framework/FAR1Provider.cs) | FAR1 archives, used for object IFFs (`objiff.far`), sprites (`objspf*.far`), and tuning (`objotf*.far`). |
-| [`FileProvider<T>`](../TSOClient/tso.content/framework/FileProvider.cs) | Loose files. |
-| [`PackingslipProvider<T>`](../TSOClient/tso.content/framework/PackingslipProvider.cs) | Files listed in a packingslip XML manifest. |
+| [`FAR3Provider<T>`](../../TSOClient/tso.content/framework/FAR3Provider.cs) | FAR3 archives matched by a regex over `AllFiles`, such as `.*/meshes/.*\.dat`. |
+| [`FAR1Provider<T>`](../../TSOClient/tso.content/framework/FAR1Provider.cs) | FAR1 archives, used for object IFFs (`objiff.far`), sprites (`objspf*.far`), and tuning (`objotf*.far`). |
+| [`FileProvider<T>`](../../TSOClient/tso.content/framework/FileProvider.cs) | Loose files. |
+| [`PackingslipProvider<T>`](../../TSOClient/tso.content/framework/PackingslipProvider.cs) | Files listed in a packingslip XML manifest. |
 
 A provider pairs a source with an `IContentCodec<T>` from `codecs/`
 (mesh, animation, skeleton, outfit, appearance, binding, texture, IFF,
@@ -73,11 +73,11 @@ The main families:
 | --- | --- | --- |
 | `UIGraphics` | `UIGraphicsProvider` | UI bitmaps from `uigraphics/*.dat`, plus a table of loose files mapped to IDs. |
 | `AvatarMeshes`, `AvatarTextures`, `AvatarSkeletons`, `AvatarAnimations`, `AvatarAppearances`, `AvatarBindings`, `AvatarOutfits`, `AvatarHandgroups`, `AvatarCollections`, `AvatarPurchasables`, `AvatarThumbnails` | `Avatar*Provider` | Vitaboy types; see [rendering.md](./rendering.md#vitaboy-avatars). |
-| `WorldObjects` | [`WorldObjectProvider`](../TSOClient/tso.content/WorldObjectProvider.cs) | `GameObject`: an `OBJD` plus its IFF, sprites, and tuning. |
+| `WorldObjects` | [`WorldObjectProvider`](../../TSOClient/tso.content/WorldObjectProvider.cs) | `GameObject`: an `OBJD` plus its IFF, sprites, and tuning. |
 | `WorldCatalog` | `WorldObjectCatalog` | Buy and build mode catalog. |
 | `WorldObjectGlobals` | `WorldGlobalProvider` | Semi-global IFFs and their tuning. |
 | `WorldWalls`, `WorldFloors`, `WorldRoofs` | `WorldWallProvider`, `WorldFloorProvider`, `WorldRoofProvider` | Architecture styles. |
-| `Audio` | [`Audio`](../TSOClient/tso.content/Audio.cs) | HIT resource groups, UTK and XA sounds, DBPF audio, music stations. |
+| `Audio` | [`Audio`](../../TSOClient/tso.content/Audio.cs) | HIT resource groups, UTK and XA sounds, DBPF audio, music stations. |
 | `CityMaps` | `CityMapsProvider` | City terrain, elevation, and road maps. |
 | `RackOutfits` | `RackOutfitsProvider` | Clothing rack stock. |
 | `GlobalTuning` | `Tuning` | `tuning.dat`. |
@@ -106,13 +106,13 @@ settings.
 
 ### Editing support
 
-[`ChangeManager`](../TSOClient/tso.content/ChangeManager.cs) tracks IFFs
+[`ChangeManager`](../../TSOClient/tso.content/ChangeManager.cs) tracks IFFs
 and chunks changed by the Volcanic IDE, can discard them, and saves them
 as PIFFs through `PiffEncoder`. See [tools.md](./tools.md).
 
 ### Preloading
 
-[`ContentPreloader`](../TSOClient/tso.content/ContentPreloader.cs) is
+[`ContentPreloader`](../../TSOClient/tso.content/ContentPreloader.cs) is
 created by the client's `LoadingScreenController` to warm content in the
 background while the loading screen shows.
 

@@ -8,7 +8,7 @@ programs and plays the samples through MonoGame's `SoundEffect` API.
 
 The formats are read by [FSO.Files](./files.md#other-formats) (`HIT/`,
 `UTK/`, `XA/`) and loaded by the content system's
-[`Audio`](../TSOClient/tso.content/Audio.cs) provider.
+[`Audio`](../../TSOClient/tso.content/Audio.cs) provider.
 
 ## How it works (2017)
 
@@ -16,13 +16,13 @@ The formats are read by [FSO.Files](./files.md#other-formats) (`HIT/`,
 
 | Type | Role |
 | --- | --- |
-| [`HITVM`](../TSOClient/tso.sound/HITVM.cs) | Singleton (`HITVM.Init`, `HITVM.Get`). Holds the running sounds, global variables, the four volume groups (FX, music, voice, ambience), and the current music. `Tick` is called once per frame from `TSOGame.Update`. |
-| [`HITThread`](../TSOClient/tso.sound/HITThread.cs) | One running track: its bytecode, registers, local variables, playing notes, and owners (the objects that keep it alive). |
-| [`HITInterpreter`](../TSOClient/tso.sound/HITInterpreter.cs) | One static method per opcode (about 100): arithmetic, comparisons, jumps and waits, note on and off, "smart" random choice from hitlists, ducking, and track control. |
-| [`HITSound`](../TSOClient/tso.sound/HITSound.cs) | Base for anything `HITVM` ticks, with volume, pan, and owner tracking. |
-| [`HITTVOn`](../TSOClient/tso.sound/Events/HITTVOn.cs) | Special handler for the `kTurnOnTV` event used by TVs, radios, and music stations. It plays a random `.xa` file from a station folder, or streams MP3 through `MP3Player` (see [common.md](./common.md#utilities)). |
-| [`FSCPlayer`](../TSOClient/tso.sound/FSCPlayer.cs) | Plays `.fsc` music sequences (timed sample lists). |
-| [`AmbiencePlayer`](../TSOClient/tso.sound/AmbiencePlayer.cs) | Loops lot ambience. |
+| [`HITVM`](../../TSOClient/tso.sound/HITVM.cs) | Singleton (`HITVM.Init`, `HITVM.Get`). Holds the running sounds, global variables, the four volume groups (FX, music, voice, ambience), and the current music. `Tick` is called once per frame from `TSOGame.Update`. |
+| [`HITThread`](../../TSOClient/tso.sound/HITThread.cs) | One running track: its bytecode, registers, local variables, playing notes, and owners (the objects that keep it alive). |
+| [`HITInterpreter`](../../TSOClient/tso.sound/HITInterpreter.cs) | One static method per opcode (about 100): arithmetic, comparisons, jumps and waits, note on and off, "smart" random choice from hitlists, ducking, and track control. |
+| [`HITSound`](../../TSOClient/tso.sound/HITSound.cs) | Base for anything `HITVM` ticks, with volume, pan, and owner tracking. |
+| [`HITTVOn`](../../TSOClient/tso.sound/Events/HITTVOn.cs) | Special handler for the `kTurnOnTV` event used by TVs, radios, and music stations. It plays a random `.xa` file from a station folder, or streams MP3 through `MP3Player` (see [common.md](./common.md#utilities)). |
+| [`FSCPlayer`](../../TSOClient/tso.sound/FSCPlayer.cs) | Plays `.fsc` music sequences (timed sample lists). |
+| [`AmbiencePlayer`](../../TSOClient/tso.sound/AmbiencePlayer.cs) | Loops lot ambience. |
 
 ### Playing a sound
 

@@ -22,12 +22,12 @@ simulation is [SimAntics](./simantics.md).
 
 ### Startup
 
-[`Program`](../TSOClient/FSO.Server/Program.cs) parses a verb with
+[`Program`](../../TSOClient/FSO.Server/Program.cs) parses a verb with
 CommandLineParser:
 
-- `server run [-d]` runs [`ToolRunServer`](../TSOClient/FSO.Server/ToolRunServer.cs),
+- `server run [-d]` runs [`ToolRunServer`](../../TSOClient/FSO.Server/ToolRunServer.cs),
   which starts every enabled service. `-d` starts the network debugger UI.
-- `server db-init` runs [`ToolInitDatabase`](../TSOClient/FSO.Server/ToolInitDatabase.cs),
+- `server db-init` runs [`ToolInitDatabase`](../../TSOClient/FSO.Server/ToolInitDatabase.cs),
   which compares the database to `DatabaseScripts/manifest.json` and
   applies missing scripts after asking for confirmation.
 
@@ -40,7 +40,7 @@ because the lot server runs SimAntics against the real object files.
 
 ### Configuration
 
-[`config.json`](../TSOClient/FSO.Server/config.json) holds:
+[`config.json`](../../TSOClient/FSO.Server/config.json) holds:
 
 - `gameLocation`: the TSO install (content is required on the server too).
 - `secret`: the JWT signing key for the admin API.
@@ -54,18 +54,18 @@ because the lot server runs SimAntics against the real object files.
 
 | Service | Class | What it does |
 | --- | --- | --- |
-| API | [`ApiServer`](../TSOClient/FSO.Server/Servers/Api/ApiServer.cs) | Nancy, self-hosted. Login (`AuthController`), city selection (`CitySelectorController`), and admin endpoints (users, shards, hosts, tasks, OAuth for the admin panel) behind JWT. |
-| User API | [`UserApi`](../TSOClient/FSO.Server/Servers/UserApi/UserApi.cs) | OWIN self-host that runs the ASP.NET Web API controllers from `FSO.Server.Api`: login, avatar data, shard selection and status, registration, city JSON, and lot thumbnails. |
-| City | [`CityServer`](../TSOClient/FSO.Server/Servers/City/CityServer.cs) | One per city (shard). Accepts client Voltron sessions and serves the data service, database requests, messaging, purchases, roommates, moderation, and finding lots. |
-| Lot | [`LotServer`](../TSOClient/FSO.Server/Servers/Lot/LotServer.cs) | Hosts running lots for one or more cities. |
-| Tasks | [`TaskServer`](../TSOClient/FSO.Server/Servers/Tasks/TaskServer.cs) | Runs scheduled jobs from cron expressions: `prune_database` and `bonus` (daily property and visitor bonuses and top 100 lists). |
+| API | [`ApiServer`](../../TSOClient/FSO.Server/Servers/Api/ApiServer.cs) | Nancy, self-hosted. Login (`AuthController`), city selection (`CitySelectorController`), and admin endpoints (users, shards, hosts, tasks, OAuth for the admin panel) behind JWT. |
+| User API | [`UserApi`](../../TSOClient/FSO.Server/Servers/UserApi/UserApi.cs) | OWIN self-host that runs the ASP.NET Web API controllers from `FSO.Server.Api`: login, avatar data, shard selection and status, registration, city JSON, and lot thumbnails. |
+| City | [`CityServer`](../../TSOClient/FSO.Server/Servers/City/CityServer.cs) | One per city (shard). Accepts client Voltron sessions and serves the data service, database requests, messaging, purchases, roommates, moderation, and finding lots. |
+| Lot | [`LotServer`](../../TSOClient/FSO.Server/Servers/Lot/LotServer.cs) | Hosts running lots for one or more cities. |
+| Tasks | [`TaskServer`](../../TSOClient/FSO.Server/Servers/Tasks/TaskServer.cs) | Runs scheduled jobs from cron expressions: `prune_database` and `bonus` (daily property and visitor bonuses and top 100 lists). |
 
 The API and the user API overlap: both implement `AuthLogin` and the city
 selector, one on Nancy and one on ASP.NET Web API. `FSO.Server.Api` also
 has `Global.asax` and `Web.config`, so it can be hosted in IIS on its own.
 
 Every Aries service derives from
-[`AbstractAriesServer`](../TSOClient/FSO.Server/Framework/Aries/AbstractAriesServer.cs):
+[`AbstractAriesServer`](../../TSOClient/FSO.Server/Framework/Aries/AbstractAriesServer.cs):
 a Mina.NET acceptor with the Aries codec, optional TLS, a session list,
 session interceptors, and an `AriesPacketRouter` that dispatches each
 packet type to a handler class by reflection over handler methods.
@@ -81,7 +81,7 @@ The city server owns the world's state for one shard:
   city data from `ServerAvatarProvider` and `ServerLotProvider`, and
   applies client updates after security checks.
 - **Lots.** `JoinLotHandler` uses
-  [`LotAllocations`](../TSOClient/FSO.Server/Servers/City/Domain/LotAllocations.cs)
+  [`LotAllocations`](../../TSOClient/FSO.Server/Servers/City/Domain/LotAllocations.cs)
   and `LotServerPicker` to choose a lot server, ask it over Gluon to open
   the lot, and answer the client with the lot server's address and a
   ticket. `JobMatchmaker` places players into job lots.
@@ -90,9 +90,9 @@ The city server owns the world's state for one shard:
 
 ### Lot server
 
-[`LotHost`](../TSOClient/FSO.Server/Servers/Lot/Domain/LotHost.cs) holds
+[`LotHost`](../../TSOClient/FSO.Server/Servers/Lot/Domain/LotHost.cs) holds
 running lots, up to `max_lots`. Each lot is a
-[`LotContainer`](../TSOClient/FSO.Server/Servers/Lot/Domain/LotContainer.cs)
+[`LotContainer`](../../TSOClient/FSO.Server/Servers/Lot/Domain/LotContainer.cs)
 with its own `VM`, a `VMServerDriver`, and a dedicated thread running
 `LotContainer.Run`:
 
@@ -108,7 +108,7 @@ If the VM throws, the lot shuts down. A background thread watches for a
 stuck lot thread; on .NET Framework it suspends the thread to log a stack
 trace, then aborts it.
 
-[`LotServerGlobalLink`](../TSOClient/FSO.Server/Servers/Lot/Domain/LotServerGlobalLink.cs)
+[`LotServerGlobalLink`](../../TSOClient/FSO.Server/Servers/Lot/Domain/LotServerGlobalLink.cs)
 implements SimAntics' `IVMTSOGlobalLink` against the database: money
 transfers, object persistence, roommates, relationships, and plugin data.
 Database calls are queued to the lot's background thread with
@@ -117,18 +117,18 @@ commands such as `VMNetAsyncResponseCmd`, so the simulation never waits on
 the database and every client applies the result on the same tick.
 
 The lot server connects to each city it serves through
-[`CityConnections`](../TSOClient/FSO.Server/Servers/Lot/Lifecycle/CityConnections.cs)
+[`CityConnections`](../../TSOClient/FSO.Server/Servers/Lot/Lifecycle/CityConnections.cs)
 over Gluon, advertising its capacity.
 
 ### Server-to-server: Gluon
 
-[`GluonHostPool`](../TSOClient/FSO.Server/Utils/GluonHostPool.cs) keeps
+[`GluonHostPool`](../../TSOClient/FSO.Server/Utils/GluonHostPool.cs) keeps
 connections between servers, pings them, and authenticates them with the
 shared secret (see [protocol.md](./protocol.md#server-to-server-authentication)).
 
 ### Database
 
-[`FSO.Server.Database`](../TSOClient/FSO.Server.Database/) uses MySQL
+[`FSO.Server.Database`](../../TSOClient/FSO.Server.Database/) uses MySQL
 through MySql.Data and Dapper. `IDAFactory.Get()` returns an `IDA` that
 exposes one repository per area (users, avatars, lots, objects,
 roommates, relationships, bookmarks, shards, tasks, bans, top 100,
@@ -138,7 +138,7 @@ fixed table names chosen by a flag, but never from user input.
 
 The schema is in `DatabaseScripts/`: base scripts per table group plus
 numbered change scripts (`changes/0001` to `0015`), listed in
-`manifest.json`. [`DbChangeTool`](../TSOClient/FSO.Server.Database/Management/DbChangeTool.cs)
+`manifest.json`. [`DbChangeTool`](../../TSOClient/FSO.Server.Database/Management/DbChangeTool.cs)
 records applied scripts in `fso_db_changes`.
 
 The project still references IBatisNet, Castle.DynamicProxy, and log4net,
@@ -146,14 +146,14 @@ but no source file uses them.
 
 ### Passwords and tokens
 
-[`PasswordHasher`](../TSOClient/FSO.Server.Common/PasswordHasher.cs)
+[`PasswordHasher`](../../TSOClient/FSO.Server.Common/PasswordHasher.cs)
 hashes with PBKDF2 (`Rfc2898DeriveBytes`, default SHA-1) at 1,000
 iterations, storing the scheme name so it can be changed later. Admin
 API tokens are JWTs signed with `config.json`'s `secret`.
 
 ### Watchdog
 
-`watchdog.exe` ([`FSO.Server.Updater`](../TSOClient/FSO.Server.Updater/Program.cs))
+`watchdog.exe` ([`FSO.Server.Updater`](../../TSOClient/FSO.Server.Updater/Program.cs))
 loads `server.exe` into a child `AppDomain`, runs it, and restarts it
 unless it exits with code 2 (shutdown). With `--update` it downloads a
 new build from a configured URL or TeamCity first.
