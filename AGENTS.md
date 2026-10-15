@@ -17,7 +17,7 @@ The project has two goals:
 
 The output of both goals is Markdown under [doc/](./doc/). This is solo work
 held to production standards. Read this file first, then
-[README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/README.md](./doc/README.md).
+[README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/fso/README.md](./doc/fso/README.md).
 
 ## 1. Workspace map
 
@@ -26,16 +26,24 @@ AGENTS.md                    this file
 README.md, FAQ.md            project purpose and long-term plans
 CONTRIBUTING.md              how to contribute AI-assisted source comments
 doc/                         the Markdown documentation
-  README.md                  index, coverage table, and conventions (start here)
-  architecture.md            layers, dependency graph, runtime flows
-  modernization.md           rewrite plan: layout, replacements, phases, decisions, risks
-  common.md, files.md, content.md, simantics.md, rendering.md,
-  audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
+  roadmap.md                 NSOClient milestones, alpha gate, estimates, owner decisions
+  scorecard.md               NSOClient status per feature, with evidence (wins over the roadmap)
+  fso/                       documentation of the 2017 FreeSO snapshot
+    README.md                index, coverage table, and conventions (start here)
+    architecture.md          layers, dependency graph, runtime flows
+    modernization.md         C# rewrite plan: layout, replacements, phases, decisions, risks
+    common.md, files.md, content.md, simantics.md, rendering.md,
+    audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions for the rewrite guidance
+  swift-guidelines/          Swift conventions for the NSOClient packages
 TSOClient/                   the 2017 FreeSO snapshot (all paths below are relative to it)
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
+NSOClient/                   Swift rewrite of the engine-free libraries (independent SwiftPM packages)
+  TSOFiles/                  file format readers; no dependencies
+  TSOContent/                content system; depends on ../TSOFiles
+  SimAntics/                 the VM; depends on ../TSOContent and ../TSOFiles
 Charvatia/                   standalone SimAntics VM server (console, .NET Framework)
 FSOInstaller/                WinForms installer that fetches the original TSO files
 Other/
@@ -184,7 +192,7 @@ This covers the docs and any C# shown in them.
 - Write plain, short sentences without em dashes. Explain why, not only
   what. Prefer tables for inventories and short lists for steps.
 - Use relative links, so they work on GitHub and locally. Every new doc is
-  linked from [doc/README.md](./doc/README.md).
+  linked from [doc/fso/README.md](./doc/fso/README.md).
 - Use `text` code fences for trees and diagrams, and `csharp`, `xml`,
   `json`, or `sh` for code.
 - Use Mermaid only where a diagram explains a flow or dependency better
@@ -225,9 +233,12 @@ git status --short -- TSOClient Charvatia FSOInstaller Other
 - Fix every broken link, and confirm the `git status` check prints nothing.
 - Re-read the source behind any claim you changed, and confirm the cited
   paths, types, and members exist.
-- Keep [doc/README.md](./doc/README.md) up to date: link new docs, and
+- Keep [doc/fso/README.md](./doc/fso/README.md) up to date: link new docs, and
   update the coverage list (which projects are documented and which aren't
   yet).
+- After NSOClient work, update [doc/scorecard.md](./doc/scorecard.md) (statuses
+  with evidence, summary counts, the "As of" line) and [doc/roadmap.md](./doc/roadmap.md)
+  (milestone rows, alpha gate, revision history).
 - Update this file if the workspace layout or these rules change.
 - Leave `README.md`, `FAQ.md`, and `CONTRIBUTING.md` alone unless asked.
 

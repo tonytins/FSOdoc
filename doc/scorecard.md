@@ -1,0 +1,171 @@
+# NSOClient scorecard
+
+Maintained by hand from the source tree and `swift test` in each package under
+[`NSOClient/`](../NSOClient/). Statuses are checked against the code at the date below; when this
+page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
+`done` row names the code or test that proves it.
+
+**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 38 passed, TSOContent 1
+passed, SimAntics 1 passed.
+
+Status values: `done` (works and is tested), `partial` (works with gaps, named in the note),
+`missing` (not started).
+
+## Summary
+
+| Area | Done | Partial | Missing | Key numbers |
+|---|---:|---:|---:|---|
+| [Formats](#formats) | 6 | 0 | 15 | 642 Swift source lines; 38 test cases; 0 real files read |
+| [Content](#content) | 0 | 0 | 9 | |
+| [SimAntics](#simantics) | 1 | 0 | 14 | 0 of about 70 primitives |
+| [Fidelity](#fidelity) | 0 | 1 | 4 | no real-file corpus run; no replay oracle |
+| [Determinism](#determinism) | 0 | 0 | 5 | |
+| [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
+| [Tests and tooling](#tests-and-tooling) | 3 | 0 | 3 | |
+| [Platforms](#platforms) | 1 | 0 | 3 | |
+| [Known differences from 2017](#known-differences-from-2017) | | | | 4 deliberate |
+| [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
+
+## Formats
+
+Package: [TSOFiles](../NSOClient/TSOFiles/). Ports `TSOClient/tso.files` (see
+[fso/files.md](fso/files.md)).
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| FMT-1 | Bounds-checked binary reader, both byte orders, .NET-compatible ASCII | done | `Binary/ByteReader.swift`, `Binary/ASCII.swift`; `ByteReaderTests` (7 tests: byte orders, signed values, 24-bit, end of data, `readBytes(upTo:)`, slices, ASCII replacement) |
+| FMT-2 | RefPack decompression matching `Decompresser.Decompress` | done | `Compression/RefPack.swift`; `RefPackTests` covers all four command forms, the 6-byte passthrough, output growth, 0xFD continuing, 0xFC stop, and two error paths |
+| FMT-3 | FAR1 archives, variants 1a and 1b | done | `Archives/FAR1Archive.swift`; `FAR1ArchiveTests` (both variants, bad version, truncated manifest, out-of-bounds entry) |
+| FMT-4 | FAR3 archives with asset IDs and RefPack entries | done | `Archives/FAR3Archive.swift`; `FAR3ArchiveTests` (ID packing, raw and compressed entries, non-RefPack fallback, duplicate names and IDs, wrong type ID) |
+| FMT-5 | IFF container: header, chunk records, lookups | done | `IFF/IFFFile.swift`; `IFFFileTests` (10 tests incl. trailing byte, short final chunk, bad sizes, 2.0 header) |
+| FMT-6 | Reference snapshot constant | done | `ReferenceSnapshot.swift`; `ReferenceSnapshotTests` |
+| FMT-7 | DBPF archives | missing | Charvatia |
+| FMT-8 | Behavior chunks: `BHAV`, `BCON`, `TRCN`, `TPRP` | missing | Grantley Grove |
+| FMT-9 | String chunks: `STR#`, `CTSS`, `TTAs` with language sets and code pages | missing | Grantley Grove |
+| FMT-10 | Object chunks: `OBJD`, `OBJf`, `OBJT`, `OBJM`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | missing | Grantley Grove |
+| FMT-11 | Lot and TS1 chunks: `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT` | missing | Grantley Grove |
+| FMT-12 | Sprite chunks decoded to RGBA plus depth: `SPR#`, `SPR2`, `PALT`, `DGRP` | missing | Hyde Park |
+| FMT-13 | Images: `BMP_`, `THMB`, BMP, TGA, PNG with magenta masking | missing | Hyde Park |
+| FMT-14 | PIFF: apply patches to an IFF, `User/` precedence | missing | King Canyons |
+| FMT-15 | OTF tuning tables and `tuning.dat` | missing | King Canyons |
+| FMT-16 | `datadefinition.dat` and INI files | missing | King Canyons |
+| FMT-17 | UTK and XA decoding to PCM | missing | Landry Lakes |
+| FMT-18 | HIT family: `HITFile`, HOT, EVT, HSM, FSC, TLO, hitlists | missing | Landry Lakes |
+| FMT-19 | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand group | missing | Nichol's Notch |
+| FMT-20 | TS1 avatar formats: BCF, CFP, BMF | missing | Nichol's Notch |
+| FMT-21 | Cursors (`.cur`, `.ani`) | missing | Low priority; a client concern |
+
+## Content
+
+Package: [TSOContent](../NSOClient/TSOContent/). Ports `TSOClient/tso.content` (see
+[fso/content.md](fso/content.md)).
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| CNT-1 | Game locator: configured path, `TSO_GAME_DIR`, per-OS defaults | missing | Ocean's Edge |
+| CNT-2 | Case-insensitive file index over the install | missing | Ocean's Edge; fixes the 2017 Linux path failures |
+| CNT-3 | FAR3 providers keyed by `AssetID`, with a bounded cache | missing | Ocean's Edge |
+| CNT-4 | Object provider: `objecttable.xml`, `objiff.far`, sprites, tuning, standalone objects | missing | Ocean's Edge |
+| CNT-5 | Semi-global and global IFFs | missing | Ocean's Edge |
+| CNT-6 | Avatar providers: meshes, skeletons, animations, outfits, appearances, bindings, hand groups, thumbnails | missing | Ocean's Edge |
+| CNT-7 | Walls, floors, roofs, city maps, UI graphics, audio resource groups | missing | Ocean's Edge |
+| CNT-8 | Async initialization with progress, no singleton | missing | Ocean's Edge |
+| CNT-9 | TS1 hybrid providers | missing | Ocean's Edge, after TSO mode works |
+
+## SimAntics
+
+Package: [SimAntics](../NSOClient/SimAntics/). Ports `TSOClient/tso.simantics` (see
+[fso/simantics.md](fso/simantics.md)).
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| VM-1 | Tick rate constant (30 per second) | done | `TickRate.swift`; `TickRateTests` |
+| VM-2 | BHAV translator: decode operands once per routine | missing | Queen Margaret's |
+| VM-3 | Thread, stack frames, exit codes, subroutine calls by opcode range | missing | Queen Margaret's |
+| VM-4 | Variable scopes (`VMMemory`) including tuning lookup (BCON then OTF) | missing | Queen Margaret's |
+| VM-5 | Scheduler and `InternalTick` order | missing | Queen Margaret's |
+| VM-6 | Entities: objects, avatars, multitile groups, motives | missing | Queen Margaret's |
+| VM-7 | Lot model: architecture, rooms, placement queries | missing | Queen Margaret's |
+| VM-8 | Interactions: TTAB checks, action queue, priorities | missing | Queen Margaret's |
+| VM-9 | Primitives: about 70, `VMExpression` first | missing | Rancho Rizzo |
+| VM-10 | Routing: routing frame, rectangle router | missing | Shannopolis |
+| VM-11 | Saves: VMMarshal version 19 read and write, hollow saves | missing | Terra Tablante |
+| VM-12 | Lockstep: commands, tick lists, client and server drivers, resync | missing | The Billabong |
+| VM-13 | Global link interface and offline stub | missing | The Billabong |
+| VM-14 | EOD handlers | missing | Upper Shankelston |
+| VM-15 | Activators and lot utilities | missing | Virginia Islands |
+
+## Fidelity
+
+How we know the Swift code behaves like the 2017 code.
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| FID-1 | Install scan: every FAR1, FAR3, and IFF in a TSO install opens without error | missing | Needs a scan tool and `TSO_GAME_DIR` (roadmap decision 5) |
+| FID-2 | Each ported reader keeps the 2017 behavior on valid input, with quirks tested | partial | Done for FMT-1 to FMT-5 (quirks listed under [known differences](#known-differences-from-2017) and in each type's doc comment); applies to every later format |
+| FID-3 | Byte-level comparison of decoded output against the 2017 readers on real files | missing | Needs the 2017 build or recorded dumps (roadmap decision 2) |
+| FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | missing | Pixie Point |
+| FID-5 | Swift VM matches recorded state hashes for a basic lot over an in-game day | missing | Queen Margaret's to Shannopolis |
+
+## Determinism
+
+Rules the VM must follow for lockstep. None can be checked until VM code exists; each needs a test
+or a lint when it does.
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| DET-1 | All 16-bit VM arithmetic wraps (`&+`, `&-`, `&*`), division matches FreeSO | missing | Overflow traps in Swift; C# wraps |
+| DET-2 | No `Dictionary` or `Set` iteration in VM logic | missing | Swift randomizes hash seeds per process |
+| DET-3 | One seeded random generator, owned by the VM context | missing | |
+| DET-4 | No wall-clock time or floating point feeding simulation state without review | missing | Routing and animation timing need a look |
+| DET-5 | Same replay result on Linux x86_64, Linux ARM64, and macOS ARM64 | missing | Needs FID-4 and CI on those runners |
+
+## Reliability
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| REL-1 | Corrupt or truncated input throws a typed error, never crashes | done | Every reader throws a typed error (`EndOfDataError`, `RefPackError`, `FAR1Error`, `FAR3Error`, `IFFError`); tests cover truncation and bad sizes |
+| REL-2 | No `try!`, force unwraps, `fatalError`, or `precondition` in library sources | done | Checked with a grep over `NSOClient/*/Sources` on 2026-10-15; no lint enforces it yet (TST-5) |
+| REL-3 | Archives are immutable values, safe to read from several threads | done | `FAR1Archive` and `FAR3Archive` are `Sendable` structs over memory-mapped `Data`; removes the 2017 `isReadingSomething` race |
+| REL-4 | Swift 6 language mode (strict concurrency) in every package | done | `swiftLanguageModes: [.v6]` in all three manifests |
+| REL-5 | Size limits on allocations driven by file data | partial | Reads are bounded by the data length; RefPack output growth and declared decompressed sizes have no cap yet |
+| REL-6 | Fuzzing of every reader with malformed input | missing | |
+| REL-7 | Bounded caches for decoded content | missing | Ocean's Edge |
+
+## Tests and tooling
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| TST-1 | Swift Testing in every package | done | `import Testing` in all test targets |
+| TST-2 | Synthetic fixtures only, no EA data in the repository | done | `Tests/TSOFilesTests/Support/ByteWriter.swift` builds archives, RefPack streams, and IFFs in code |
+| TST-3 | Each package builds and tests on its own | done | `swift build` and `swift test` per package; path dependencies resolve |
+| TST-4 | CI runs all three packages on every push | missing | |
+| TST-5 | Lint for REL-2 and DET-2 (SwiftLint custom rules or a script) | missing | |
+| TST-6 | Real-file tests gated on `TSO_GAME_DIR` | missing | Roadmap decision 5 |
+
+## Platforms
+
+No `platforms:` are declared (owner decision); this tracks where the packages are known to build.
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| PLAT-1 | Linux x86_64 | done | Swift 6.3.3, all tests pass |
+| PLAT-2 | Linux ARM64 | missing | Untested |
+| PLAT-3 | macOS | missing | Untested |
+| PLAT-4 | Windows | missing | Untested; Foundation on Windows is the least tested |
+
+## Known differences from 2017
+
+Deliberate, documented in the code. Each keeps valid-file behavior the same.
+
+| Id | Difference | Where | Why |
+|---|---|---|---|
+| DIFF-1 | Corrupt data throws instead of crashing or returning partial results | all readers | Never crash on hostile input |
+| DIFF-2 | Archives are values over memory-mapped bytes, not shared readers | `FAR1Archive`, `FAR3Archive` | Removes the `isReadingSomething` race that silently returned empty archives |
+| DIFF-3 | IFF keeps chunk types the old reader skipped | `IFFFile` | Nothing is lost before typed parsing |
+| DIFF-4 | Seeking past the end of the data throws; .NET allowed it and then read nothing | `ByteReader.seek(to:)` | Surfaces bad offsets at their source |
+
+## Open bugs
+
+None filed yet. Bugs found in the 2017 code that the port fixes go under known differences, not
+here.
