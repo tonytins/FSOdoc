@@ -17,8 +17,7 @@ The project has two goals:
 
 The output of both goals is Markdown under [doc/](./doc/). This is solo work
 held to production standards. Read this file first, then
-[README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/README.md](./doc/README.md)
-once it exists.
+[README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/README.md](./doc/README.md).
 
 ## 1. Workspace map
 
@@ -26,7 +25,12 @@ once it exists.
 AGENTS.md                    this file
 README.md, FAQ.md            project purpose and long-term plans
 CONTRIBUTING.md              how to contribute AI-assisted source comments
-doc/                         the Markdown documentation (see section 2 for its layout)
+doc/                         the Markdown documentation
+  README.md                  index, coverage table, and conventions (start here)
+  architecture.md            layers, dependency graph, runtime flows
+  modernization.md           rewrite plan: layout, replacements, phases, decisions, risks
+  common.md, files.md, content.md, simantics.md, rendering.md,
+  audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions for the rewrite guidance
 TSOClient/                   the 2017 FreeSO snapshot (all paths below are relative to it)
@@ -175,7 +179,8 @@ This covers the docs and any C# shown in them.
 ### Markdown
 
 - One `#` heading per file, matching the doc's purpose. File names are
-  lowercase kebab-case (`simantics-vm.md`).
+  lowercase kebab-case (`simantics-vm.md`), except the index,
+  `README.md`.
 - Write plain, short sentences without em dashes. Explain why, not only
   what. Prefer tables for inventories and short lists for steps.
 - Use relative links, so they work on GitHub and locally. Every new doc is
