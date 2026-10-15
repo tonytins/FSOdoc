@@ -39,11 +39,11 @@ Package: [TSOFiles](../NSOClient/TSOFiles/). Ports `TSOClient/tso.files` (see
 | FMT-4 | FAR3 archives with asset IDs and RefPack entries | done | `Archives/FAR3Archive.swift`; `FAR3ArchiveTests` (ID packing, raw and compressed entries, non-RefPack fallback, duplicate names and IDs, wrong type ID) |
 | FMT-5 | IFF container: header, chunk records, lookups | done | `IFF/IFFFile.swift`; `IFFFileTests` (10 tests incl. trailing byte, short final chunk, bad sizes, 2.0 header) |
 | FMT-6 | Reference snapshot constant | done | `ReferenceSnapshot.swift`; `ReferenceSnapshotTests` |
-| FMT-7 | DBPF archives | missing | Charvatia |
-| FMT-8 | Behavior chunks: `BHAV`, `BCON`, `TRCN`, `TPRP` | missing | Grantley Grove |
-| FMT-9 | String chunks: `STR#`, `CTSS`, `TTAs` with language sets and code pages | missing | Grantley Grove |
-| FMT-10 | Object chunks: `OBJD`, `OBJf`, `OBJT`, `OBJM`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | missing | Grantley Grove |
-| FMT-11 | Lot and TS1 chunks: `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT` | missing | Grantley Grove |
+| FMT-7 | DBPF archives | missing | Xanadu |
+| FMT-8 | Behavior chunks: `BHAV`, `BCON`, `TRCN`, `TPRP` | missing | Pixie Point |
+| FMT-9 | String chunks: `STR#`, `CTSS`, `TTAs` with language sets and code pages | missing | Pixie Point |
+| FMT-10 | Object chunks: `OBJD`, `OBJf`, `OBJT`, `OBJM`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | missing | Pixie Point |
+| FMT-11 | Lot and TS1 chunks: `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT` | missing | Pixie Point |
 | FMT-12 | Sprite chunks decoded to RGBA plus depth: `SPR#`, `SPR2`, `PALT`, `DGRP` | missing | Hyde Park |
 | FMT-13 | Images: `BMP_`, `THMB`, BMP, TGA, PNG with magenta masking | missing | Hyde Park |
 | FMT-14 | PIFF: apply patches to an IFF, `User/` precedence | missing | King Canyons |
@@ -104,7 +104,7 @@ How we know the Swift code behaves like the 2017 code.
 | FID-1 | Install scan: every FAR1, FAR3, and IFF in a TSO install opens without error | missing | Needs a scan tool and `TSO_GAME_DIR` (roadmap decision 5) |
 | FID-2 | Each ported reader keeps the 2017 behavior on valid input, with quirks tested | partial | Done for FMT-1 to FMT-5 (quirks listed under [known differences](#known-differences-from-2017) and in each type's doc comment); applies to every later format |
 | FID-3 | Byte-level comparison of decoded output against the 2017 readers on real files | missing | Needs the 2017 build or recorded dumps (roadmap decision 2) |
-| FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | missing | Pixie Point |
+| FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | missing | West Darrington |
 | FID-5 | Swift VM matches recorded state hashes for a basic lot over an in-game day | missing | Queen Margaret's to Shannopolis |
 
 ## Determinism
