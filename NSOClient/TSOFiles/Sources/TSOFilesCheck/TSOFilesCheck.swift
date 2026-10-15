@@ -11,7 +11,7 @@ struct TSOFilesCheck {
         every archive entry. The directory defaults to $TSO_GAME_DIR.
 
           --far1-variant a|b   FAR1 layout: b for TSO (default), a for The Sims 1
-          --headers-only       open archives without reading their entries
+          --headers-only       open archives without reading entries or parsing chunks
           --max-failures N     list at most N failures (default 50; all are counted)
         """
 
@@ -25,7 +25,8 @@ struct TSOFilesCheck {
             exit(2)
         }
 
-        let scanner = InstallScanner(far1Variant: options.far1Variant, readsEntries: !options.headersOnly)
+        let scanner = InstallScanner(far1Variant: options.far1Variant, readsEntries: !options.headersOnly,
+                                     parsesChunks: !options.headersOnly)
         let report: ScanReport
         do {
             report = try scanner.scan(directory: options.directory)
@@ -42,7 +43,10 @@ struct TSOFilesCheck {
         for kind in ContainerKind.allCases {
             print("\(kind.rawValue): \(report.containerCounts[kind, default: 0]) files")
         }
-        print("entries read: \(report.entriesRead) (IFFs inside FAR1: \(report.nestedIFFCount))")
+        print("entries read: \(report.entriesRead) (IFFs inside archives: \(report.nestedIFFCount))")
+        let chunkSummary = report.chunkCounts.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
+        print("chunks parsed: \(report.chunkCounts.values.reduce(0, +))" +
+              (chunkSummary.isEmpty ? "" : " (\(chunkSummary.joined(separator: ", ")))"))
         print("other files: \(report.otherFileCount)")
         print("failures: \(report.failures.count)")
 
@@ -52,6 +56,13 @@ struct TSOFilesCheck {
         }
         if report.failures.count > maxFailures {
             print("  ... and \(report.failures.count - maxFailures) more")
+        }
+        if !report.unreferencedChunkFailures.isEmpty {
+            print("unreferenced chunks that don't parse (the game never loads them): " +
+                  "\(report.unreferencedChunkFailures.count)")
+            for failure in report.unreferencedChunkFailures.prefix(maxFailures) {
+                print("  \(failure.path): \(failure.entry ?? ""): \(failure.message)")
+            }
         }
     }
 

@@ -113,7 +113,69 @@ public struct ByteReader: Sendable {
         ASCII.decode(try readBytes(length))
     }
 
+    /// Reads a string prefixed by a one-byte length, decoded as ASCII.
+    ///
+    /// Matches `IoBuffer.ReadPascalString`.
+    public mutating func readPascalString() throws(EndOfDataError) -> String {
+        let length = Int(try readUInt8())
+        return try readASCII(length: length)
+    }
+
+    /// Reads a string prefixed by a signed 16-bit length, decoded as ASCII.
+    ///
+    /// Matches `IoBuffer.ReadLongPascalString`. Returns `nil` for a negative
+    /// length, where .NET throws.
+    public mutating func readLongPascalString() throws(EndOfDataError) -> String? {
+        let length = Int(try readInt16())
+        guard length >= 0 else { return nil }
+        return try readASCII(length: length)
+    }
+
+    /// Reads bytes up to a NUL and maps each byte to the character with the same code.
+    ///
+    /// Matches `IoBuffer.ReadNullTerminatedString`, which casts each byte to a
+    /// `char`. That is Latin-1 decoding, not ASCII.
+    public mutating func readNullTerminatedLatin1() throws(EndOfDataError) -> String {
+        let bytes = try readUntilNUL()
+        return String(String.UnicodeScalarView(bytes.map { Unicode.Scalar($0) }))
+    }
+
+    /// Reads bytes up to a NUL and decodes them as UTF-8.
+    ///
+    /// Matches `IoBuffer.ReadNullTerminatedUTF8`. Invalid sequences become U+FFFD.
+    public mutating func readNullTerminatedUTF8() throws(EndOfDataError) -> String {
+        String(decoding: try readUntilNUL(), as: UTF8.self)
+    }
+
+    /// Reads a string written by .NET's `BinaryWriter.Write(string)`: a 7-bit
+    /// encoded length, then that many UTF-8 bytes.
+    ///
+    /// Matches `IoBuffer.ReadVariableLengthPascalString`. Returns `nil` if the
+    /// length prefix runs past five bytes, where .NET throws a format error.
+    public mutating func readDotNetString() throws(EndOfDataError) -> String? {
+        var length = 0
+        var shift = 0
+        while true {
+            guard shift < 35 else { return nil }
+            let byte = try readUInt8()
+            length |= Int(byte & 0x7F) << shift
+            shift += 7
+            if byte & 0x80 == 0 { break }
+        }
+        guard length >= 0, length <= Int(Int32.max) else { return nil }
+        return String(decoding: try readBytes(length), as: UTF8.self)
+    }
+
     // MARK: Private
+
+    private mutating func readUntilNUL() throws(EndOfDataError) -> [UInt8] {
+        var bytes: [UInt8] = []
+        while true {
+            let byte = try readUInt8()
+            if byte == 0 { return bytes }
+            bytes.append(byte)
+        }
+    }
 
     private func requireBytes(_ byteCount: Int) throws(EndOfDataError) {
         guard byteCount >= 0, byteCount <= remaining else {

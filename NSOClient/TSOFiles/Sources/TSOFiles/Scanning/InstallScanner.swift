@@ -43,12 +43,18 @@ public struct ScanReport: Sendable {
     public var containerCounts: [ContainerKind: Int] = [:]
     /// Archive entries whose data was read (and decompressed, for FAR3).
     public var entriesRead = 0
-    /// IFF files found inside FAR1 archives and parsed.
+    /// IFF files found inside archives and parsed.
     public var nestedIFFCount = 0
+    /// Typed chunks parsed, by type code.
+    public var chunkCounts: [String: Int] = [:]
     /// Files that aren't a recognized container.
     public var otherFileCount = 0
     /// Everything that failed to read, in path order.
     public var failures: [ScanFailure] = []
+    /// Chunks that failed to parse but that nothing in their file refers to, so the
+    /// game never loads them (for example, an old `TTAB` no `OBJD` points at).
+    /// The 2017 reader parses chunks only on demand, so it never meets these.
+    public var unreferencedChunkFailures: [ScanFailure] = []
 
     /// Whether every recognized file read without error.
     public var isClean: Bool { failures.isEmpty }
@@ -63,10 +69,13 @@ public struct InstallScanner: Sendable {
     public var far1Variant: FAR1Archive.Variant
     /// Whether to read every archive entry's data, or only the archive headers.
     public var readsEntries: Bool
+    /// Whether to parse every chunk of a supported type inside each IFF.
+    public var parsesChunks: Bool
 
-    public init(far1Variant: FAR1Archive.Variant = .b, readsEntries: Bool = true) {
+    public init(far1Variant: FAR1Archive.Variant = .b, readsEntries: Bool = true, parsesChunks: Bool = true) {
         self.far1Variant = far1Variant
         self.readsEntries = readsEntries
+        self.parsesChunks = parsesChunks
     }
 
     /// Scans every regular file under `root`, in sorted path order.
@@ -102,21 +111,16 @@ public struct InstallScanner: Sendable {
                 let archive = try FAR1Archive(contentsOf: url, variant: far1Variant)
                 guard readsEntries else { return }
                 for entry in archive.entries {
-                    let wasIFF = check(path: path, entry: entry.fileName, into: &report) {
-                        let data = try archive.data(for: entry)
-                        guard ContainerKind(header: data) == .iff else { return false }
-                        _ = try IFFFile(bytes: data)
-                        return true
-                    }
-                    if wasIFF == true { report.nestedIFFCount += 1 }
+                    let data = check(path: path, entry: entry.fileName, into: &report) { try archive.data(for: entry) }
+                    if let data { scanNestedIFF(data, path: path, entry: entry.fileName, into: &report) }
                 }
             case .far3:
                 let archive = try FAR3Archive(contentsOf: url)
                 guard readsEntries else { return }
                 for entry in archive.entries {
-                    check(path: path, entry: "\(entry.fileName) [\(entry.assetID)]", into: &report) {
-                        _ = try archive.data(for: entry)
-                    }
+                    let name = "\(entry.fileName) [\(entry.assetID)]"
+                    let data = check(path: path, entry: name, into: &report) { try archive.data(for: entry) }
+                    if let data { scanNestedIFF(data, path: path, entry: name, into: &report) }
                 }
             case .dbpf:
                 let archive = try DBPFArchive(contentsOf: url)
@@ -128,11 +132,55 @@ public struct InstallScanner: Sendable {
                     }
                 }
             case .iff:
-                _ = try IFFFile(contentsOf: url)
+                let iff = try IFFFile(contentsOf: url)
+                scanChunks(of: iff, path: path, entryPrefix: nil, into: &report)
             }
         } catch {
             report.failures.append(ScanFailure(path: path, entry: nil, message: String(describing: error)))
         }
+    }
+
+    /// Parses archive entry data that is an IFF file, then its chunks.
+    private func scanNestedIFF(_ data: Data, path: String, entry: String, into report: inout ScanReport) {
+        guard ContainerKind(header: data) == .iff else { return }
+        do {
+            let iff = try IFFFile(bytes: data)
+            report.nestedIFFCount += 1
+            scanChunks(of: iff, path: path, entryPrefix: entry, into: &report)
+        } catch {
+            report.failures.append(ScanFailure(path: path, entry: entry, message: String(describing: error)))
+        }
+    }
+
+    /// Parses every chunk of a supported type, recording each failure against its chunk.
+    private func scanChunks(of iff: IFFFile, path: String, entryPrefix: String?, into report: inout ScanReport) {
+        guard parsesChunks else { return }
+        let referencedTables = Self.referencedTreeTables(in: iff)
+        for record in iff.chunks {
+            guard let chunkType = IFFChunkTypes.type(forCode: record.typeCode) else { continue }
+            do {
+                _ = try chunkType.init(record: record)
+                report.chunkCounts[record.typeCode, default: 0] += 1
+            } catch {
+                let chunk = "\(record.typeCode) #\(record.id)"
+                let entry = entryPrefix.map { "\($0): \(chunk)" } ?? chunk
+                let failure = ScanFailure(path: path, entry: entry, message: String(describing: error))
+                if record.typeCode == TTAB.typeCode, !referencedTables.contains(record.id) {
+                    report.unreferencedChunkFailures.append(failure)
+                } else {
+                    report.failures.append(failure)
+                }
+            }
+        }
+    }
+
+    /// The `TTAB` IDs that the file's objects point at through `treeTableID`.
+    private static func referencedTreeTables(in iff: IFFFile) -> Set<UInt16> {
+        var tables = Set<UInt16>()
+        for record in iff.chunks(ofType: OBJD.typeCode) {
+            if let object = try? OBJD(record: record) { tables.insert(object.treeTableID) }
+        }
+        return tables
     }
 
     /// Runs one entry check, counting it, or recording its error against the entry.

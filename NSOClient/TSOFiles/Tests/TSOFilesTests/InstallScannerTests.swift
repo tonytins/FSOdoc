@@ -22,6 +22,16 @@ struct FakeInstall: ~Copyable {
     }
 }
 
+/// The data of a version 142 OBJD whose words are zero except the tree table ID.
+func validOBJD(treeTableID: UInt16 = 0) -> Data {
+    var writer = ByteWriter()
+    writer.uint32(142)
+    for index in 0..<OBJD.wordCount(forVersion: 142) {
+        writer.uint16(index == 5 ? treeTableID : 0)
+    }
+    return writer.bytes
+}
+
 @Suite struct InstallScannerTests {
     @Test(arguments: [
         (Data("DBPF".utf8) + Data(count: 8), ContainerKind.dbpf),
@@ -40,7 +50,7 @@ struct FakeInstall: ~Copyable {
 
     @Test func scansAHealthyInstall() throws {
         let install = try FakeInstall()
-        let object = makeIFF([ChunkFixture(type: "OBJD", id: 1, label: "chair", contents: Data([1]))])
+        let object = makeIFF([ChunkFixture(type: "OBJD", id: 1, label: "chair", contents: validOBJD())])
         try install.write(makeFAR1([FAR1Fixture(name: "chair.iff", contents: object),
                                     FAR1Fixture(name: "chair.otf", contents: Data("<?xml".utf8))], variant: .b),
                           to: "objectdata/objects/objiff.far")
@@ -62,6 +72,24 @@ struct FakeInstall: ~Copyable {
         #expect(report.entriesRead == 4)
         #expect(report.nestedIFFCount == 1)
         #expect(report.otherFileCount == 1)
+        #expect(report.chunkCounts == ["OBJD": 2])
+    }
+
+    @Test func separatesBrokenTablesThatNoObjectUses() throws {
+        let install = try FakeInstall()
+        let brokenTable = ChunkFixture(type: "TTAB", id: 128, label: "", contents: Data([1, 0, 2, 0, 1, 0, 2, 0, 0x10, 0, 0xA3, 0xA3]))
+        // The object points at table 129, so the broken table 128 is never loaded.
+        try install.write(makeIFF([ChunkFixture(type: "OBJD", id: 1, label: "", contents: validOBJD(treeTableID: 129)),
+                                   brokenTable]), to: "orphan.iff")
+        // Here the object points at the broken table itself, which is a real failure.
+        try install.write(makeIFF([ChunkFixture(type: "OBJD", id: 1, label: "", contents: validOBJD(treeTableID: 128)),
+                                   brokenTable]), to: "used.iff")
+
+        let report = try InstallScanner().scan(directory: install.root)
+
+        #expect(report.unreferencedChunkFailures.map(\.path) == ["orphan.iff"])
+        #expect(report.failures.map(\.path) == ["used.iff"])
+        #expect(report.failures.first?.entry == "TTAB #128")
     }
 
     @Test func reportsBrokenFilesAndEntriesByPath() throws {
