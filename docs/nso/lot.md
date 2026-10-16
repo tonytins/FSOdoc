@@ -2,8 +2,8 @@
 
 The lot model is where things are on a lot: positions and facings, which objects share a tile,
 and the walls, floors, and rooms that SimAntics code asks about. It's part of the SimAntics
-package. Positions, the tile index, rooms, and multi-tile groups are done; placing objects in the
-world, slots, and loading a lot's objects come next. How objects are created and grouped is in
+package. Positions, the tile index, rooms, multi-tile groups, and placement are done; slots and
+loading a lot's objects come next. How objects are created and grouped is in
 [simantics.md](simantics.md#creating-and-deleting-objects).
 
 ## Positions and facings
@@ -26,11 +26,14 @@ print(Direction(notch: 3), Direction.east.notch, Direction.east.rawValue)   // s
 
 ## Moving and finding objects
 
-Always move entities with `VM.move(_:to:)`. Like FreeSO's position change, it keeps the tile index
-current and records the entity's room in object data 29:
+`VM.move(_:to:)` puts an entity somewhere without checking whether it fits, as loading a saved
+lot does. Like FreeSO's position change, it keeps the tile index and the room's entity list
+current, records the room in object data 29, and updates the footprint and the walls the object
+uses. To place an object as the game does, with every check and the placement entry point, use
+`VM.place` ([below](#placing-objects)).
 
 ```swift
-vm.move(door, to: .center(ofTileX: 4, y: 4, level: 1))
+try vm.move(door, to: .center(ofTileX: 4, y: 4, level: 1))
 print(vm.objects(at: .center(ofTileX: 4, y: 4, level: 1))?.map(\.objectID) ?? [])   // [1]
 print(vm.objects(withGUID: 0x0000_01CA)?.count ?? 0)
 print(vm.objects(inCategory: 5) ?? [])     // listed once the category is set through object data
@@ -39,6 +42,36 @@ print(vm.objects(inCategory: 5) ?? [])     // listed once the category is set th
 Query results are in object ID order, as FreeSO's are, since primitives such as Set To Next walk
 them in that order. Tiles are keyed as FreeSO keys them: a position past the lot's edge shares a
 key with a tile on the next row, and every object out of the world shares one entry.
+
+## Placing objects
+
+`VM.place(_:at:facing:flags:)` places every part of an object, as FreeSO's `ChangePosition` does:
+
+1. Each part's offset in its group turns with the facing, a quarter turn per compass point (the
+   diagonals count as north), around the lead part.
+2. Each part must pass `Entity.placement(at:facing:flags:)`:
+   - **on the lot** (`locationOutOfBounds` otherwise);
+   - **walls:** the walls around the tile, turned to the facing, must include the ones the object
+     needs (object data 13, low four bits: front, right, behind, left), exclude the ones it can't
+     have (bits 8 to 11), and with exclusive wall placement, not be in use; diagonals need
+     permission;
+   - **floor:** water, pools, bare ground, air, and floor each need their placement flag (object
+     data 42);
+   - **other objects:** no other object's footprint in the room may overlap, unless one of the two
+     allows it through "allow intersection" (entry point 5), or this one can stack on the other's
+     first slot. The `allowIntersection` flag skips this check.
+3. If any part fails, every part goes back where it was and the failure comes back as a
+   `PlacementResult`. Otherwise each part moves and faces the new way, takes its footprint (the
+   definition's footprint mask, turned with the facing), joins its room's entity list, marks the
+   walls it uses, puts a door's or window's style on its wall, and runs the placement entry point.
+
+```swift
+let result = try vm.place(table, at: .center(ofTileX: 4, y: 4, level: 1), facing: .east)
+if result.status != .success { print(result.status, result.object?.objectID as Any) }  // e.g. cantIntersectOtherObjects 7
+```
+
+The lot is flat, so slopes never fail; the buildable area isn't ported yet, so the
+`userBuildableLimit` flag throws `unsupported`, as does stacking onto a slot (containment).
 
 ## Walls, floors, and rooms
 
@@ -125,5 +158,5 @@ throws `BlueprintError.offLot`, where FreeSO fails with an index out of range. L
 tiles a side. The lot's objects aren't loaded yet.
 
 All of this matches FreeSO exactly: `fso-oracle room-maps` dumps FreeSO's room maps and rooms, and
-all 61 lots compared (FreeSO's empty lot and 60 synthetic ones with walls, fences, diagonals,
-pools, and upper floors) match entry for entry.
+all 62 lots compared (FreeSO's empty lot, the owner's house in `NSOClient/Lots`, and 60 synthetic
+ones with walls, fences, diagonals, pools, and upper floors) match entry for entry.

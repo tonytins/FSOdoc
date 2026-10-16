@@ -8,7 +8,7 @@ extension Primitives {
     /// deleted again and the primitive is false. The new object's main can get the stack object's ID
     /// and, as argument 0, temp 0 or the caller's ID.
     ///
-    /// Not ported yet: placing in the world (placement), slots and hands (containment), callbacks
+    /// Not ported yet: slots and hands (containment), callbacks
     /// that run an interaction on the new object, and a neighbor's Sim (The Sims 1). Each throws
     /// ``SimAnticsError/unsupported(_:)``. Persisting the object gives it a database ID in FreeSO,
     /// which nothing here models.
@@ -103,10 +103,10 @@ extension Primitives {
 
             if mode == .underneathMe && object.position.isOutOfWorld {
                 guard let caller = frame.caller else { throw .nullReference("no caller") }
-                guard caller.position.isOutOfWorld else {
-                    throw .unsupported("placing an object in the world needs placement")
-                }
-                vm.moveOutOfWorld(group, facing: direction)
+                // Placed under the caller, the new object may overlap it.
+                for part in group.objects { part.ignoreIntersection = caller.group }
+                defer { for part in group.objects { part.ignoreIntersection = nil } }
+                try vm.place(group, at: caller.position, facing: direction)
             }
             if mode != .outOfWorld && object.position.isOutOfWorld {
                 vm.delete(object, wholeGroup: true)

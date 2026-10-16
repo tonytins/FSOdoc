@@ -2,11 +2,13 @@
 
 The output is deterministic, so it isn't committed; `NSOClient/scripts/oracle-fixtures.sh`
 writes it beside FreeSO's answers. Cases that name real objects take the GUIDs of the lot's
-objects 1 and 2 from ORACLE_GUIDS ("caller,stack" in hex), which the fixture script reads from
+objects 1 and 2 from ORACLE_GUIDS (every lot object's GUID in hex, in object ID order: the caller,
+then the stack object, then the rest) and its multi-tile masters from ORACLE_MASTERS, which the fixture
+script reads from
 the oracle. Every value a case reads is set by the request, so the Swift tests can build the
 same state.
 
-    ORACLE_GUIDS=534564d5,6271eff3 python3 -I NSOClient/SimAntics/OracleCases/make_cases.py PRIMITIVE OUTPUT
+    ORACLE_GUIDS=534564d5,6271eff3,... ORACLE_MASTERS=39ccf441 python3 -I NSOClient/SimAntics/OracleCases/make_cases.py PRIMITIVE OUTPUT
 """
 
 import json
@@ -202,6 +204,9 @@ def set_to_next_cases(stack_guid):
                     yield f"set-to-next-{search}-{start}-{guid_label}-{category}", {
                         "operand": set_to_next_operand(guid, 0x80 | search, TEMPS, 0, 3),
                         "temps": [0, 0, 0, start], "args": [category, 0, 0, 0]}
+    # Parts of a multi-tile object, from every object on the lot (the default lot has one).
+    for start in range(1, 14):
+        yield f"set-to-next-part-{start}", {"operand": set_to_next_operand(0, 0x80 | 3, TEMPS, 0, 3), "temps": [0, 0, 0, start]}
     # Objects next to the anchor in local 0, from every lot object and several starting points.
     for anchor in range(1, 14):
         for start in (0, 1, 2, 5, 9, 12):
@@ -250,7 +255,8 @@ def play_sound_cases():
 
 # MARK: Create Object Instance
 
-def create_object_instance_cases(caller_guid, stack_guid):
+def create_object_instance_cases(lot_guids, masters):
+    caller_guid, stack_guid = lot_guids[0], lot_guids[1]
     # Every position mode (10 is invalid), with flags that change what main gets, the stack
     # object, and the locals and parameter some modes read. Objects out of the world stay there;
     # every other mode needs the new object placed.
@@ -270,20 +276,35 @@ def create_object_instance_cases(caller_guid, stack_guid):
                 "operand": struct.pack("<IBBBB", caller_guid, position, 0, local, 0).hex(),
                 "locals": [value, value]}
     yield "create-param-missing", {"operand": struct.pack("<IBBBB", caller_guid, 7, 0, 0, 0).hex(), "args": [99, 0, 0, 0]}
+    # Placing on the lot: next to, in front of, and under the lot's objects in the world (7 to 12),
+    # with every object on the lot and its multi-tile masters as the new object.
+    kinds = sorted(set(lot_guids) | set(masters))
+    for anchor in range(7, 13):
+        for guid in kinds:
+            name = f"{anchor}-{guid:08x}"
+            yield f"place-front-of-stack-{name}", {"operand": struct.pack("<IBBBB", guid, 3, 0, 0, 0).hex(), "stackObject": anchor}
+            yield f"place-below-local-{name}", {"operand": struct.pack("<IBBBB", guid, 8, 0, 0, 0).hex(), "locals": [anchor]}
+            yield f"place-below-param-{name}", {"operand": struct.pack("<IBBBB", guid, 7, 0, 0, 0).hex(), "args": [anchor, 0, 0, 0]}
+            for position in (0, 1, 5):  # in front of, on top of, and under the caller
+                yield f"place-{position}-caller-{name}", {"operand": struct.pack("<IBBBB", guid, position, 0, 0, 0).hex(),
+                                                         "caller": anchor}
+            for direction in (0, 2, 4, 6):  # next to the caller, north, east, south, west
+                yield f"place-next-{direction}-{name}", {"operand": struct.pack("<IBBBB", guid, 9, 0, 0, 0).hex(),
+                                                        "caller": anchor, "locals": [direction]}
 
 
 # MARK: Writing
 
-# Each primitive's opcode, whether its cases name real objects, and its cases given the
-# GUIDs of objects 1 and 2.
+# Each primitive's opcode, whether its cases name real objects, and its cases given
+# (the lot's GUIDs in object ID order, its multi-tile masters' GUIDs).
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
     "refresh": (7, False, lambda guids: refresh_cases()),
     "random_number": (8, False, lambda guids: random_number_cases()),
     "play_sound": (23, False, lambda guids: play_sound_cases()),
-    "set_to_next": (31, True, lambda guids: set_to_next_cases(guids[1])),
-    "test_object_type": (32, True, lambda guids: test_object_type_cases(*guids)),
+    "set_to_next": (31, True, lambda guids: set_to_next_cases(guids[0][1])),
+    "test_object_type": (32, True, lambda guids: test_object_type_cases(guids[0][0], guids[0][1])),
     "create_object_instance": (42, True, lambda guids: create_object_instance_cases(*guids)),
 }
 
@@ -295,6 +316,8 @@ def main():
     guids = None
     if "ORACLE_GUIDS" in os.environ:
         guids = tuple(int(value, 16) for value in os.environ["ORACLE_GUIDS"].split(","))
+        masters = tuple(int(value, 16) for value in os.environ.get("ORACLE_MASTERS", "").split(",") if value)
+        guids = (guids, masters)
     opcode, needs_guids, generate = GENERATORS[sys.argv[1]]
     if needs_guids and guids is None:
         print(f"{sys.argv[1]} cases name real objects and need ORACLE_GUIDS", file=sys.stderr)

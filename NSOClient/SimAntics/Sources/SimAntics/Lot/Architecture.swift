@@ -32,6 +32,14 @@ public struct WallTile: Sendable, Hashable {
     public var bottomRightPattern: UInt16
     public var topLeftStyle: UInt16
     public var topRightStyle: UInt16
+    /// Styles that doors and windows put on the wall (`ObjSetTLStyle`, `ObjSetTRStyle`); only drawing reads them.
+    public var objectTopLeftStyle: UInt16 = 0
+    public var objectTopRightStyle: UInt16 = 0
+    /// Whether a door is in the wall, which routing will read (`TopLeftDoor`, `TopRightDoor`).
+    public var topLeftDoor = false
+    public var topRightDoor = false
+    /// Walls an object with exclusive wall placement is against (`OccupiedWalls`).
+    public var occupiedWalls: WallSegments = []
 
     public init(segments: WallSegments = [], topLeftPattern: UInt16 = 0, topRightPattern: UInt16 = 0,
                 bottomLeftPattern: UInt16 = 0, bottomRightPattern: UInt16 = 0,
@@ -73,6 +81,9 @@ public struct Architecture: Sendable {
     public private(set) var rooms: [Room]
     /// Whether walls or floors changed since rooms were last generated.
     public private(set) var isDirty = false
+    /// Identifies one generation of ``rooms``, so a VM can tell its room lists are out of date.
+    final class Generation: Sendable {}
+    private(set) var generation = Generation()
 
     /// An empty lot: no walls and no floors, with its rooms generated.
     ///
@@ -119,6 +130,27 @@ public struct Architecture: Sendable {
         isDirty = true
     }
 
+    /// Whether a position is off the lot or outside its levels (`VMContext.IsOutOfBounds`).
+    public func isOutOfBounds(_ position: LotPosition) -> Bool {
+        position.x < 0 || position.y < 0 || position.level < 1 || Int(position.tileX) >= width
+            || Int(position.tileY) >= height || Int(position.level) > Self.stories
+    }
+
+    /// The floor under a position, or on a diagonal tile, the pattern of the half it's in (`GetPreciseFloor`).
+    ///
+    /// - Throws: ``SimAnticsError/indexOutOfRange(_:)`` off the lot.
+    public func preciseFloor(at position: LotPosition) throws(SimAnticsError) -> UInt16 {
+        let tileX = Int(position.tileX), tileY = Int(position.tileY), level = Int(position.level)
+        let wall = try self.wall(atX: tileX, y: tileY, level: level)
+        let inX = Int(position.x) % 16, inY = Int(position.y) % 16
+        if wall.segments.contains(.verticalDiagonal) {
+            return inX - inY > 0 ? wall.topLeftPattern : wall.topLeftStyle
+        } else if wall.segments.contains(.horizontalDiagonal) {
+            return inX + inY > 15 ? wall.topLeftPattern : wall.topLeftStyle
+        }
+        return try floor(atX: tileX, y: tileY, level: level)
+    }
+
     // MARK: Rooms
 
     /// Regenerates every level's room map (`RegenRoomMap`), level by level, so rooms on upper
@@ -131,6 +163,7 @@ public struct Architecture: Sendable {
         }
         self.rooms = rooms
         isDirty = false
+        generation = Generation()
     }
 
     /// The room at a position, or 0 off the lot (`GetRoomAt`). On a tile split by a diagonal

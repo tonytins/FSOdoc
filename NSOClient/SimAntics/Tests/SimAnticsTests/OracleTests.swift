@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import TSOContent
+import TSOFiles
 @testable import SimAntics
 
 /// A folder from `NSOClient/scripts/oracle-fixtures.sh`, named by `TSO_ORACLE_DIR`, or `nil`.
@@ -30,6 +31,7 @@ struct OraclePrimitiveTests {
         var matched = 0, unsupported: [String: Int] = [:], mismatches: [String] = []
         for response in responses where response["requestError"] == nil {
             let id = try required(response["id"] as? String)
+            if let only = ProcessInfo.processInfo.environment["TSO_ORACLE_CASE"], only != id { continue }  // to debug one case
             let outcome = try OracleCase(request: try required(requests[id]), response: response).run(content)
             switch outcome {
             case .unsupported(let reason):
@@ -42,6 +44,10 @@ struct OraclePrimitiveTests {
                     mismatches.append("\(id): FreeSO \(canonical(expected)) Swift \(canonical(actual))")
                 }
             }
+        }
+        // TSO_ORACLE_MISMATCHES=FOLDER writes every mismatch to FOLDER/PRIMITIVE.mismatches.txt.
+        if let folder = ProcessInfo.processInfo.environment["TSO_ORACLE_MISMATCHES"], !mismatches.isEmpty {
+            try mismatches.joined(separator: "\n").write(toFile: "\(folder)/\(primitive).mismatches.txt", atomically: true, encoding: .utf8)
         }
         print("\(primitive) against FreeSO: \(matched) matched, \(mismatches.count) mismatched, "
               + "\(unsupported.values.reduce(0, +)) unsupported \(unsupported.sorted { $0.value > $1.value }.prefix(8))")
@@ -73,7 +79,7 @@ struct OracleCase {
         let vm = try VM(content: content, seed: seed)
         let callerID = Int16(request["caller"] as? Int ?? 1)
         let stackObjectID = Int16(request["stackObject"] as? Int ?? 0)
-        // Rebuild every object on the oracle's lot: categories, positions, and facings.
+        // Rebuild every object on the oracle's lot: categories, positions, facings, and state.
         // The oracle's lot: FreeSO's empty lot, whose rooms the room data scope reads.
         vm.architecture = try emptyLotArchitecture()
         if let size = response["lotSize"] as? [Int], size != [vm.lotSize.width, vm.lotSize.height] {
@@ -86,9 +92,23 @@ struct OracleCase {
             if entry[3] as? Bool == true { vm.changeCategory(of: entity, from: nil, to: category) }
             if entry.count >= 8, let x = entry[4] as? Int, let y = entry[5] as? Int, let level = entry[6] as? Int,
                let direction = entry[7] as? Int {
-                vm.move(entity, to: LotPosition(x: Int16(x), y: Int16(y), level: Int8(level)))
                 entity.direction = try required(Direction(rawValue: UInt8(direction)))
+                try vm.move(entity, to: LotPosition(x: Int16(x), y: Int16(y), level: Int8(level)))
             }
+            // The object's state as FreeSO left it, after its init, main, and placement.
+            if entry.count >= 11 {
+                for (index, value) in try required(entry[8] as? [Int]).enumerated() { entity.objectData[index] = Int16(value) }
+                for (index, value) in try required(entry[9] as? [Int]).enumerated() { entity.setAttribute(Int16(value), at: UInt16(index)) }
+                entity.footprint = (entry[10] as? [Int]).map { Obstacle($0[0], $0[1], $0[2], $0[3]) }
+            }
+        }
+        // Objects that form one group, such as the parts of a multi-tile object.
+        for entry in response["groups"] as? [[Any]] ?? [] {
+            let parts = try (try required(entry[2] as? [Int])).map { try required(vm.entity(id: Int16($0))) }
+            let master = try (entry[1] as? String).map { (guid) throws -> OBJD in
+                try required(try content.objects.object(guid: try required(UInt32(guid, radix: 16)))?.definition)
+            }
+            vm.regroup(parts, isMultiTile: entry[0] as? Bool == true, masterDefinition: master)
         }
         if vm.entity(id: callerID) == nil { try vm.addObject(guid: try guid("callerGUID"), id: callerID) }
         if response["stackObjectGUID"] != nil, vm.entity(id: stackObjectID) == nil {

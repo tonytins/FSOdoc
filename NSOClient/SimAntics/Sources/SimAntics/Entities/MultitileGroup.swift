@@ -46,6 +46,22 @@ public final class MultitileGroup {
         return objects.first
     }
 
+    /// Adds another group's parts to this one, at their offsets from the lead and facing its way
+    /// (`Combine`, for dynamic multi-tile objects). FreeSO computes a rotation for the offsets and
+    /// then discards it, so they aren't rotated. The other group keeps its list.
+    func combine(_ other: MultitileGroup) {
+        guard let lead = leadObject else { return }
+        for part in other.objects {
+            let offset = LotPosition(x: Int16(truncatingIfNeeded: Int(part.position.x) - Int(lead.position.x)),
+                                     y: Int16(truncatingIfNeeded: Int(part.position.y) - Int(lead.position.y)),
+                                     level: Int8(truncatingIfNeeded: Int(part.position.level) - Int(lead.position.level)))
+            objects.append(part)
+            offsets.append(offset)
+            part.group = self
+            part.direction = lead.direction
+        }
+    }
+
     /// Takes a deleted part out of the group (`RemoveObject`).
     func remove(_ entity: Entity) {
         guard let index = objects.firstIndex(where: { $0 === entity }) else { return }

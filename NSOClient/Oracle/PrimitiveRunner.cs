@@ -179,11 +179,25 @@ namespace FSO.Oracle
             lotObjects = new JsonArray(vm.Entities.OrderBy(entity => entity.ObjectID).Select(entity => (JsonNode)new JsonArray(
                 entity.ObjectID, entity.Object.OBJ.GUID.ToString("x8"), entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category],
                 vm.Context.ObjectQueries.GetObjectsByCategory(entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category])?.Contains(entity) ?? false,
-                entity.Position.x, entity.Position.y, entity.Position.Level, (byte)entity.Direction)).ToArray());
+                entity.Position.x, entity.Position.y, entity.Position.Level, (byte)entity.Direction,
+                Values(entity.ObjectData), Values((List<short>)AttributesField.GetValue(entity)),
+                entity.Footprint == null ? null : new JsonArray(entity.Footprint.x1, entity.Footprint.y1, entity.Footprint.x2, entity.Footprint.y2)
+                )).ToArray());
             var (idleStartBefore, interruptBefore, scheduledBefore) = (thread.ScheduleIdleStart, thread.Interrupt, thread.ScheduleIdleEnd);
             var response = Response(id, null, null);
             response["lot"] = lotObjects;
             response["lotSize"] = new JsonArray(vm.Context.Architecture.Width, vm.Context.Architecture.Height);
+            // Objects that share a group with others, or were made from a multi-tile master, by group.
+            var groups = new JsonArray();
+            foreach (var group in vm.Entities.Select(entity => entity.MultitileGroup).Distinct()
+                .Where(group => group.MultiTile || group.Objects.Count > 1)
+                .OrderBy(group => group.Objects.Min(entity => entity.ObjectID)))
+            {
+                var master = group.Objects.Select(entity => entity.MasterDefinition).FirstOrDefault(definition => definition != null);
+                groups.Add(new JsonArray(group.MultiTile, master?.GUID.ToString("x8"),
+                    Values(group.Objects.Select(entity => entity.ObjectID))));
+            }
+            response["groups"] = groups;
             if (primitive == null)
             {
                 // ExecuteInstruction treats an opcode with no primitive as GOTO_TRUE.

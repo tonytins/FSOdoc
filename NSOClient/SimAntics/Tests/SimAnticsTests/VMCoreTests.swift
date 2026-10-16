@@ -214,10 +214,10 @@ struct RealOperandEncodingTests {
         try withVM { vm, chair throws in
             let other = try vm.addObject(guid: chairGUID, id: 5)
             let tile = LotPosition.center(ofTileX: 4, y: 4, level: 1)
-            vm.move(other, to: tile)
-            vm.move(chair, to: LotPosition(x: tile.x + 3, y: tile.y, level: 1)) // same tile, off center
+            try vm.move(other, to: tile)
+            try vm.move(chair, to: LotPosition(x: tile.x + 3, y: tile.y, level: 1)) // same tile, off center
             #expect(vm.objects(at: tile)?.map(\.objectID) == [1, 5])
-            vm.move(chair, to: .outOfWorld)
+            try vm.move(chair, to: .outOfWorld)
             #expect(vm.objects(at: tile)?.map(\.objectID) == [5])
             #expect(vm.objects(at: .outOfWorld)?.map(\.objectID) == [1])
             #expect(vm.objects(at: LotPosition.center(ofTileX: 9, y: 9, level: 1)) == nil)
@@ -227,7 +227,7 @@ struct RealOperandEncodingTests {
     @Test func sharesKeysPastTheLotEdgeAsFreeSODoes() throws {
         try withVM { vm, chair throws in
             vm.architecture = try Architecture(width: 10, height: 10)
-            vm.move(chair, to: LotPosition.center(ofTileX: 10, y: 0, level: 1)) // one past the edge
+            try vm.move(chair, to: LotPosition.center(ofTileX: 10, y: 0, level: 1)) // one past the edge
             #expect(vm.objects(at: LotPosition.center(ofTileX: 0, y: 1, level: 1))?.first === chair)
         }
     }

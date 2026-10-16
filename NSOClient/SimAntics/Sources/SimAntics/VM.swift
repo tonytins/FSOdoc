@@ -45,6 +45,20 @@ public final class VM {
     /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
     /// is listed once its category is set through object data, not when it's created.
     private var categoryIndex: [Int16: [Entity]] = [:]
+    /// Each room's entities, in object ID order (`VMRoomInfo.Entities`), for the rooms of
+    /// `roomListsGeneration`.
+    private var roomEntitiesStorage: [[Entity]] = []
+    private var roomListsGeneration: Architecture.Generation?
+    private var roomEntities: [[Entity]] {
+        get {
+            if roomListsGeneration !== architecture.generation { rebuildRoomLists() }
+            return roomEntitiesStorage
+        }
+        set {
+            if roomListsGeneration !== architecture.generation { rebuildRoomLists() }
+            roomEntitiesStorage = newValue
+        }
+    }
     private var nextTickID: UInt32 = 1
     private var routines: [RoutineKey: Routine] = [:]
 
@@ -123,17 +137,15 @@ public final class VM {
     /// master's file with the same master ID and a sub-index), in file order; anything else creates
     /// one entity. Every entity gets the lowest free object ID, then each is initialized in turn
     /// (``Entity/initialize()``, with the main parameter and stack object given), then the group
-    /// is placed.
+    /// is placed (``place(_:at:facing:flags:)``). If it doesn't fit, it stays out of the world.
     ///
-    /// - Throws: ``SimAnticsError/unsupported(_:)`` for a Sim, or a position in the world, which
-    ///   needs placement (not ported yet); any error an entity's init entry point throws.
+    /// - Throws: ``SimAnticsError/unsupported(_:)`` for a Sim; any error an entry point throws.
     @discardableResult
     public func createObject(guid: UInt32, at position: LotPosition = .outOfWorld, facing direction: Direction = .north,
                              mainStackObjectID: Int16 = 0, mainParameter: Int16 = 0) throws(SimAnticsError) -> MultitileGroup? {
         guard let object = try gameObject(guid: guid) else { return nil }
         let definition = object.definition
         guard definition.knownObjectType != .person else { throw .unsupported("creating a Sim needs Sims") }
-        guard position.isOutOfWorld else { throw .unsupported("placing an object in the world needs placement") }
 
         let group: MultitileGroup
         if definition.masterID != 0 && definition.subIndex == -1 {
@@ -160,7 +172,8 @@ public final class VM {
             entity.mainParameter = mainParameter
         }
         for entity in group.objects { try entity.initialize() }
-        moveOutOfWorld(group, facing: direction)
+        // FreeSO ignores whether this worked; an object that didn't fit stays out of the world.
+        try place(group, at: position, facing: direction)
         return group
     }
 
@@ -181,7 +194,7 @@ public final class VM {
             return
         }
         entity.isDead = true
-        removeFromTileIndex(entity)
+        leavePosition(entity)
         removeFromCategoryIndex(entity)
         if let index = entities.firstIndex(where: { $0 === entity }) {
             entities.remove(at: index)
@@ -192,6 +205,18 @@ public final class VM {
         entity.group.remove(entity)
         // A deleted entity never runs again; dropping its stack breaks the frames' references to it.
         entity.thread.stack.removeAll()
+    }
+
+    /// Puts entities already on the lot into one new group, in the order given, as a saved lot
+    /// or a test's rebuilt lot needs (`VMMultitileGroup.Load`). Each leaves its old group.
+    func regroup(_ parts: [Entity], isMultiTile: Bool, masterDefinition: OBJD?) {
+        let group = MultitileGroup(isMultiTile: isMultiTile)
+        for entity in parts {
+            entity.group.remove(entity)
+            entity.group = group
+            entity.masterDefinition = masterDefinition
+            group.add(entity)
+        }
     }
 
     private func gameObject(guid: UInt32) throws(SimAnticsError) -> GameObject? {
@@ -262,30 +287,150 @@ public final class VM {
         tileIndex[tileKey(position)]
     }
 
-    /// Moves every part of a group, keeping each one's facing, as `ChangePosition` does for a
-    /// position out of the world. Placing a group in the world needs placement (not ported yet).
-    func moveOutOfWorld(_ group: MultitileGroup, facing direction: Direction) {
-        for entity in group.objects {
-            entity.direction = direction
-            move(entity, to: .outOfWorld)
+    /// Moves an entity without checking whether it fits, as loading a saved lot does: it leaves its
+    /// old place (footprint, room, tile, walls), then takes the new one, as FreeSO's position change
+    /// does, but without running the placement entry point. To place an object as the game does,
+    /// use ``place(_:at:facing:flags:)``.
+    ///
+    /// - Throws: any error a dynamic multi-tile entry point throws.
+    public func move(_ entity: Entity, to position: LotPosition) throws(SimAnticsError) {
+        leavePosition(entity)
+        entity.position = position
+        try takePosition(entity, runsPlacementEntryPoint: false)
+    }
+
+    /// Places every part of a group, as `VMMultitileGroup.ChangePosition` does.
+    ///
+    /// Each part's offset is turned to the facing (a quarter turn per compass point; the diagonals
+    /// count as north) around the lead part, and each must pass ``Entity/placement(at:facing:flags:)``.
+    /// If one fails, every part goes back where it was, and the failure is returned. Otherwise each
+    /// moves and faces the new way, then each takes its place: room, footprint, walls, and the
+    /// placement entry point.
+    ///
+    /// - Throws: ``SimAnticsError/unsupported(_:)`` for stacking onto a slot (containment isn't
+    ///   ported); any error an entry point throws.
+    @discardableResult
+    public func place(_ group: MultitileGroup, at position: LotPosition, facing direction: Direction,
+                      flags: PlaceRequestFlags = []) throws(SimAnticsError) -> PlacementResult {
+        guard Int(position.level) <= Architecture.stories else { return PlacementResult(.notAllowedOnFloor) }
+        guard !group.objects.isEmpty, let lead = group.leadObject,
+              let leadIndex = group.objects.firstIndex(where: { $0 === lead }) else { return PlacementResult() }
+        let parts = group.objects
+        for part in parts { leavePosition(part) }
+
+        let leadOffset = group.offsets[leadIndex]
+        var targets: [LotPosition] = []
+        var results: [PlacementResult] = []
+        for (part, offset) in zip(parts, group.offsets) {
+            guard !position.isOutOfWorld else {
+                targets.append(.outOfWorld)
+                results.append(PlacementResult())
+                continue
+            }
+            let (dx, dy) = Self.turn(x: Int(offset.x) - Int(leadOffset.x), y: Int(offset.y) - Int(leadOffset.y),
+                                     quarterTurns: direction.wallOffset)
+            let target = LotPosition(x: Int16(truncatingIfNeeded: Int(position.x) + dx),
+                                     y: Int16(truncatingIfNeeded: Int(position.y) + dy),
+                                     level: Int8(truncatingIfNeeded: Int(position.level) + Int(offset.level)))
+            let result = try part.placement(at: target, facing: direction, flags: flags)
+            guard result.status == .success else {
+                // Back to where they were.
+                for part in parts { try takePosition(part, runsPlacementEntryPoint: true) }
+                return result
+            }
+            targets.append(target)
+            results.append(result)
+        }
+        for (part, (target, result)) in zip(parts, zip(targets, results)) {
+            if result.object != nil { throw .unsupported("stacking an object onto a slot needs containment") }
+            part.direction = direction
+            part.position = target
+        }
+        for part in parts { try takePosition(part, runsPlacementEntryPoint: true) }
+        return PlacementResult()
+    }
+
+    /// An offset turned clockwise by quarter turns, as FreeSO's rotation matrix turns it (exactly,
+    /// where FreeSO rounds a float rotation).
+    private static func turn(x: Int, y: Int, quarterTurns: Int) -> (Int, Int) {
+        switch quarterTurns {
+        case 1: (-y, x)
+        case 2: (-x, -y)
+        case 3: (y, -x)
+        default: (x, y)
         }
     }
 
-    /// Moves an entity, keeping the tile index and its room (object data 29) current, as FreeSO's
-    /// position change does. Footprints, portals, lighting, and the placement entry point come
-    /// with the rest of the lot model.
-    public func move(_ entity: Entity, to position: LotPosition) {
-        removeFromTileIndex(entity)
-        entity.position = position
-        entity.setRoom(architecture.room(at: position))
-        var list = tileIndex[tileKey(position)] ?? []
-        if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
-        tileIndex[tileKey(position)] = list
+    /// The entities in a room, in object ID order (`VMRoomInfo.Entities`), or none for an unknown room.
+    func entities(inRoom room: UInt16) -> [Entity] {
+        Int(room) < roomEntities.count ? roomEntities[Int(room)] : []
     }
 
-    /// Puts every entity in the room at its position, in object ID order (`RegeneratePortalInfo`).
+    /// `VMGameObject.PrePositionChange`: the entity leaves its place. Its footprint goes, it leaves
+    /// its room and tile, and in the world, a door or window takes its style off the walls and the
+    /// object stops using them.
+    func leavePosition(_ entity: Entity) {
+        entity.footprint = nil
+        unregisterPosition(entity)
+        guard !entity.position.isOutOfWorld, !architecture.isOutOfBounds(entity.position) else { return }
+        try? entity.setArchitecturalWallStyles(to: 0)          // in range, so these can't fail
+        try? entity.setWallUse(occupied: false, exclusive: entity.objectData[Int(ObjectVariable.exclusivePlacementFlags.rawValue)] & 2 != 0)
+    }
+
+    /// `VMGameObject.PositionChange`: the entity takes its place. It joins the room and tile; in the
+    /// world, a door or window puts its style on the walls, the object marks the walls it uses,
+    /// a dynamic multi-tile object joins its neighbors, and it gets a footprint and (unless loading)
+    /// runs the placement entry point.
+    func takePosition(_ entity: Entity, runsPlacementEntryPoint: Bool) throws(SimAnticsError) {
+        entity.setRoom(architecture.room(at: entity.position))
+        registerPosition(entity)
+        guard !entity.position.isOutOfWorld, !architecture.isOutOfBounds(entity.position) else { return }
+        try entity.setArchitecturalWallStyles(to: entity.object.definition.wallStyle)
+        try entity.setWallUse(occupied: true, exclusive: entity.objectData[Int(ObjectVariable.exclusivePlacementFlags.rawValue)] & 2 != 0)
+        if let table = entity.entryPoints, table.count > 8, table[8].actionFunction != 0 {
+            try entity.updateDynamicMultitile()
+        }
+        entity.footprint = entity.obstacle(at: entity.position, facing: entity.direction)
+        if runsPlacementEntryPoint { try entity.executeEntryPoint(.place, runImmediately: true) }
+    }
+
+    /// `RegisterObjectPos`: joins the room's list and the tile index, and records the room.
+    private func registerPosition(_ entity: Entity) {
+        guard entity.position.level >= 1 else { return }
+        let room = Int(architecture.room(at: entity.position))
+        if room < roomEntities.count { VMScheduler.insertInObjectIDOrder(entity, into: &roomEntities[room]) }
+        entity.setRoom(UInt16(room))
+        var list = tileIndex[tileKey(entity.position)] ?? []
+        if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
+        tileIndex[tileKey(entity.position)] = list
+    }
+
+    /// `UnregisterObjectPos`: leaves the room's list and the tile index.
+    private func unregisterPosition(_ entity: Entity) {
+        let room = Int(architecture.room(at: entity.position))
+        if room < roomEntities.count, let index = roomEntities[room].firstIndex(where: { $0 === entity }) {
+            roomEntities[room].remove(at: index)
+        }
+        removeFromTileIndex(entity)
+    }
+
+    /// Puts every entity in the room at its position, in object ID order, and rebuilds each room's
+    /// list (`RegeneratePortalInfo`).
     private func updateRooms() {
+        rebuildRoomLists()
         for entity in entities { entity.setRoom(architecture.room(at: entity.position)) }
+    }
+
+    /// Each room's list from the entities' positions. The lists are also rebuilt when the
+    /// architecture is replaced outright.
+    private func rebuildRoomLists() {
+        var lists = [[Entity]](repeating: [], count: architecture.rooms.count)
+        for entity in entities {
+            let room = Int(architecture.room(at: entity.position))
+            if room < lists.count { VMScheduler.insertInObjectIDOrder(entity, into: &lists[room]) }
+        }
+        roomEntitiesStorage = lists
+        roomListsGeneration = architecture.generation
     }
 
     private func removeFromTileIndex(_ entity: Entity) {

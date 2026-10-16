@@ -8,8 +8,6 @@ import TSOFiles
 /// containers and slots, and interactions aren't ported yet; reading values that need them
 /// throws ``SimAnticsError/unsupported(_:)``.
 ///
-/// A known gap in writes, which stores the value but skips a FreeSO side effect: `flags`
-/// doesn't recompute the footprint (no routing yet).
 public final class Entity {
     public let objectID: Int16
     public let object: GameObject
@@ -28,6 +26,17 @@ public final class Entity {
     /// 0 (`MainParam`), and the stack object's ID, when not 0 (`MainStackOBJ`). Both are used once.
     public var mainParameter: Int16 = 0
     public var mainStackObjectID: Int16 = 0
+
+    /// The rectangle the entity takes up on the lot, or `nil` out of the world or with no extent
+    /// (`Footprint`); placement keeps it current.
+    public internal(set) var footprint: Obstacle?
+    /// A group whose objects placement ignores, while an object is created underneath its creator
+    /// (`IgnoreIntersection`).
+    var ignoreIntersection: MultitileGroup?
+    /// The definition's container slots (`SLOT` slots of type 0), and how many the entity has once
+    /// initialized (`TotalSlots`).
+    let containerSlots: [SLOT.Slot]
+    public internal(set) var containerSlotCount = 0
 
     /// Whether the entity was deleted (`Dead`).
     public internal(set) var isDead = false
@@ -62,6 +71,11 @@ public final class Entity {
         self.vm = vm
         self.group = group ?? MultitileGroup(isMultiTile: false)
         entryPoints = try Self.entryPoints(of: object)
+        do {
+            containerSlots = try object.resource.chunk(SLOT.self, id: object.definition.slotID)?.slots(ofType: 0) ?? []
+        } catch {
+            throw .simantics("SLOT \(object.definition.slotID) doesn't parse: \(error)")
+        }
         objectData[Int(ObjectVariable.flags.rawValue)] |= Self.chairFacingFlag
         self.group.add(self)
     }
@@ -193,6 +207,7 @@ public final class Entity {
     /// Starts the entity, as `VMGameObject.Init` does: schedules it, runs init to completion,
     /// pushes main (with ``mainParameter`` and ``mainStackObjectID``), then disables it if the lot's category isn't one its definition allows.
     public func initialize() throws(SimAnticsError) {
+        containerSlotCount = containerSlots.count
         vm.scheduler.scheduleTick(for: self, in: 1)
         try executeEntryPoint(.initialize, runImmediately: true)
         var arguments: [Int16]?
@@ -297,6 +312,11 @@ public final class Entity {
             value = Int16((Int(value) + 65536) % 8)
             let step = objectData[Int(ObjectVariable.rotationNotches.rawValue)]
             direction = Direction(notch: Int(step > 1 ? value - value % step : value))
+        case .flags:
+            // FreeSO recomputes the footprint before storing the flags, so it still sees the old ones.
+            if (value ^ objectData[Int(ObjectVariable.flags.rawValue)]) & EntityFlag.hasZeroExtent != 0 {
+                footprint = obstacle(at: position, facing: direction)
+            }
         case .lockoutCount:
             lockoutTimestamp = vm.scheduler.currentTick
         case .fsoEngineQuery where value == 1:

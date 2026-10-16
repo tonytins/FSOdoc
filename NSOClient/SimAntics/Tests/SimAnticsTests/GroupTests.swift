@@ -4,11 +4,11 @@ import TSOFiles
 @testable import SimAntics
 
 /// A multi-tile table (master 0x200) with two parts, a part of another object, and a lone lamp.
-private let tableGUID: UInt32 = 0x200, leftGUID: UInt32 = 0x201, rightGUID: UInt32 = 0x202
-private let otherPartGUID: UInt32 = 0x203, lampGUID: UInt32 = 0x300
-private let masterID = 8, subIndex = 9, levelOffset = 54, myLeadObject = 61
+let tableGUID: UInt32 = 0x200, leftGUID: UInt32 = 0x201, rightGUID: UInt32 = 0x202
+let otherPartGUID: UInt32 = 0x203, lampGUID: UInt32 = 0x300
+let masterID = 8, subIndex = 9, levelOffset = 54, myLeadObject = 61
 
-private func withTable(rightLeads: Bool = false, _ body: (VM, Entity) throws -> Void) throws {
+func withTable(rightLeads: Bool = false, _ body: (VM, Entity) throws -> Void) throws {
     try withVM(chair: [
         objdChunk(label: "table", guid: tableGUID, words: [masterID: 5, subIndex: 0xFFFF], id: 129),
         objdChunk(label: "table left", guid: leftGUID, words: [masterID: 5, subIndex: 0x0000], id: 130),
@@ -48,15 +48,6 @@ private func withTable(rightLeads: Bool = false, _ body: (VM, Entity) throws -> 
             #expect(!lamp.isMultiTile && lamp.objects.map(\.objectID) == [2])
             #expect(lamp.objects[0].direction == .east && lamp.objects[0].masterDefinition == nil)
             #expect(try vm.createObject(guid: 0x9999) == nil)
-        }
-    }
-
-    @Test func refusesWhatIsNotPortedYet() throws {
-        try withTable { vm, _ throws in
-            #expect(throws: SimAnticsError.unsupported("placing an object in the world needs placement")) {
-                try vm.createObject(guid: lampGUID, at: .center(ofTileX: 1, y: 1, level: 1))
-            }
-            #expect(vm.entities.count == 1)
         }
     }
 

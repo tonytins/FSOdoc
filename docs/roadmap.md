@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase C1: multi-tile groups, object creation, and deletion) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase C2: placement in the world) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -52,7 +52,7 @@ In order:
    - [ ] C. In three steps:
      - [x] C1. Multi-tile groups, object creation as `CreateObjectInstance` does it, deletion, and the
        Create Object Instance primitive out of the world.
-     - [ ] C2. Placement in the world: footprints, placement checks, and the placement entry point.
+     - [x] C2. Placement in the world: footprints, placement checks, and the placement entry point.
      - [ ] C3. Slots and containment.
    - [ ] D. Lot loading from blueprint XML, then `run-lot` digests compared with FreeSO tick by tick.
 2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
@@ -80,7 +80,7 @@ criteria met, not lines written.
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: FreeSO SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single FreeSO primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
-| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 48% | 86–140 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), and C1 (multi-tile groups, creation, deletion) are done. |
+| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 52% | 79–129 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), C1 (multi-tile groups, creation, deletion), and C2 (placement) are done. |
 | Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 16% | 71–113 | Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, Test Object Type, and Create Object Instance (out of the world) done. `run-objects` ranks the rest by how many objects each blocks; the biggest blockers now come with the lot model. |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
 | Terra Tablante | Saves: marshals, version 19 read and write, hollow saves | 1,572 | 20–30 | 0% | 20–30 | Must read saves written by FreeSO servers. |
@@ -89,7 +89,7 @@ criteria met, not lines written.
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
 | Charvatia | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT`, and field-encoded strings | 764 | 5–8 | 0% | 5–8 | Only TS1 hybrid mode reads these; a TSO install contains none (checked 2026-10-15). Deferred by the owner; port it when TS1 hybrid is needed, ideally checked against a TS1 install. `OBJM` is decoded by heuristic search in FreeSO. |
 | Yatesport | SimsScript: a text assembly for BHAVs, an LSL-like language that compiles to them, a decompiler from existing objects, LSL `state`s and interactions, editor support | new | 70–120 | 5% | 67–114 | Later, after alpha; not counted in the totals below. Proof of concept in `NSOClient/SimsScript` (decision 5). |
-| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 18% ready** | **≈ 435–690** | |
+| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 18% ready** | **≈ 428–679** | |
 
 ## Upcoming milestones, ranked
 
@@ -155,6 +155,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Queen Margaret's third pass, phase C2: placement as `ChangePosition` does it: footprints, the bounds, wall, floor, and overlap checks, multi-tile offsets turned with the facing and undone when a part doesn't fit, room entity lists, wall use, door and window wall styles, dynamic multi-tile joining, and the placement entry point. Create Object Instance now places in the world; all 1,167 of its 1,255 cases the port can run match, 672 of them placed objects. `run-primitive` now reports lot objects' state (object data, attributes, footprint) and groups, so tests rebuild the lot exactly. The owner's house (`NSOClient/Lots`, 564 walls, 211 objects) joined the room-map comparison and matches; the oracle now leaves out objects FreeSO can't load on the install, such as one whose FreeSO patch doesn't fit the 2002 files. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase C1: multi-tile groups (`MultitileGroup`), object creation as `CreateObjectInstance` does it, deletion of objects that keep failing, Set To Next's part search, and the Create Object Instance primitive out of the world (all 314 of 475 cases the port can run match). The oracle fixtures now come from the 2002 production copy; every comparison still matches, and objects running alone and matching FreeSO went from 2,163 to 2,597. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase B: walls and floors (`Architecture`), FreeSO's room flood fill, rooms by position, entities' rooms, room data (scope 23), and walls and floors from blueprint XML. `fso-oracle room-maps` dumps FreeSO's room maps; all 61 lots compared (FreeSO's empty lot and 60 synthetic ones with walls, fences, diagonals, pools, and upper floors) match. Expression matches on 3,785 cases, and objects running alone and matching FreeSO went from 1,932 to 1,988. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase A: `LotPosition`, `Direction`, entity positions, and the tile index keyed as FreeSO does. Set To Next's same-tile and adjacent searches and Expression's upstairs test now work, matching FreeSO on all 212 and 3,734 cases; objects running alone and matching FreeSO went from 1,914 to 1,932. `run-primitive` reports lot objects' positions, facings, and the lot size. |

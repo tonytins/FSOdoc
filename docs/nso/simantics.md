@@ -90,8 +90,8 @@ door.reset()                       // clears the stack, runs cleanup, queues mai
 3. Each entity is **initialized** in turn: it's scheduled for the next tick, its init entry point
    runs to completion, and `main` is queued, with argument 0 and the stack object that the creator
    passed. An object whose definition doesn't allow the lot's category is disabled.
-4. The group is **placed**. Only out of the world for now; a position on the lot needs placement
-   checks, which come next.
+4. The group is **placed** with `VM.place` ([lot.md](lot.md#placing-objects)). An object that
+   doesn't fit stays out of the world.
 
 ```swift
 if let table = try vm.createObject(guid: tableGUID) {        // a multi-tile master
@@ -191,7 +191,7 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |
-| 42 | `CreateObjectInstance` | Creates an object and makes it the stack object (out of the world only, so far) |
+| 42 | `CreateObjectInstance` | Creates an object beside, in front of, or under another, and makes it the stack object |
 
 A VM can run its own table, which is how extensions will add primitives without touching the
 ported ones:

@@ -320,24 +320,33 @@ options:
         }
 
         /// <summary>
-        /// Reads blueprint XML, dropping objects the install doesn't have.
+        /// Reads blueprint XML, dropping objects the install doesn't have or FreeSO can't load.
         /// </summary>
         /// <remarks>
         /// FreeSO's blueprints assume TSO's 2003 production files. On an older install
-        /// (such as the 2002 beta) some objects don't exist, and FreeSO's activator fails
-        /// on a missing object, so they're left out and reported. The Swift side must load
-        /// the same adapted lot.
+        /// (such as the 2002 beta) some objects don't exist, or carry a FreeSO patch that doesn't
+        /// fit them, and FreeSO's activator fails on either, so they're left out and reported.
+        /// The Swift side must load the same adapted lot.
         /// </remarks>
         private static byte[] BlueprintForInstall(string path)
         {
             var document = XDocument.Load(path);
             var objects = Content.Content.Get().WorldObjects;
-            var missing = document.Descendants("object")
-                .Where(element => objects.Get(Convert.ToUInt32((string)element.Attribute("guid"), 16)) == null)
-                .ToList();
-            foreach (var element in missing)
+            foreach (var element in document.Descendants("object").ToList())
             {
-                Console.Error.WriteLine($"fso-oracle: the install has no object {(string)element.Attribute("guid")}; left out of the lot");
+                var guid = (string)element.Attribute("guid");
+                string problem = null;
+                try
+                {
+                    if (objects.Get(Convert.ToUInt32(guid, 16)) == null) problem = "the install has no object";
+                }
+                catch (Exception error)
+                {
+                    // Such as a FreeSO patch written for the 2003 files that doesn't fit this install.
+                    problem = $"FreeSO can't load ({error.GetType().Name}) object";
+                }
+                if (problem == null) continue;
+                Console.Error.WriteLine($"fso-oracle: {problem} {guid}; left out of the lot");
                 element.Remove();
             }
             using var stream = new MemoryStream();

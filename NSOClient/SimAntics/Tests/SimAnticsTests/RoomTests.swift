@@ -3,8 +3,12 @@ import Testing
 import TSOContent
 @testable import SimAntics
 
-/// Compares room generation with `fso-oracle room-maps` over FreeSO's empty lot and the
-/// synthetic blueprints from `OracleCases/make_blueprints.py`.
+/// The owner's lots, in `NSOClient/Lots`.
+let ownerLotsDirectory = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent().appendingPathComponent("../../../Lots").standardizedFileURL
+
+/// Compares room generation with `fso-oracle room-maps` over FreeSO's empty lot, the owner's lots,
+/// and the synthetic blueprints from `OracleCases/make_blueprints.py`.
 @Suite(.enabled(if: oracleDirectory != nil, "TSO_ORACLE_DIR is not set"))
 struct OracleRoomMapTests {
     @Test func matchesFreeSO() throws {
@@ -14,7 +18,8 @@ struct OracleRoomMapTests {
             let file = try required(response["file"] as? String)
             guard response["error"] == nil else { continue }
             let candidates = [directory.appendingPathComponent("blueprints/\(file)"),
-                              freeSOContentDirectory.appendingPathComponent("Blueprints/\(file)")]
+                              freeSOContentDirectory.appendingPathComponent("Blueprints/\(file)"),
+                              ownerLotsDirectory.appendingPathComponent(file)]
             let url = try required(candidates.first { FileManager.default.fileExists(atPath: $0.path) }, "blueprint \(file)")
             let architecture = try Blueprint(xml: try Data(contentsOf: url)).architecture()
 
@@ -178,18 +183,18 @@ struct RoomTests {
             architecture.regenerateRooms()
             vm.architecture = architecture
             let room = Int(ObjectVariable.room.rawValue)
-            vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 1))
+            try vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 1))
             #expect(chair.objectData[room] == 2)
-            vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 2))
+            try vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 2))
             #expect(chair.objectData[room] == 3) // the ground floor has rooms 1 and 2
-            vm.move(chair, to: .outOfWorld)
+            try vm.move(chair, to: .outOfWorld)
             #expect(chair.objectData[room] == 0)
         }
     }
 
     @Test func changesTakeEffectOnTheNextTick() throws {
         try withVM { vm, chair throws in
-            vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 1))
+            try vm.move(chair, to: .center(ofTileX: 2, y: 2, level: 1))
             let room = Int(ObjectVariable.room.rawValue)
             #expect(chair.objectData[room] == 1)
             try vm.architecture.setFloor(Architecture.poolPattern, atX: 2, y: 2, level: 1)
@@ -202,7 +207,7 @@ struct RoomTests {
 
     @Test func loadingABlueprintPutsEntitiesInRooms() throws {
         try withVM { vm, chair throws in
-            vm.move(chair, to: .center(ofTileX: 1, y: 1, level: 1))
+            try vm.move(chair, to: .center(ofTileX: 1, y: 1, level: 1))
             let xml = "<house><size>4</size><world><pools><pool x=\"1\" y=\"1\"/></pools></world></house>"
             try vm.load(try Blueprint(xml: Data(xml.utf8)))
             #expect(vm.lotSize.width == 4 && vm.lotSize.height == 4)
