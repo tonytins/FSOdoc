@@ -1,7 +1,7 @@
 # Documentation
 
 This folder documents two things: the FreeSO source code as of August 9, 2017 (the snapshot in
-[`TSOClient/`](../TSOClient/)), and NSOClient, the Swift rewrite of its engine-free libraries (in
+[`TSOClient/`](../TSOClient/)), and NSOClient, a new Swift reimplementation of its engine-free libraries (in
 [`NSOClient/`](../NSOClient/)). It also holds a copy of the community SimAntics reference.
 
 ## Where to start
@@ -30,14 +30,14 @@ scorecard and the roadmap disagree, the scorecard wins.
 
 ### [fso/](fso/README.md): the 2017 FreeSO snapshot
 
-Written from reading the source. Each page says how the code works in 2017 and how to rewrite it
-on modern .NET.
+Written from reading the source. Each page says how the code works in 2017. The "Modern .NET
+rewrite" sections are from an earlier goal and kept only for reference.
 
 | Page | Covers |
 | --- | --- |
 | [README.md](fso/README.md) | Index, coverage, and conventions |
 | [architecture.md](fso/architecture.md) | Layers, project dependencies, runtime flows |
-| [modernization.md](fso/modernization.md) | The modern .NET rewrite plan: layout, replacements, phases, risks |
+| [modernization.md](fso/modernization.md) | The earlier modern .NET rewrite plan, kept for reference |
 | [common.md](fso/common.md) | FSO.Common: settings, rendering framework, threading, utilities |
 | [files.md](fso/files.md) | FSO.Files: FAR, DBPF, IFF and its chunks, PIFF patches, OTF, audio and image formats |
 | [content.md](fso/content.md) | FSO.Content: finding the game, providers, objects, TS1 hybrid mode |

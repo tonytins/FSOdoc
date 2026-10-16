@@ -1,10 +1,10 @@
 # SimsCraft: the 2017 FreeSO snapshot
 
 These pages explain the FreeSO source code as of August 9, 2017 (the
-snapshot in [`TSOClient/`](../../TSOClient/)), and how to rewrite it on
-modern, cross-platform .NET. Each page has two parts: **How it works
-(2017)** describes the code as it is, and **Modern .NET rewrite** says
-what to change.
+snapshot in [`TSOClient/`](../../TSOClient/)), the reference that NSOClient's
+Swift reimplementation draws on. **How it works (2017)** describes the code as
+it is. The **Modern .NET rewrite** sections come from an earlier goal of
+rewriting FreeSO on .NET; they're kept for reference and no longer maintained.
 
 Everything here comes from reading the source. Nothing was built or run.
 Claims that couldn't be confirmed in the code are marked **Unverified**.

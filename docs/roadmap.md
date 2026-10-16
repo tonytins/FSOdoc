@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Sleep ported: 800 objects now run alone exactly as in 2017) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (goals revised: NSOClient matches FreeSO's results, not its code; decision 3 settled) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -116,8 +116,10 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
    whole-lot replays using FreeSO's own lockstep stream (an initial `VMMarshal` plus `VMNetTickList`
    batches) and a state digest that both sides compute the same way. Recordings are generated from
    `TSO_GAME_DIR` and not committed. AGENTS.md allows `dotnet` for this tool only.
-3. **Wire compatibility of lockstep commands.** Byte-for-byte with 2017 (mixed clients possible), or
-   a new encoding. Recommended: byte-for-byte; it doubles as a fidelity check.
+3. **Wire compatibility of lockstep commands.** Decided (2026-10-16): not a requirement. FreeSO's
+   server protocol began as an attempt to talk to the original TSO client and still carries code
+   from then, though it later stopped being compatible; NSOClient doesn't hold to it. Matching
+   2017's commands byte for byte stays an option where it doubles as a fidelity check.
 4. **Editing support.** PIFF encoding and `IffFile` change tracking only matter for an editor. Port
    them now, or defer. Recommended: defer.
 5. **Scripting.** Decided (2026-10-16): an LSL-like language for both editing existing objects and
@@ -150,6 +152,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Goals revised: the modern .NET rewrite is no longer a goal, and NSOClient is a new reimplementation that matches FreeSO's results rather than its code. Decision 3 settled: FreeSO's network protocol isn't a compatibility target. |
 | 2026-10-16 | minor | Sleep ported and matching 2017 on all 135 oracle cases. Objects that run alone and match 2017 digest for digest went from 6 to 800. `run-primitive` gained the thread's idle start, interrupt flag, and scheduled tick, and the oracle fixtures now cover each ported primitive by name. |
 | 2026-10-16 | minor | Decision 5 (scripting): an LSL-like language for editing and authoring, as a later milestone, Yatesport, outside the alpha totals. Proof of concept added: `BHAV.encoded()` and operand encoders (every Expression and call operand in the install re-encodes to its bytes), a text assembly that round-trips all 15,723 routines, and a compiler for a small LSL-like subset whose output runs on the Swift VM. |
 | 2026-10-16 | minor | Queen Margaret's second pass: entry points (tables match 2017 for all 2,649 objects), init and reset, check threads, error handling, the clock, the scheduler, `VM.tick()`, object definition fields, and a version 0 state digest. `fso-oracle run-objects` runs each object alone; the 6 the port can run match 2017's digests over 30 ticks, and the rest rank the unported primitives by how many objects they block. Expression now matches on 3,691 cases. Lot loading moved to a third pass: it needs the lot model, multi-tile groups, and most primitives, so whole-lot digests come after Rancho Rizzo's first part. Found and fixed two port bugs: unported primitives silently took the true branch, and direction writes ignored the rotation step. |

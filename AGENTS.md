@@ -11,18 +11,18 @@ The project's goals:
 
 1. Explain the 2017 codebase: what each project does, how the pieces fit,
    and how data flows through the client, the simulation, and the servers.
-2. Serve as a guide for rewriting it on modern, cross-platform .NET (SDK-style
-   projects, .NET 10 LTS at the time of writing) that runs on Windows,
-   Linux, and macOS.
-3. Rewrite FreeSO's engine-free libraries in **Swift** as independent
-   packages under [NSOClient/](./NSOClient/): TSOFiles (file formats),
-   TSOContent (the content system), and SimAntics (the VM), compatible with
-   FreeSO and the TSO beta (see Library rules, rule 2).
-4. Go past that baseline: extend SimAntics (such as the
+   This is the reference the reimplementation draws on.
+2. Reimplement the engine-free parts in **Swift** as independent packages
+   under [NSOClient/](./NSOClient/): TSOFiles (file formats), TSOContent
+   (the content system), and SimAntics (the VM). This is a new
+   implementation, not a line-by-line port: it must reach the same results
+   as FreeSO and keep the TSO beta working (see Library rules, rule 2), and
+   it's free to get there its own way.
+3. Go past that baseline: extend SimAntics (such as the
    [scripting proof of concept](./NSOClient/SimsScript/README.md)) and,
    later, support older games' data, such as The Sims 1.
 
-The first two goals produce Markdown under [docs/fso/](./docs/fso/). The
+The first goal produces Markdown under [docs/](./docs/README.md). The
 others produce Swift packages, planned in [docs/roadmap.md](./docs/roadmap.md) and
 tracked in [docs/scorecard.md](./docs/scorecard.md). This is solo work held to
 production standards. Read this file first, then
@@ -40,17 +40,17 @@ docs/                        the Markdown documentation
   fso/                       documentation of the 2017 FreeSO snapshot
     README.md                index, coverage table, and conventions (start here)
     architecture.md          layers, dependency graph, runtime flows
-    modernization.md         C# rewrite plan: layout, replacements, phases, decisions, risks
+    modernization.md         the earlier modern .NET rewrite plan, kept for reference (no longer a goal)
     common.md, files.md, content.md, simantics.md, rendering.md,
     audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
   simantics/                 SimAntics Wiki pages in Markdown, with notes against 2017 (CC BY-SA 3.0, see its README)
 .agents/skills/
-  dotnet-guidelines/         C# and .NET conventions for the rewrite guidance
+  dotnet-guidelines/         C# and .NET conventions, for the oracle
   swift-guidelines/          Swift conventions for the NSOClient packages
 TSOClient/                   the 2017 FreeSO snapshot (all paths below are relative to it)
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
-NSOClient/                   Swift rewrite of the engine-free libraries (independent SwiftPM packages)
+NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
   Oracle/                    .NET tool that runs the 2017 SimAntics sources headless, for reference results
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
@@ -197,17 +197,31 @@ These apply to everything under [NSOClient/](./NSOClient/).
    results. Command-line executables such as `tsofiles-check` may print.
 2. **Compatibility is the baseline, not the ceiling.** Every change keeps
    two baselines:
-   - **FreeSO.** The 2017 snapshot is the specification for the behavior it
-     has. Read the C# before writing the Swift, match it on valid input
-     (quirks included) and on TSO's 2003 production files, which FreeSO
-     targets, and name the C# type a Swift type ports in its doc comment.
-     Differ only to avoid a crash, to reject hostile input, or to fix a
-     clear bug, and record each difference in the doc comment and in the
-     scorecard's "Known differences from 2017". Check against `fso-oracle`
-     where 2017 has an answer.
+   - **FreeSO.** Match the results FreeSO's 2017 snapshot gives, not its
+     code. On valid input and on TSO's 2003 production files, which FreeSO
+     targets, the observable behavior must agree, including quirks that
+     change results (SimAntics state, what loads and how), and `fso-oracle`
+     checks it wherever 2017 has an answer. How the Swift gets there is
+     ours: choose the structure, names, and algorithms that suit Swift, and
+     take creative liberties where they reach the same results more simply.
+     Say in the doc comment which 2017 type a Swift type corresponds to, so
+     the two can be cross-checked. Where the results do differ (to avoid a
+     crash, reject hostile input, fix a clear bug, or replace a FreeSO
+     workaround), record it in the doc comment and in the scorecard's
+     "Known differences from 2017".
    - **The TSO beta.** The owner's 2002 beta install must keep working.
      Where its files differ from production, degrade gracefully: skip what
      doesn't fit, report it, and keep going, never fail outright.
+
+   Learn from everything available: the 2017 code, the
+   [SimAntics Wiki copy](./docs/simantics/README.md), and the wider Sims
+   community's documentation, such as
+   [SimsWiki](https://simswiki.info/wiki.php?title=Main_Page) and its
+   [Sims 2 pages](https://simswiki.info/wiki.php?title=Sims_2:Main_Page).
+   Sims 2 material often applies: The Sims 2 grew out of The Sims 1 and kept its
+   behavior engine, and TSO introduced formats such as DBPF that later games
+   built on. Treat these as leads to verify against the code or the oracle,
+   and cite them where they shaped a design.
 
    Past the baseline, new behavior is welcome: SimAntics extensions,
    scripting, and support for older games' data. An addition must not
@@ -271,44 +285,22 @@ These apply to everything under [NSOClient/](./NSOClient/).
   belongs to EA/Maxis and isn't in this repo. Document formats and how the
   code reads them, but never paste or reconstruct game data.
 
-#### Separate the two goals
-
-Each doc keeps "how it works" apart from "how to rewrite it":
+#### What a page holds
 
 - **How it works (2017)** describes the code as it is, including its
-  Windows-only parts, without judging them.
-- **Modern .NET rewrite** gives a concrete plan: target framework, project
-  layout, which APIs and packages replace the old ones, and what to check.
-  Follow the [.NET guidelines skill](./.agents/skills/dotnet-guidelines/SKILL.md).
-
-#### Cross-platform is the bar
-
-The rewrite guidance must run on Windows, Linux, and macOS. For every
-subsystem, call out what blocks that and propose a replacement:
-
-- WinForms (FSO.IDE, FSO.Debug, FSO.Server.Debug, FSO.Patcher,
-  FSOInstaller): name a cross-platform UI option, and say when a tool is
-  better as a CLI or dropped.
-- `[DllImport]` and checked-in native binaries: name the cross-platform
-  package or the per-OS native asset layout (`runtimes/<rid>/native`).
-- `System.Drawing`, `BinaryFormatter`, `System.Web`, OWIN, Nancy, ASP.NET
-  MVC/Web API, `app.config`/`ConfigurationManager`, and the registry: give
-  the modern equivalent (for example ImageSharp or SkiaSharp, an explicit
-  serializer, ASP.NET Core, and `Microsoft.Extensions.Configuration`).
-- File paths: case sensitivity, `\` separators, and hard-coded Windows
-  install paths.
-- Stock MonoGame (DesktopGL) versus the FSOMonoGame fork: list what the
-  fork adds that the snapshot depends on.
-- Wire and file compatibility: changes that would break the protocol, the
-  database schema, or reading the original game files must be called out,
-  not slipped in.
+  Windows-only parts, without judging them. This is what new pages write.
+- **Modern .NET rewrite** sections come from an earlier goal of rewriting
+  FreeSO on modern .NET. Keep them for reference, but don't add new ones or
+  expand them.
+- Where something matters to NSOClient (a quirk to keep, a trap, a format
+  detail the code hides), say so in a short note.
 
 #### Don't run dotnet
 
 Don't run the `dotnet` command, `msbuild`, `mono`, or `nuget`. The
 snapshot doesn't build as-is on Linux, so findings come from reading code,
 project files, and `packages.config`. Use `grep`, `find`, `git`, and
-ordinary shell tools. Never present rewrite code as compiled or tested.
+ordinary shell tools.
 
 **One exception: the SimAntics oracle.** `NSOClient/Oracle/` is a small
 .NET console tool that compiles the 2017 SimAntics, Files, and Content
@@ -323,7 +315,9 @@ change a file under `TSOClient/`.
 
 ## 3. Code style
 
-This covers the docs and any C# shown in them.
+This covers the docs and any code shown in them. Swift follows the
+[Swift guidelines](./.agents/skills/swift-guidelines/SKILL.md); C# in the
+oracle follows the [.NET guidelines](./.agents/skills/dotnet-guidelines/SKILL.md).
 
 ### Markdown
 
@@ -339,22 +333,11 @@ This covers the docs and any C# shown in them.
 - Use Mermaid only where a diagram explains a flow or dependency better
   than prose.
 
-### C# in the docs
+### Code in the docs
 
 - **Quoting the snapshot:** quote it verbatim and keep it short, with its
   file path. Don't restyle quoted code.
-- **Rewrite examples:** follow the
-  [.NET guidelines skill](./.agents/skills/dotnet-guidelines/SKILL.md).
-  Use SDK-style projects, `net10.0`, nullable reference types, file-scoped
-  namespaces, `Directory.Build.props` and central package management, the
-  `Microsoft.Extensions.*` stack (hosting, DI, logging, configuration) in
-  place of Ninject, NLog, and Common.Logging, and `async`/`await` with
-  `CancellationToken` for I/O.
-- Keep examples minimal and label them as sketches. Show the shape of the
-  replacement, not a full port.
-- Prefer the BCL and well-maintained packages. Every package you
-  recommend gets its name and a reason. New dependencies are suggestions
-  for the owner to approve.
+- **Examples:** keep them minimal and label them as sketches.
 
 ## 4. Before you finish a task
 
@@ -430,9 +413,11 @@ The owner often reviews changes alone, so make review easy:
 - List what you documented, what you skipped, and what's still undocumented.
 - List every **Unverified** claim and anything you couldn't trace in the
   code, such as behavior that depends on the missing submodules.
-- State rewrite recommendations that break compatibility clearly: the
-  wire protocol, the database schema, save and lot formats, or reading the
-  original TSO files.
+- State clearly anything that would break compatibility: save and lot
+  formats, or reading the original TSO files. FreeSO's network protocol
+  isn't a target: it carries leftovers from early attempts to talk to the
+  original client, and NSOClient doesn't need to keep them (roadmap
+  decision 3).
 - State new dependencies and framework choices, with the alternative you
   weighed, as judgment calls for the owner to decide.
 - For NSOClient, list every deliberate difference from the 2017 behavior
