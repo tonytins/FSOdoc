@@ -146,15 +146,31 @@ import TSOFiles
     @Test func describesChangedEntries() {
         var differences = InstallDifferences()
         differences.identicalFileCount = 3
-        differences.changedFiles = [FileDifference(path: "objiff.far", firstSize: 10, secondSize: 12, kind: .far1, entries: [
-            EntryDifference(name: "chair.iff: OBJD #128", change: .changed, guid: "000000ab"),
-            EntryDifference(name: "a|b.iff", change: .onlyInSecond, guid: nil),
-        ])]
+        differences.changedFiles = [
+            FileDifference(path: "objiff.far", firstSize: 10, secondSize: 12, kind: .far1, entries: [
+                EntryDifference(name: "a|b.iff", change: .onlyInSecond),
+                EntryDifference(name: "chair.iff: BHAV #4096", change: .onlyInFirst),
+                EntryDifference(name: "chair.iff: BHAV #4097", change: .onlyInFirst),
+                EntryDifference(name: "chair.iff: OBJD #128", change: .changed, guid: "000000ab"),
+                EntryDifference(name: "chair.iff: STR# #128", change: .changed),
+            ]),
+            FileDifference(path: "global.iff", firstSize: 1, secondSize: 2, kind: .iff, entries: [
+                EntryDifference(name: "BCON #4096", change: .onlyInSecond),
+            ]),
+            FileDifference(path: "meshes.dat", firstSize: 5, secondSize: 6, kind: .far3, entries: [
+                EntryDifference(name: "a.mesh [1]", change: .onlyInFirst),
+                EntryDifference(name: "b.mesh [2]", change: .changed),
+                EntryDifference(name: "c.mesh [3]", change: .changed),
+            ]),
+        ]
         let text = DifferencesReport.markdown(differences, first: "TSO_GAME_DIR", second: "TSO_BETA_DIR", date: Date(timeIntervalSince1970: 0))
         #expect(text.contains("| Identical | 3 |"))
         #expect(text.contains("FAR1, 10 bytes in `TSO_GAME_DIR`, 12 in `TSO_BETA_DIR`."))
-        #expect(text.contains("| `chair.iff: OBJD #128` | changed | 000000ab |"))
-        #expect(text.contains("| `a\\|b.iff` | only in `TSO_BETA_DIR` |  |"))
+        #expect(text.contains("| `a\\|b.iff` |  | whole entry |  |  |"))
+        #expect(text.contains("| `chair.iff` | BHAV 4096, 4097 |  | OBJD 128; STR# 128 | 000000ab |"))
+        #expect(text.contains("| `(this file)` |  | BCON 4096 |  |  |"))
+        #expect(text.contains("Entries only in `TSO_GAME_DIR`: 1, only in `TSO_BETA_DIR`: 0, changed: 2."))
+        #expect(!text.contains("a.mesh"))
         #expect(!text.contains("The installs are identical."))
     }
 }
