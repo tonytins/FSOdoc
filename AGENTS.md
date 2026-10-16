@@ -43,6 +43,7 @@ docs/                        the Markdown documentation
     modernization.md         the earlier modern .NET rewrite plan, kept for reference (no longer a goal)
     common.md, files.md, content.md, simantics.md, rendering.md,
     audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
+    future/                  FreeSO's branches before and after the snapshot (lot-serialize, server-rebuild, upgrades, lotview-refactor)
   simantics/                 SimAntics Wiki pages in Markdown, with notes against 2017 (CC BY-SA 3.0, see its README)
   nso/                       how NSOClient's code behaves, with examples (keep it current when behavior changes)
   install-differences.md     how the TSO_GAME_DIR and TSO_BETA_DIR installs differ (written once by tsofiles-check)
@@ -124,11 +125,6 @@ MySql.Data, Nancy, OWIN, ASP.NET MVC/Web API, RestSharp, Portable.JWT,
 BouncyCastle, LuaInterface, GOLD Engine, Lidgren.Network.
 
 Build output (`bin/`, `obj/`, `packages/`) is ignored; never commit it.
-
-`Stash/` may exist at the root and is ignored. It's the owner's personal
-space for brainstormed material and notes. Read it for context when it
-helps, but treat it as drafts rather than decisions, and don't depend on it
-from docs.
 
 ## 2. Golden rules
 
@@ -226,7 +222,11 @@ These apply to everything under [NSOClient/](./NSOClient/).
    [SimAntics Wiki copy](./docs/simantics/README.md), and the wider Sims
    community's documentation, such as
    [SimsWiki](https://simswiki.info/wiki.php?title=Main_Page) and its
-   [Sims 2 pages](https://simswiki.info/wiki.php?title=Sims_2:Main_Page).
+   [Sims 2 pages](https://simswiki.info/wiki.php?title=Sims_2:Main_Page), and
+   [TheSimsOpenTechDoc](https://github.com/DnfJeff/TheSimsOpenTechDoc), a six-part
+   reference for The Sims 1's formats: FAR and IFF containers, OBJD, BHAV and the
+   VM, TTAB and SLOT, sprites and draw groups, characters and animation, careers,
+   string tables, and function constants. Most of it carries over to TSO's objects.
    Sims 2 material often applies: The Sims 2 grew out of The Sims 1 and kept its
    behavior engine, and TSO introduced formats such as DBPF that later games
    built on. Treat these as leads to verify against the code or the oracle,

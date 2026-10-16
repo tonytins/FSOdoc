@@ -4,8 +4,8 @@
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
-What the 2017 code does, and why, is in [fso/](fso/README.md); the Swift design is sketched in
-`Stash/swift-ada-vapor.md` (local only).
+What the 2017 code does, and why, is in [fso/](fso/README.md); how the Swift code behaves is in
+[nso/](nso/README.md).
 
 Keep it current: at the end of every session, update the milestone rows, the scorecard, and the
 revision history. Re-estimate when a milestone lands.

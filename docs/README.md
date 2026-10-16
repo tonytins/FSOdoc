@@ -69,6 +69,7 @@ rewrite" sections are from an earlier goal and kept only for reference.
 | [client.md](fso/client.md) | FSO.Client and FSO.UI |
 | [server.md](fso/server.md) | FSO.Server: city and lot servers, database, watchdog |
 | [tools.md](fso/tools.md) | Volcanic IDE, debug tools, patcher, installer, Charvatia |
+| [future/](fso/future/README.md) | FreeSO's branches before and after the snapshot: lot serialization, the server rebuild, and 2017–2019 development |
 
 ### [simantics/](simantics/README.md): the SimAntics Wiki, in Markdown
 

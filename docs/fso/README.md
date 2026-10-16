@@ -32,6 +32,12 @@ Claims that couldn't be confirmed in the code are marked **Unverified**.
 | [server.md](./server.md) | FSO.Server and its libraries: services, city and lot servers, database, watchdog |
 | [tools.md](./tools.md) | Volcanic IDE, debug tools, patcher, FSOInstaller, Charvatia, `Other/` |
 
+## Beyond the snapshot
+
+[future/](./future/README.md) covers FreeSO's branches in this repository: the two that led into
+the snapshot (`lot-serialize`, `feature/server-rebuild`) and the two that carry its development
+afterward, to October 2019 (`feature/upgrades`, `feature/lotview-refactor`).
+
 ## Coverage
 
 Every project in the repository is covered by at least an overview. Depth
