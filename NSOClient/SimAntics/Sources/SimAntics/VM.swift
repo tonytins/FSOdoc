@@ -32,6 +32,9 @@ public final class VM {
     }
 
     private var entitiesByID: [Int16: Entity] = [:]
+    /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
+    /// is listed once its category is set through object data, not when it's created.
+    private var categoryIndex: [Int16: [Entity]] = [:]
     private var nextTickID: UInt32 = 1
     private var routines: [RoutineKey: Routine] = [:]
 
@@ -109,6 +112,30 @@ public final class VM {
 
     func report(_ error: SimAnticsError, by entity: Entity) {
         reportedErrors.append(ReportedError(objectID: entity.objectID, tick: scheduler.currentTick, error: error))
+    }
+
+    // MARK: Queries
+
+    /// Objects with a GUID, in object ID order, or `nil` if there are none (`GetObjectsByGUID`).
+    public func objects(withGUID guid: UInt32) -> [Entity]? {
+        let matches = entities.filter { $0.object.guid == guid }
+        return matches.isEmpty ? nil : matches
+    }
+
+    /// Objects whose category was set to `category`, in object ID order, or `nil` if there are none.
+    public func objects(inCategory category: Int16) -> [Entity]? {
+        categoryIndex[category]
+    }
+
+    /// Moves an object between categories, as `RemoveCategory` and `RegisterCategory` do.
+    func changeCategory(of entity: Entity, from old: Int16?, to new: Int16) {
+        if let old, var list = categoryIndex[old], let index = list.firstIndex(where: { $0 === entity }) {
+            list.remove(at: index)
+            categoryIndex[old] = list.isEmpty ? nil : list
+        }
+        var list = categoryIndex[new] ?? []
+        if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
+        categoryIndex[new] = list
     }
 
     // MARK: Globals

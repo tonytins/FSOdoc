@@ -216,3 +216,43 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         }
     }
 }
+
+@Suite struct SetToNextTests {
+    func next(after start: Int16, search: UInt8, in vm: VM, caller: Entity, category: Int16 = 0) throws -> (ExitCode, Int16) {
+        caller.thread.tempRegisters[3] = start
+        let operand = Primitives.SetToNext.Operand(guid: chairGUID, search: search, targetScope: VariableScope.temps.rawValue, targetData: 3)
+        let (exit, _) = try vm.runPrimitive(opcode: 31, operand: operand.encoded(), caller: caller, arguments: [category, 0, 0, 0])
+        return (exit, caller.thread.tempRegisters[3])
+    }
+
+    @Test func walksObjectsInIDOrder() throws {
+        try withVM { vm, chair throws in
+            for id in [7, 3] as [Int16] { try vm.addObject(guid: chairGUID, id: id) }
+            #expect(try next(after: 0, search: 0, in: vm, caller: chair) == (.gotoTrue, 1))
+            #expect(try next(after: 1, search: 0, in: vm, caller: chair) == (.gotoTrue, 3))
+            #expect(try next(after: 3, search: 4, in: vm, caller: chair) == (.gotoTrue, 7)) // of the chair's type
+            #expect(try next(after: 7, search: 0, in: vm, caller: chair).0 == .gotoFalse)
+            #expect(try next(after: 0, search: 1, in: vm, caller: chair).0 == .gotoFalse) // no Sims
+            #expect(try next(after: 0, search: 11, in: vm, caller: chair).0 == .gotoFalse) // closest house
+        }
+    }
+
+    @Test func findsObjectsOnlyOnceTheirCategoryIsSet() throws {
+        try withVM { vm, chair throws in
+            let other = try vm.addObject(guid: chairGUID, id: 2)
+            #expect(try next(after: 0, search: 6, in: vm, caller: chair, category: 0).0 == .gotoFalse)
+            try other.setValue(5, of: ObjectVariable.category.rawValue)
+            #expect(try next(after: 0, search: 6, in: vm, caller: chair, category: 5) == (.gotoTrue, 2))
+            try other.setValue(6, of: ObjectVariable.category.rawValue)
+            #expect(try next(after: 0, search: 6, in: vm, caller: chair, category: 5).0 == .gotoFalse)
+        }
+    }
+
+    @Test func usesTheStackObjectWithoutTheTargetFlag() {
+        var bytes = Primitives.SetToNext.Operand(search: 0, targetScope: 8, targetData: 3).encoded()
+        bytes[4] = 0 // clear the flag bit
+        let operand = Primitives.SetToNext.Operand(bytes: bytes)
+        #expect(operand.targetScope == VariableScope.stackObjectID.rawValue && operand.targetData == 0)
+        #expect(operand.encoded() == bytes) // the stored bytes are kept
+    }
+}

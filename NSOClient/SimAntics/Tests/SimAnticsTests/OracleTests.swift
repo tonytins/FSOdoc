@@ -18,7 +18,7 @@ let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
 /// are compared. Cases that need behavior this port doesn't have yet are counted, not failed.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OraclePrimitiveTests {
-    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh"])
+    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next"])
     func matches2017(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))
@@ -72,11 +72,19 @@ struct OracleCase {
         let seed = (request["seed"] as? String).flatMap { UInt64($0, radix: 16) } ?? 0x0F50_D0C5_EED0_0001
         let vm = try VM(content: content, seed: seed)
         let callerID = Int16(request["caller"] as? Int ?? 1)
-        let caller = try vm.addObject(guid: try guid("callerGUID"), id: callerID)
         let stackObjectID = Int16(request["stackObject"] as? Int ?? 0)
-        if response["stackObjectGUID"] != nil, stackObjectID != callerID {
+        // Rebuild every object on the oracle's lot, with the categories it registered.
+        for entry in response["lot"] as? [[Any]] ?? [] {
+            let id = Int16(try required(entry[0] as? Int)), category = Int16(try required(entry[2] as? Int))
+            let entity = try vm.addObject(guid: try required(UInt32(try required(entry[1] as? String), radix: 16)), id: id)
+            entity.objectData[Int(ObjectVariable.category.rawValue)] = category
+            if entry[3] as? Bool == true { vm.changeCategory(of: entity, from: nil, to: category) }
+        }
+        if vm.entity(id: callerID) == nil { try vm.addObject(guid: try guid("callerGUID"), id: callerID) }
+        if response["stackObjectGUID"] != nil, vm.entity(id: stackObjectID) == nil {
             try vm.addObject(guid: try guid("stackObjectGUID"), id: stackObjectID)
         }
+        let caller = try required(vm.entity(id: callerID))
 
         for (key, value) in request["globals"] as? [String: Int] ?? [:] { vm.globalState[Int(key)!] = Int16(value) }
         if let clock = request["clock"] as? [String: Int] {

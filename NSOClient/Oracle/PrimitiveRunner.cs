@@ -93,6 +93,7 @@ namespace FSO.Oracle
 
         private static JsonObject Execute(VM vm, Request request, JsonNode id)
         {
+            JsonArray lotObjects;
             var primitive = vm.Context.Primitives[request.Opcode];
             var caller = request.Caller is short callerID
                 ? vm.GetObjectById(callerID) ?? throw new RequestException($"no object {callerID} on the lot")
@@ -174,8 +175,13 @@ namespace FSO.Oracle
             thread.Stack.Add(frame);
 
             var before = Snapshot.Take(vm);
+            // Every object on the lot as the primitive sees it, so a test can rebuild the lot.
+            lotObjects = new JsonArray(vm.Entities.OrderBy(entity => entity.ObjectID).Select(entity => (JsonNode)new JsonArray(
+                entity.ObjectID, entity.Object.OBJ.GUID.ToString("x8"), entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category],
+                vm.Context.ObjectQueries.GetObjectsByCategory(entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category])?.Contains(entity) ?? false)).ToArray());
             var (idleStartBefore, interruptBefore, scheduledBefore) = (thread.ScheduleIdleStart, thread.Interrupt, thread.ScheduleIdleEnd);
             var response = Response(id, null, null);
+            response["lot"] = lotObjects;
             if (primitive == null)
             {
                 // ExecuteInstruction treats an opcode with no primitive as GOTO_TRUE.

@@ -8,9 +8,8 @@ import TSOFiles
 /// and interactions aren't ported yet; reading values that need them throws
 /// ``SimAnticsError/unsupported(_:)``.
 ///
-/// Known gaps in writes, which store the value but skip a 2017 side effect: `flags`
-/// doesn't recompute the footprint (no routing yet), and `category` doesn't update
-/// the object query index (no queries yet).
+/// A known gap in writes, which stores the value but skips a 2017 side effect: `flags`
+/// doesn't recompute the footprint (no routing yet).
 public final class Entity {
     public let objectID: Int16
     public let object: GameObject
@@ -269,6 +268,8 @@ public final class Entity {
             lockoutTimestamp = vm.scheduler.currentTick
         case .fsoEngineQuery where value == 1:
             throw .unsupported("the safe-to-delete query needs interactions")
+        case .category:
+            vm.changeCategory(of: self, from: objectData[Int(ObjectVariable.category.rawValue)], to: value)
         default:
             break
         }

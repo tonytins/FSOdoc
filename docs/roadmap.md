@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Refresh ported: 1,628 objects run alone as in 2017) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Set To Next ported: 1,842 objects run alone as in 2017) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -46,9 +46,10 @@ is `partial, not blocking`.
 In order:
 
 1. **Rancho Rizzo, first part:** the primitives that block the most objects in `fso-oracle run-objects`
-   (scorecard FID-10): Set To Next (257 objects), Random Number (49), and Play Sound (25). Sleep,
-   Test Object Type, and Refresh are done. Multi-tile groups (390) and slots (111) come with the lot
-   model. Each primitive is checked with `run-primitive` cases and by the objects it unblocks.
+   (scorecard FID-10): Random Number (52 objects) and Play Sound (25). Sleep, Test Object Type,
+   Refresh, and Set To Next are done. Slots (111), room data (56), and multi-tile groups (390) come
+   with the lot model. Each primitive is checked with `run-primitive` cases and by the objects it
+   unblocks.
 2. **Queen Margaret's, third pass:** the lot model (architecture, rooms, positions and placement),
    multi-tile groups, object creation as `CreateObjectInstance` does it, then lot loading from
    blueprint XML and `run-lot` digests compared tick by tick.
@@ -78,7 +79,7 @@ criteria met, not lines written.
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: 2017 SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single 2017 primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
 | Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 35% | 107–175 | Two passes done: the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler and `VM.tick()`, object definition fields, and state digests. Checked against 2017 by `run-primitive`, entry point tables, and single objects run with `run-objects`. Left: the lot model, multi-tile groups, object creation, lot loading, interactions. |
-| Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 8% | 78–124 | Expression, Sleep, Test Object Type, and Refresh done. `run-objects` ranks the rest by how many objects each blocks. Each primitive lands with `run-primitive` cases and the objects it unblocks. |
+| Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 10% | 76–121 | Expression, Sleep, Test Object Type, Refresh, and Set To Next done. `run-objects` ranks the rest by how many objects each blocks. Each primitive lands with `run-primitive` cases and the objects it unblocks. |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
 | Terra Tablante | Saves: marshals, version 19 read and write, hollow saves | 1,572 | 20–30 | 0% | 20–30 | Must read saves written by 2017 servers. |
 | The Billabong | Lockstep: net commands, ticks, server and client drivers, resync | 3,987 | 50–80 | 0% | 50–80 | Byte-level compatibility with 2017 commands is decision 3. |
@@ -86,13 +87,13 @@ criteria met, not lines written.
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
 | Charvatia | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT`, and field-encoded strings | 764 | 5–8 | 0% | 5–8 | Only TS1 hybrid mode reads these; a TSO install contains none (checked 2026-10-15). Deferred by the owner; port it when TS1 hybrid is needed, ideally checked against a TS1 install. `OBJM` is decoded by heuristic search in 2017. |
 | Yatesport | SimsScript: a text assembly for BHAVs, an LSL-like language that compiles to them, a decompiler from existing objects, LSL `state`s and interactions, editor support | new | 70–120 | 5% | 67–114 | Later, after alpha; not counted in the totals below. Proof of concept in `NSOClient/SimsScript` (decision 5). |
-| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 16% ready** | **≈ 455–723** | |
+| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 16% ready** | **≈ 453–720** | |
 
 ## Upcoming milestones, ranked
 
 | Rank | Next milestone | Closes | Estimate (h) |
 |---|---|---|---|
-| 1 | The most-blocking primitives: Set To Next, Random Number, Play Sound | Rancho Rizzo (first part) | 9–15 |
+| 1 | The most-blocking primitives: Random Number, Play Sound | Rancho Rizzo (first part) | 6–10 |
 | 2 | Lot model, object creation, and lot loading | Queen Margaret's (third part), alpha row 3 in part | 50–90 |
 | 3 | Sprites and images | Hyde Park | 24–35 |
 | 4 | Avatars: Vitaboy formats and providers | Nichol's Notch, Ocean's Edge avatar path | 30–45 |
@@ -153,6 +154,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Set To Next ported and matching 2017 on all 128 oracle cases it can run; objects running alone and matching 2017 went from 1,628 to 1,842. The VM gained 2017's category index, and `run-primitive` now reports every lot object (GUID, category, and whether it's indexed) so tests rebuild the whole lot. |
 | 2026-10-16 | minor | Refresh ported and matching 2017 on all 40 oracle cases; objects running alone and matching 2017 went from 1,069 to 1,628. Headless, Refresh changes nothing an out-of-world object can see; the lot model must make it recompute room lighting and score. |
 | 2026-10-16 | minor | Test Object Type ported and matching 2017 on all 48 oracle cases; objects running alone and matching 2017 went from 800 to 1,069. The fixture script now asks the oracle for the lot's object GUIDs, so cases can name real objects on any install. |
 | 2026-10-16 | minor | Goals revised: the modern .NET rewrite is no longer a goal, and NSOClient is a new reimplementation that matches FreeSO's results rather than its code. Decision 3 settled: FreeSO's network protocol isn't a compatibility target. |
