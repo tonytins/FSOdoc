@@ -7,9 +7,9 @@
 
 ## Background
 
-This started as FSOdoc, an ill-fated attempt to document FreeSO's sparsely commented code using AI before stuff like Claude Code or Copilot even exists. Naturally, it didn't go exactly as planned. It would take hundreds of hours to even get remotely close.
+This started as FSOdoc, an ill-fated attempt to document FreeSO's sparsely commented code using AI before stuff like Claude Code or Copilot even existed. Naturally, it didn't go exactly as planned. It would take hundreds of hours to even get remotely close.
 
-But my long term goal has always been to start fresh with a new language and engine. Now that it's finally a thing, I have been reimplementing the reimplementation in Swift, with the aid of AI, and trying out new things, like a [scripting language](./NSOClient/SimAnticsScript/README.md)!
+But my long term goal has always been to start fresh with a new language and engine. Now that all this stuff is finally a thing, I have begun reimplementing the reimplementation in Swift, with the aid of AI, and trying out new things, like a [scripting language](./NSOClient/SimAnticsScript/README.md)!
 
 My version, NewSO (NSOClient), does differ ever so slightly. Mine was built against TSO Beta because that's all I was able to get extracted properly on Linux; the old EA downloaders no longer worked. So in order to keep things running smoothly, mine is backwards compatible.
 
