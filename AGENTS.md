@@ -260,10 +260,17 @@ These apply to everything under [NSOClient/](./NSOClient/).
    pass the dependency in.
 5. **Independent packages.** Each package builds and tests on its own.
    Dependencies point one way through local paths (TSOFiles, then
-   TSOContent, then SimAntics, then SimsScript). Foundation is allowed; don't declare
-   `platforms:`. The only other approved dependency is swift-argument-parser,
-   for command-line tools such as `tsofiles-check`. Any other needs the
-   owner's approval.
+   TSOContent, then SimAntics, then SimsScript). Foundation is allowed. The
+   libraries don't declare `platforms:` and take no other dependency without
+   the owner's approval.
+
+   **Tools are the exception** (command-line executables such as
+   `tsofiles-check`, and anything else that isn't a library others build on).
+   A tool may use swift-argument-parser, the one approved tool dependency, and
+   may declare `platforms:` when an API it uses needs a newer OS;
+   `tsofiles-check` requires macOS 13. Through pre-alpha and alpha, support
+   for older macOS versions in tools is as needed only: raise the minimum
+   rather than work around a missing API, and say so in the package.
 6. **No EA data in the repository.** Tests build synthetic files in code
    (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
    files read `TSO_GAME_DIR` (and `tsofiles-check` also `TSO_BETA_DIR`) and

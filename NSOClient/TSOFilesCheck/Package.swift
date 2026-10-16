@@ -4,6 +4,8 @@ import PackageDescription
 
 let package = Package(
     name: "TSOFilesCheck",
+    // A tool, so it may require a newer macOS than the libraries (see AGENTS.md, rule 5).
+    platforms: [.macOS(.v13)],
     products: [
         .executable(name: "tsofiles-check", targets: ["TSOFilesCheck"]),
     ],
