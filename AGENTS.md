@@ -212,6 +212,13 @@ These apply to everything under [NSOClient/](./NSOClient/).
    - **The TSO beta.** The owner's 2002 beta install must keep working.
      Where its files differ from production, degrade gracefully: skip what
      doesn't fit, report it, and keep going, never fail outright.
+     [`docs/install-differences.md`](./docs/install-differences.md), when it
+     exists, lists how the install in `TSO_GAME_DIR` differs from the beta in
+     `TSO_BETA_DIR`, file by file and chunk by chunk. Use it as the
+     backwards-compatibility notes: check it before calling a mismatch on one
+     install a port bug, and cite it where a fallback exists for the beta.
+     `tsofiles-check` writes it once, the first time it scans both installs;
+     don't regenerate it unless the owner asks (delete it to compare again).
 
    Learn from everything available: the 2017 code, the
    [SimAntics Wiki copy](./docs/simantics/README.md), and the wider Sims
@@ -245,7 +252,9 @@ These apply to everything under [NSOClient/](./NSOClient/).
    owner's approval.
 6. **No EA data in the repository.** Tests build synthetic files in code
    (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
-   files read `TSO_GAME_DIR` and skip when it isn't set.
+   files read `TSO_GAME_DIR` (and `tsofiles-check` also `TSO_BETA_DIR`) and
+   skip when it isn't set. `docs/install-differences.md` holds names, sizes,
+   chunk IDs, and GUIDs only, never file contents.
 7. **Tests are the gate.** Swift Testing (`import Testing`, `@Test`), never
    XCTest. Cover every kept quirk and every error path, keep tests
    deterministic, and use `@Test(arguments:)` for shared checks.
@@ -349,7 +358,7 @@ for package in TSOFiles TSOFilesCheck TSOContent SimAntics SimsScript; do  # eve
     swift test --package-path "NSOClient/$package"
 done
 grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources  # must print nothing
-swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
+swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if you touched a reader; scans TSO_GAME_DIR and TSO_BETA_DIR
 dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
 python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR
@@ -361,8 +370,8 @@ git status --short -- TSOClient                                        # must pr
 - Every package must build with no new warnings and pass all tests.
 - Look over your diff for force unwraps (`!`) by eye; the search above can't
   tell them apart from `!=` and `!condition`.
-- If you touched a reader and `TSO_GAME_DIR` is set, the scan must still
-  report 0 failures. Without an install, say that you couldn't run it.
+- If you touched a reader and `TSO_GAME_DIR` or `TSO_BETA_DIR` is set, the scan must still
+  report 0 failures for each. Without an install, say that you couldn't run it.
 - In SimAntics, check new code against the determinism rule: no
   `Dictionary` or `Set` iteration, wrapping arithmetic only.
 

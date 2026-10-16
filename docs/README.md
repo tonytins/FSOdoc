@@ -28,6 +28,13 @@ file formats, content, SimAntics, fidelity to 2017, determinism, reliability, te
 and platforms. It also lists the known deliberate differences from 2017 and open bugs. When the
 scorecard and the roadmap disagree, the scorecard wins.
 
+### install-differences.md: how the owner's two installs differ
+
+Written once by `tsofiles-check` when both `TSO_GAME_DIR` and `TSO_BETA_DIR` are set: the files,
+archive entries, IFF chunks, and object GUIDs that differ between them, with no game data. It's
+the reference for backwards compatibility with the 2002 beta. It doesn't exist until both
+installs have been scanned.
+
 ### [fso/](fso/README.md): the 2017 FreeSO snapshot
 
 Written from reading the source. Each page says how the code works in 2017. The "Modern .NET

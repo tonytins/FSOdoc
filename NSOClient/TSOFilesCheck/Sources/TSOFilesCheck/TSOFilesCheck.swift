@@ -9,8 +9,10 @@ struct TSOFilesCheck: ParsableCommand {
         commandName: "tsofiles-check",
         abstract: "Open every FAR1, FAR3, DBPF, and IFF file in a TSO install and read every entry.",
         discussion: """
-            Exits with 0 when everything reads, 1 when anything fails, and 2 when the folder \
-            can't be listed.
+            Without a folder, checks every install named by $TSO_GAME_DIR and $TSO_BETA_DIR, \
+            one after the other. When both are checked and the differences file doesn't exist \
+            yet, it compares the two installs once and writes how they differ there. Exits with 0 when everything reads, 1 when anything fails, and \
+            2 when a folder isn't an install or can't be listed.
             """)
 
     /// The FAR1 layouts, by the names the command line takes.
@@ -34,35 +36,126 @@ struct TSOFilesCheck: ParsableCommand {
     @Option(help: "List at most this many failures; all of them are counted.")
     var maxFailures = 50
 
-    @Argument(help: "The install folder. Defaults to $TSO_GAME_DIR.")
+    /// Which of the installs in the environment to check.
+    enum InstallChoice: String, ExpressibleByArgument, CaseIterable {
+        case all, game, beta
+    }
+
+    @Option(help: "Without a folder: which installs to check, game ($TSO_GAME_DIR), beta ($TSO_BETA_DIR), or all that are set.")
+    var install: InstallChoice = .all
+
+    @Option(help: "Where to note how the two installs differ, if it doesn't exist yet.")
+    var differences = "docs/install-differences.md"
+
+    @Argument(help: "The install folder. Defaults to $TSO_GAME_DIR and $TSO_BETA_DIR.")
     var directory: String?
 
     func validate() throws {
         guard maxFailures >= 0 else { throw ValidationError("--max-failures takes a number of 0 or more.") }
+        guard directory == nil || install == .all else {
+            throw ValidationError("--install picks from the environment; give it or a folder, not both.")
+        }
     }
 
-    /// The folder to scan: the argument, else `TSO_GAME_DIR`.
-    func installDirectory(environment: [String: String]) throws(ValidationError) -> URL {
-        guard let path = directory ?? environment["TSO_GAME_DIR"], !path.isEmpty else {
-            throw ValidationError("No directory given and TSO_GAME_DIR is not set.")
+    /// An install to check, and where it was named.
+    struct Install: Equatable {
+        /// The environment variable that named it, or `nil` for the command line.
+        var source: String?
+        var directory: URL
+    }
+
+    /// The installs to check: the argument, else each set variable `--install` picks, in the
+    /// order `TSO_GAME_DIR`, `TSO_BETA_DIR`. Two variables naming one folder check it once.
+    func installs(environment: [String: String]) throws(ValidationError) -> [Install] {
+        if let directory {
+            guard !directory.isEmpty else { throw ValidationError("The folder can't be empty.") }
+            return [Install(source: nil, directory: URL(fileURLWithPath: directory, isDirectory: true))]
         }
-        return URL(fileURLWithPath: path, isDirectory: true)
+        let variables: [String] = switch install {
+        case .all: ["TSO_GAME_DIR", "TSO_BETA_DIR"]
+        case .game: ["TSO_GAME_DIR"]
+        case .beta: ["TSO_BETA_DIR"]
+        }
+        var found: [Install] = []
+        for variable in variables {
+            guard let path = environment[variable], !path.isEmpty else { continue }
+            let directory = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
+            if !found.contains(where: { $0.directory == directory }) { found.append(Install(source: variable, directory: directory)) }
+        }
+        guard !found.isEmpty else {
+            throw ValidationError("No folder given and \(variables.joined(separator: " and ")) \(variables.count == 1 ? "is" : "are") not set.")
+        }
+        return found
+    }
+
+    /// Whether a folder holds an install: it has an `objectdata` folder, in any letter case.
+    static func isInstall(_ directory: URL) -> Bool {
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return false }
+        return names.contains { $0.lowercased() == "objectdata" }
+    }
+
+    /// Compares two installs and writes the differences file, unless it exists. Returns false
+    /// if the comparison or the write failed.
+    func noteDifferences(between installs: [Install], date: Date = Date()) -> Bool {
+        let file = URL(fileURLWithPath: differences)
+        print("")
+        guard !FileManager.default.fileExists(atPath: file.path) else {
+            print("differences: already noted in \(differences); delete it to compare again")
+            return true
+        }
+        guard FileManager.default.fileExists(atPath: file.deletingLastPathComponent().path) else {
+            print("differences: not compared; \(file.deletingLastPathComponent().path) doesn't exist (run from the repository root, or pass --differences)")
+            return true
+        }
+        let first = installs[0], second = installs[1]
+        do {
+            let result = try InstallComparison(far1Variant: far1Variant.layout).compare(first.directory, second.directory)
+            let text = DifferencesReport.markdown(result, first: first.source ?? first.directory.path,
+                                                  second: second.source ?? second.directory.path, date: date)
+            try Data(text.utf8).write(to: file, options: .withoutOverwriting)
+            print("differences: \(result.changedFiles.count) files differ, \(result.onlyInFirst.count) only in "
+                  + "\(first.source ?? "the first"), \(result.onlyInSecond.count) only in \(second.source ?? "the second"); "
+                  + "noted in \(differences)")
+            return true
+        } catch {
+            fflush(nil)
+            FileHandle.standardError.write(Data("tsofiles-check: can't compare the installs: \(error)\n".utf8))
+            return false
+        }
     }
 
     func run() throws {
-        let directory = try installDirectory(environment: ProcessInfo.processInfo.environment)
+        let installs = try installs(environment: ProcessInfo.processInfo.environment)
         let scanner = InstallScanner(far1Variant: far1Variant.layout, readsEntries: !headersOnly, parsesChunks: !headersOnly)
-        let report: ScanReport
-        do {
-            report = try scanner.scan(directory: directory)
-        } catch {
-            FileHandle.standardError.write(Data("tsofiles-check: can't list \(directory.path): \(error)\n".utf8))
-            throw ExitCode(2)
+        var exitCode: Int32 = 0
+        var scanned: [Install] = []
+        for (index, install) in installs.enumerated() {
+            if installs.count > 1 || install.source != nil {
+                if index > 0 { print("") }
+                print("== \(install.source.map { "\($0): " } ?? "")\(install.directory.path)")
+            }
+            fflush(nil) // keep the header ahead of any error on standard error
+            guard Self.isInstall(install.directory) else {
+                FileHandle.standardError.write(Data("tsofiles-check: \(install.directory.path) isn't a TSO install (no objectdata folder)\n".utf8))
+                exitCode = 2
+                continue
+            }
+            let report: ScanReport
+            do {
+                report = try scanner.scan(directory: install.directory)
+            } catch {
+                FileHandle.standardError.write(Data("tsofiles-check: can't list \(install.directory.path): \(error)\n".utf8))
+                exitCode = 2
+                continue
+            }
+            for line in ScanReportText.lines(for: report, maxFailures: maxFailures) {
+                print(line)
+            }
+            scanned.append(install)
+            if !report.isClean && exitCode == 0 { exitCode = 1 }
         }
-        for line in ScanReportText.lines(for: report, maxFailures: maxFailures) {
-            print(line)
-        }
-        if !report.isClean { throw ExitCode.failure }
+        if scanned.count == 2, !noteDifferences(between: scanned) { exitCode = 2 }
+        if exitCode != 0 { throw ExitCode(exitCode) }
     }
 }
 

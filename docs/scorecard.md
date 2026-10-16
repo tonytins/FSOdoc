@@ -5,8 +5,8 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (8 need
-`TSO_GAME_DIR`), TSOFilesCheck 6 passed, TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of those also `TSO_ORACLE_DIR`),
+**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 131 passed (8 need
+`TSO_GAME_DIR`), TSOFilesCheck 12 passed, TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of those also `TSO_ORACLE_DIR`),
 SimAntics 79 passed (4 need `TSO_GAME_DIR`, and 3 of those also `TSO_ORACLE_DIR`; 1 more needs only `TSO_ORACLE_DIR`), SimsScript 12
 passed (1 needs `TSO_GAME_DIR`). Tests that need either variable are skipped without it. The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
@@ -107,6 +107,7 @@ How we know the Swift code behaves like the 2017 code.
 | Id | Target | Status | Note |
 |---|---|---|---|
 | FID-1 | Install scan: every FAR1, FAR3, DBPF, and IFF in a TSO install opens without error | done | `tsofiles-check` on the owner's install (2026-10-15, 1.5 GB): 12 FAR1, 47 FAR3, 6 DBPF, 29 IFF; 82,131 entries read and decompressed, including 1,554 IFFs inside FAR1 archives; 0 failures, in under 7 seconds (release build). The first run found the FAR3 file ID issue fixed as DIFF-5. Forcing FAR1 variant `a` fails on `objspf*.far`, confirming the variant handling |
+| FID-1b | Two installs compared: files, archive entries, IFF chunks, and object GUIDs that differ | partial | `InstallComparison` (TSOFiles) and `tsofiles-check`, which writes `docs/install-differences.md` once when `TSO_GAME_DIR` and `TSO_BETA_DIR` are both set; `InstallComparisonTests` and `DifferencesTests` on synthetic installs. Not yet run on the owner's 2002 beta and 2002 production copy |
 | FID-2 | Each ported reader keeps the 2017 behavior on valid input, with quirks tested | partial | Done for FMT-1 to FMT-5 (quirks listed under [known differences](#known-differences-from-2017) and in each type's doc comment); applies to every later format |
 | FID-6 | Typed chunks parse across a real install, and their values hang together | done | `tsofiles-check` parses every supported chunk in every IFF (51,620 chunks, 0 failures). `RealInstallTests` checks that BHAV branch targets stay inside their routine and that loaded interactions fit their pie menu strings. Five old `TTAB`s (version 2 and 3) that no `OBJD` references fail to parse, as they would in 2017; the scanner lists them as unreferenced. **Unverified:** where the game finds pie menu strings for objects whose IFF has no `TTAs` (mostly expansion objects). Not in their sprite IFFs; the owner points to the game's CST files (`gamedata/uitext.dir` holds 112, `gamedata/objectdata.dir` one, which is empty). To confirm in Ocean's Edge |
 | FID-3 | Byte-level comparison of decoded output against the 2017 readers on real files | missing | Needs the 2017 build or recorded dumps (roadmap decision 2) |
