@@ -54,6 +54,9 @@ In order:
        Create Object Instance primitive out of the world.
      - [x] C2. Placement in the world: footprints, placement checks, and the placement entry point.
      - [ ] C3. Slots and containment.
+   - [ ] Mock install wiring: unit tests read `NSOClient/MockInstall` instead of building fixtures in
+     code, the oracle loads it (its install overlay can't find the object table yet), and CI runs
+     the oracle comparisons against it.
    - [ ] D. Lot loading from blueprint XML, then `run-lot` digests compared with FreeSO tick by tick.
 2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
 
