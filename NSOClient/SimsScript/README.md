@@ -1,4 +1,4 @@
-# SimAnticsScript (proof of concept)
+# SimsScript (proof of concept)
 
 Text forms of SimAntics behavior, so objects can be read, edited, and written on any platform
 instead of only in a visual editor. Everything compiles to ordinary BHAV and `OBJf` chunks, so the

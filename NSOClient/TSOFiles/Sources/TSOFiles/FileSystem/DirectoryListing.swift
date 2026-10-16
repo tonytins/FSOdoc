@@ -2,7 +2,8 @@ import Foundation
 
 /// Lists files under a directory in a stable order.
 public enum DirectoryListing {
-    /// Every file under `root`, recursively, sorted by path.
+    /// Every file under `root`, recursively, sorted by path. Paths are standardized, so on
+    /// macOS a file under `/var` is reported under `/var`, not `/private/var`.
     ///
     /// Sorting makes results independent of the file system's own order, which
     /// .NET's `Directory.GetFiles` leaves undefined.
@@ -22,7 +23,9 @@ public enum DirectoryListing {
         for case let url as URL in enumerator {
             var isDirectory: ObjCBool = false
             if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), !isDirectory.boolValue {
-                files.append(url)
+                // On macOS the enumerator resolves a root like /var or /tmp to /private/…;
+                // standardizing gives back the form callers passed in.
+                files.append(url.standardizedFileURL)
             }
         }
         return files.sorted { $0.path < $1.path }

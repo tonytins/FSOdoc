@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import TSOContent
 import TSOFiles
-@testable import SimAnticsScript
+@testable import SimsScript
 
 let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].map { URL(fileURLWithPath: $0) }
 

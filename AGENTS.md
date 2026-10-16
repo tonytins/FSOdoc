@@ -19,7 +19,7 @@ The project's goals:
    TSOContent (the content system), and SimAntics (the VM), compatible with
    FreeSO and the TSO beta (see Library rules, rule 2).
 4. Go past that baseline: extend SimAntics (such as the
-   [scripting proof of concept](./NSOClient/SimAnticsScript/README.md)) and,
+   [scripting proof of concept](./NSOClient/SimsScript/README.md)) and,
    later, support older games' data, such as The Sims 1.
 
 The first two goals produce Markdown under [docs/fso/](./docs/fso/). The
@@ -54,9 +54,10 @@ NSOClient/                   Swift rewrite of the engine-free libraries (indepen
   Oracle/                    .NET tool that runs the 2017 SimAntics sources headless, for reference results
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
+  TSOFilesCheck/             tsofiles-check, which scans an install; depends on ../TSOFiles and swift-argument-parser
   TSOContent/                content system; depends on ../TSOFiles
   SimAntics/                 the VM; depends on ../TSOContent and ../TSOFiles
-  SimAnticsScript/           proof of concept: BHAV text assembly and an LSL-like compiler; depends on ../SimAntics
+  SimsScript/                proof of concept: BHAV text assembly and an LSL-like compiler; depends on ../SimAntics
 Charvatia/                   standalone SimAntics VM server (console, .NET Framework)
 FSOInstaller/                WinForms installer that fetches the original TSO files
 Other/
@@ -224,8 +225,10 @@ These apply to everything under [NSOClient/](./NSOClient/).
    pass the dependency in.
 5. **Independent packages.** Each package builds and tests on its own.
    Dependencies point one way through local paths (TSOFiles, then
-   TSOContent, then SimAntics, then SimAnticsScript). Foundation is allowed; don't declare
-   `platforms:`. Any other new dependency needs the owner's approval.
+   TSOContent, then SimAntics, then SimsScript). Foundation is allowed; don't declare
+   `platforms:`. The only other approved dependency is swift-argument-parser,
+   for command-line tools such as `tsofiles-check`. Any other needs the
+   owner's approval.
 6. **No EA data in the repository.** Tests build synthetic files in code
    (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
    files read `TSO_GAME_DIR` and skip when it isn't set.
@@ -358,12 +361,12 @@ This covers the docs and any C# shown in them.
 ### NSOClient work
 
 ```sh
-for package in TSOFiles TSOContent SimAntics SimAnticsScript; do  # every package, even ones you didn't touch
+for package in TSOFiles TSOFilesCheck TSOContent SimAntics SimsScript; do  # every package, even ones you didn't touch
     swift build --package-path "NSOClient/$package" &&
     swift test --package-path "NSOClient/$package"
 done
 grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources  # must print nothing
-swift run --package-path NSOClient/TSOFiles -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
+swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
 dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
 python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR

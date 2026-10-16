@@ -155,7 +155,7 @@ printf 'next: export TSO_GAME_DIR=%q\n' "$game_dir"
 
 if [[ $run_check == true ]]; then
     need swift "the Swift toolchain runs tsofiles-check"
-    package_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../TSOFiles" && pwd)
+    package_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../TSOFilesCheck" && pwd)
     echo "running tsofiles-check..."
     swift run --package-path "$package_dir" -q tsofiles-check "$game_dir"
 fi

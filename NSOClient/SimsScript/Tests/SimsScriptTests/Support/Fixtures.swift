@@ -1,6 +1,6 @@
 import Foundation
 import SimAntics
-import SimAnticsScript
+import SimsScript
 import TSOContent
 import TSOFiles
 
@@ -9,7 +9,7 @@ final class FakeInstall {
     let root: URL
 
     init() throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent("simanticsscript-\(UUID().uuidString)", isDirectory: true)
+        root = FileManager.default.temporaryDirectory.appendingPathComponent("simsscript-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
 

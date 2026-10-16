@@ -5,9 +5,9 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 131 passed (8 need
-`TSO_GAME_DIR`), TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of those also `TSO_ORACLE_DIR`),
-SimAntics 49 passed (4 need `TSO_GAME_DIR`, and 3 of those also `TSO_ORACLE_DIR`), SimAnticsScript 12
+**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (8 need
+`TSO_GAME_DIR`), TSOFilesCheck 6 passed, TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of those also `TSO_ORACLE_DIR`),
+SimAntics 49 passed (4 need `TSO_GAME_DIR`, and 3 of those also `TSO_ORACLE_DIR`), SimsScript 12
 passed (1 needs `TSO_GAME_DIR`). Tests that need either variable are skipped without it. The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
 expected and handled for backwards compatibility.
@@ -138,7 +138,7 @@ or a lint when it does.
 | REL-1 | Corrupt or truncated input throws a typed error, never crashes | done | Every reader throws a typed error (`EndOfDataError`, `RefPackError`, `FAR1Error`, `FAR3Error`, `IFFError`); tests cover truncation and bad sizes |
 | REL-2 | No `try!`, force unwraps, `fatalError`, or `precondition` in library sources | done | Checked with a grep over `NSOClient/*/Sources` on 2026-10-15; no lint enforces it yet (TST-5) |
 | REL-3 | Archives are immutable values, safe to read from several threads | done | `FAR1Archive` and `FAR3Archive` are `Sendable` structs over memory-mapped `Data`; removes the 2017 `isReadingSomething` race |
-| REL-4 | Swift 6 language mode (strict concurrency) in every package | done | `swiftLanguageModes: [.v6]` in all three manifests |
+| REL-4 | Swift 6 language mode (strict concurrency) in every package | done | `swiftLanguageModes: [.v6]` in all five manifests |
 | REL-5 | Size limits on allocations driven by file data | partial | Reads are bounded by the data length; RefPack output growth and declared decompressed sizes have no cap yet |
 | REL-6 | Fuzzing of every reader with malformed input | missing | |
 | REL-7 | Bounded caches for decoded content | missing | Object and global resources are kept for the life of `GameContent` (2017 used weak-reference caches); fine for objects, needed before FAR3 assets (CNT-3) |
@@ -150,7 +150,7 @@ or a lint when it does.
 | TST-1 | Swift Testing in every package | done | `import Testing` in all test targets |
 | TST-2 | Synthetic fixtures only, no EA data in the repository | done | `Support/ByteWriter.swift` in TSOFiles and TSOContent builds archives, RefPack streams, IFFs, and fake installs in code |
 | TST-3 | Each package builds and tests on its own | done | `swift build` and `swift test` per package; path dependencies resolve |
-| TST-4 | CI runs all three packages on every push | done | `.github/workflows/swift.yml`: builds and tests each package on Linux x86_64 and ARM64 (`swift:6.3` container) and on macOS, for pushes and pull requests that touch `NSOClient/`. Run 38812498011 (commit `9fe95212`) passed all three jobs |
+| TST-4 | CI runs every package on every push | done | `.github/workflows/swift.yml`: builds and tests each package on Linux x86_64 and ARM64 (`swift:6.3` container) and on macOS, for pushes and pull requests that touch `NSOClient/`. Run 38812498011 (commit `9fe95212`) passed all three jobs |
 | TST-5 | Lint for REL-2 and DET-2 (SwiftLint custom rules or a script) | partial | The CI workflow fails on `try!`, `as!`, `fatalError`, or `precondition` in library sources. Not covered: force unwraps (`!`), and DET-2 (no SimAntics code yet) |
 | TST-6 | Real-file tests gated on `TSO_GAME_DIR` | done | `RealInstallTests` in TSOFiles and TSOContent run when `TSO_GAME_DIR` is set and are skipped otherwise; comparisons with 2017 also need `TSO_ORACLE_DIR` (`NSOClient/scripts/oracle-fixtures.sh`). No game data in the repository |
 | TST-7 | Script that extracts the TSO installer's cabinets into a game folder | partial | `NSOClient/scripts/extract.sh`: detects Microsoft (cabextract) or InstallShield (unshield) cabinets, accepts a folder, a cabinet, or a .zip, tests integrity first, finds the folder holding `tuning.dat`, optional `--lowercase` and `--check`. Tested on hand-built Microsoft cabinets (extraction, lower-casing, .zip input, damaged and foreign files, usage errors). Not yet tested: spanned cabinet sets, InstallShield (unshield isn't installed here), the real installer |
@@ -168,7 +168,7 @@ No `platforms:` are declared (owner decision); this tracks where the packages ar
 
 ## Scripting
 
-Package: [SimAnticsScript](../NSOClient/SimAnticsScript/). A later milestone (Yatesport, roadmap
+Package: [SimsScript](../NSOClient/SimsScript/). A later milestone (Yatesport, roadmap
 decision 5); only a proof of concept so far.
 
 | Id | Target | Status | Note |

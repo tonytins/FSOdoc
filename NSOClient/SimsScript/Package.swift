@@ -3,9 +3,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "SimAnticsScript",
+    name: "SimsScript",
     products: [
-        .library(name: "SimAnticsScript", targets: ["SimAnticsScript"]),
+        .library(name: "SimsScript", targets: ["SimsScript"]),
     ],
     dependencies: [
         .package(path: "../SimAntics"),
@@ -13,12 +13,12 @@ let package = Package(
         .package(path: "../TSOFiles"),
     ],
     targets: [
-        .target(name: "SimAnticsScript", dependencies: [
+        .target(name: "SimsScript", dependencies: [
             .product(name: "SimAntics", package: "SimAntics"),
             .product(name: "TSOFiles", package: "TSOFiles"),
         ]),
-        .testTarget(name: "SimAnticsScriptTests", dependencies: [
-            "SimAnticsScript",
+        .testTarget(name: "SimsScriptTests", dependencies: [
+            "SimsScript",
             .product(name: "SimAntics", package: "SimAntics"),
             .product(name: "TSOContent", package: "TSOContent"),
             .product(name: "TSOFiles", package: "TSOFiles"),

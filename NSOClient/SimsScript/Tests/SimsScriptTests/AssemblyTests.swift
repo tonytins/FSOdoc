@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import TSOFiles
-@testable import SimAnticsScript
+@testable import SimsScript
 
 let sampleRoutine = BHAV(id: 4096, label: "main \"quoted\"\u{1}", version: 0x8002, type: 3, argumentCount: 2, localCount: 5,
                          flags: 0x10, instructions: [

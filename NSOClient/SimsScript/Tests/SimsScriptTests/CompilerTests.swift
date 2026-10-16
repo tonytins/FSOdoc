@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import SimAntics
-@testable import SimAnticsScript
+@testable import SimsScript
 
 /// Attributes after initialize runs (and `ticks` ticks of main).
 func attributes(after source: String, ticks: Int = 0) throws -> [Int16] {
