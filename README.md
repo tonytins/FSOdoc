@@ -7,7 +7,7 @@
 
 ## Background
 
-This started as FSOdoc, an ill-fated attempt to document FreeSO's sparsely commented code using AI before stuff like Claude Code or Copilot even existed. Naturally, it didn't go exactly as planned. It would take hundreds of hours to even get remotely close.
+This started as FSOdoc, an ill-fated attempt to document FreeSO's sparsely commented code using just ChatGPT. This was before stuff like Claude Code or Copilot even existed. Naturally, it didn't go exactly as planned. Probably would have taken hundreds of hours to even get remotely close.
 
 But my long term goal has always been to start fresh with a new language and engine. Now that all this stuff is finally a thing, I have begun reimplementing the reimplementation in Swift, with the aid of AI, and trying out new things, like a [scripting language](./NSOClient/SimAnticsScript/README.md)!
 
