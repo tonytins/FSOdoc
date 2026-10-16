@@ -198,3 +198,21 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         #expect(Primitives.TestObjectType.Operand(bytes: operand.encoded()) == operand)
     }
 }
+
+@Suite struct RefreshTests {
+    @Test(arguments: [(Int16(0), Int16(0)), (0, 1), (0, 2), (1, 0), (5, 3)])
+    func succeedsWhenThereIsATarget(target: Int16, type: Int16) throws {
+        try withVM { vm, chair throws in
+            let operand = Primitives.Refresh.Operand(target: target, type: type).encoded()
+            #expect(try vm.runPrimitive(opcode: 7, operand: operand, caller: chair).0 == .gotoTrue)
+        }
+    }
+
+    @Test(arguments: [(Int16(1), Int16(1)), (1, 2), (2, 1)])
+    func failsToFindTheRoomOfNoObject(target: Int16, type: Int16) throws {
+        try withVM { vm, chair throws in
+            let operand = Primitives.Refresh.Operand(target: target, type: type).encoded()
+            #expect(throws: SimAnticsError.self) { try vm.runPrimitive(opcode: 7, operand: operand, caller: chair) }
+        }
+    }
+}

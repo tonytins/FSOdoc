@@ -18,7 +18,7 @@ let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
 /// are compared. Cases that need behavior this port doesn't have yet are counted, not failed.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OraclePrimitiveTests {
-    @Test(arguments: ["expression", "sleep", "test_object_type"])
+    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh"])
     func matches2017(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))

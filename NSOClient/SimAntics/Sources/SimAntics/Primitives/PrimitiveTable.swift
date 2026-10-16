@@ -47,6 +47,7 @@ public struct PrimitiveTable: Sendable {
     public static let standard: PrimitiveTable = {
         var table = PrimitiveTable()
         table.register(Primitives.Sleep.self)
+        table.register(Primitives.Refresh.self)
         table.register(Primitives.Expression.self)
         table.register(Primitives.TestObjectType.self)
         return table

@@ -8,7 +8,7 @@
 # Needs TSO_GAME_DIR, the .NET SDK, and python3. Writes:
 #   objects.tsv                   fso-oracle list-objects (TSOContent and SimAntics tests)
 #   objects.digests               fso-oracle run-objects: each object alone for 30 ticks (SimAntics tests)
-#   PRIMITIVE.requests.jsonl      generated cases for each ported primitive (expression, sleep, test_object_type)
+#   PRIMITIVE.requests.jsonl      generated cases for each ported primitive (expression, sleep, test_object_type, refresh)
 #   PRIMITIVE.responses.jsonl     fso-oracle run-primitive answers (SimAntics tests)
 set -euo pipefail
 
@@ -35,7 +35,7 @@ ORACLE_GUIDS=$(echo '{"opcode":2,"stackObject":2}' | oracle run-primitive 2>/dev
     python3 -I -c 'import json, sys; r = json.load(sys.stdin); print(r["callerGUID"] + "," + r["stackObjectGUID"])')
 export ORACLE_GUIDS
 
-for primitive in expression sleep test_object_type; do
+for primitive in expression sleep test_object_type refresh; do
     echo "Running $primitive cases..."
     python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_${primitive}_cases.py" "$output/$primitive.requests.jsonl"
     oracle run-primitive <"$output/$primitive.requests.jsonl" >"$output/$primitive.responses.jsonl" 2>"$output/$primitive.log"
