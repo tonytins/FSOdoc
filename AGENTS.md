@@ -19,18 +19,19 @@ The project has two goals:
    TSOContent (the content system), and SimAntics (the VM), matching the
    2017 behavior.
 
-The first two goals produce Markdown under [doc/fso/](./doc/fso/). The third
-produces Swift packages, planned in [doc/roadmap.md](./doc/roadmap.md) and
-tracked in [doc/scorecard.md](./doc/scorecard.md). This is solo work held to
+The first two goals produce Markdown under [docs/fso/](./docs/fso/). The third
+produces Swift packages, planned in [docs/roadmap.md](./docs/roadmap.md) and
+tracked in [docs/scorecard.md](./docs/scorecard.md). This is solo work held to
 production standards. Read this file first, then
-[README.md](./README.md) and [doc/fso/README.md](./doc/fso/README.md).
+[README.md](./README.md) and [docs/fso/README.md](./docs/fso/README.md).
 
 ## 1. Workspace map
 
 ```text
 AGENTS.md                    this file
 README.md                    project purpose
-doc/                         the Markdown documentation
+docs/                        the Markdown documentation
+  README.md                  overview and outline of everything in docs/
   roadmap.md                 NSOClient milestones, alpha gate, estimates, owner decisions
   scorecard.md               NSOClient status per feature, with evidence (wins over the roadmap)
   fso/                       documentation of the 2017 FreeSO snapshot
@@ -313,7 +314,7 @@ This covers the docs and any C# shown in them.
 - Write plain, short sentences without em dashes. Explain why, not only
   what. Prefer tables for inventories and short lists for steps.
 - Use relative links, so they work on GitHub and locally. Every new doc is
-  linked from [doc/fso/README.md](./doc/fso/README.md).
+  linked from [docs/fso/README.md](./docs/fso/README.md).
 - Use `text` code fences for trees and diagrams, and `csharp`, `xml`,
   `json`, or `sh` for code.
 - Use Mermaid only where a diagram explains a flow or dependency better
@@ -365,13 +366,13 @@ git status --short -- TSOClient                                        # must pr
 
 Then bring the docs up to date in the same change:
 
-- [doc/scorecard.md](./doc/scorecard.md): flip the rows you moved, with
+- [docs/scorecard.md](./docs/scorecard.md): flip the rows you moved, with
   their new evidence; update the summary counts and the "As of" line; add
   any new difference from 2017 under "Known differences".
-- [doc/roadmap.md](./doc/roadmap.md): update the milestone row's done
+- [docs/roadmap.md](./docs/roadmap.md): update the milestone row's done
   percentage and remaining estimate, the alpha gate if a row changed, the
   current focus, and the status line, and add a revision-history row.
-- [doc/fso/](./doc/fso/README.md) only if the port showed that a page
+- [docs/fso/](./docs/fso/README.md) only if the port showed that a page
   describes the 2017 code wrongly.
 
 ### Documentation work
@@ -390,7 +391,7 @@ git status --short -- TSOClient Charvatia FSOInstaller Other
 - Fix every broken link, and confirm the `git status` check prints nothing.
 - Re-read the source behind any claim you changed, and confirm the cited
   paths, types, and members exist.
-- Keep [doc/fso/README.md](./doc/fso/README.md) up to date: link new docs,
+- Keep [docs/fso/README.md](./docs/fso/README.md) up to date: link new docs,
   and update the coverage list (which projects are documented and which
   aren't yet).
 
