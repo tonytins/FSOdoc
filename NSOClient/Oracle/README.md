@@ -89,7 +89,8 @@ Response fields:
 | `noPrimitive` | `true` if 2017 has no primitive for the opcode; it then counts as `GOTO_TRUE` |
 | `temps`, `tempXL`, `locals`, `args`, `stackObject`, `seed` | the values after running |
 | `thread` | what the primitive changed on the caller's thread: `idleStart`, `interrupt`, and `scheduledTick` (the tick it's scheduled to run next, `ScheduleIdleEnd`) |
-| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered]`, where `registered` says whether the object is listed under its category (2017 lists an object once its category is set), so a test can rebuild the lot |
+| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered, x, y, level, direction]`, where `registered` says whether the object is listed under its category (2017 lists an object once its category is set), and `direction` is 2017's compass flag, so a test can rebuild the lot |
+| `lotSize` | the lot's width and height in tiles |
 | `callerGUID`, `stackObjectGUID` | the GUIDs (8 hex digits) of the caller and the requested stack object, so a test can build the same objects |
 | `frames` | stack frames from the request's frame up; more than 1 means the primitive pushed one |
 | `globals` | `{"index": value}` for each global the primitive changed |

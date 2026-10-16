@@ -42,7 +42,7 @@ import TSOContent
     func normalizesDirection(written: Int16, stored: Int16) throws {
         try withVM { _, chair throws in
             try chair.setValue(written, of: ObjectVariable.direction.rawValue)
-            #expect(chair.directionNotch == stored)
+            #expect(chair.direction.notch == Int(stored))
             #expect(chair.objectData[1] == stored)
             #expect(try chair.value(of: 1) == stored)
         }
@@ -177,5 +177,58 @@ struct RealOperandEncodingTests {
         }
         #expect(checked > 50_000)
         #expect(problems.isEmpty, "\(problems.count) operands differ, first: \(problems.prefix(5))")
+    }
+}
+
+@Suite struct LotPositionTests {
+    @Test func placesTileCentersInSixteenths() {
+        let position = LotPosition.center(ofTileX: 3, y: 5, level: 2)
+        #expect(position == LotPosition(x: 56, y: 88, level: 2))
+        #expect(position.tileX == 3 && position.tileY == 5)
+        #expect(LotPosition.outOfWorld.isOutOfWorld && LotPosition.outOfWorld.tileX == -2048)
+    }
+
+    @Test func measuresDistanceRoundedDown() {
+        #expect(LotPosition(x: 0, y: 0, level: 1).distance(to: LotPosition(x: 3, y: 4, level: 2)) == 5)
+        #expect(LotPosition(x: 0, y: 0, level: 1).distance(to: LotPosition(x: 1, y: 1, level: 1)) == 1)
+    }
+
+    @Test func numbersDirectionsClockwiseFromNorth() {
+        #expect(Direction(notch: 0) == .north && Direction(notch: 7) == .northWest && Direction(notch: 9) == .northEast)
+        #expect(Direction(notch: -1) == .northWest)
+        #expect(Direction.allCases.map(\.notch) == Array(0...7))
+    }
+
+    @Test func snapsDirectionWritesToTheRotationStep() throws {
+        try withVM { _, chair throws in
+            chair.objectData[Int(ObjectVariable.rotationNotches.rawValue)] = 2
+            try chair.setValue(3, of: ObjectVariable.direction.rawValue)
+            #expect(chair.direction == .east)          // notch 3 snaps down to 2
+            #expect(chair.objectData[1] == 3)            // the stored value isn't snapped
+        }
+    }
+}
+
+@Suite struct TileIndexTests {
+    @Test func listsObjectsByTileInIDOrder() throws {
+        try withVM { vm, chair throws in
+            let other = try vm.addObject(guid: chairGUID, id: 5)
+            let tile = LotPosition.center(ofTileX: 4, y: 4, level: 1)
+            vm.move(other, to: tile)
+            vm.move(chair, to: LotPosition(x: tile.x + 3, y: tile.y, level: 1)) // same tile, off center
+            #expect(vm.objects(at: tile)?.map(\.objectID) == [1, 5])
+            vm.move(chair, to: .outOfWorld)
+            #expect(vm.objects(at: tile)?.map(\.objectID) == [5])
+            #expect(vm.objects(at: .outOfWorld)?.map(\.objectID) == [1])
+            #expect(vm.objects(at: LotPosition.center(ofTileX: 9, y: 9, level: 1)) == nil)
+        }
+    }
+
+    @Test func sharesKeysPastTheLotEdgeAs2017Does() throws {
+        try withVM { vm, chair throws in
+            vm.lotSize = (10, 10)
+            vm.move(chair, to: LotPosition.center(ofTileX: 10, y: 0, level: 1)) // one past the edge
+            #expect(vm.objects(at: LotPosition.center(ofTileX: 0, y: 1, level: 1))?.first === chair)
+        }
     }
 }

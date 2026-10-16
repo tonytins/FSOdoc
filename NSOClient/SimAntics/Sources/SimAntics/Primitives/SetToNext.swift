@@ -11,8 +11,9 @@ extension Primitives {
     /// - The Sims 1 neighbors and careers, which fail in TSO as 2017 has no neighborhood;
     /// - parts of a multi-tile object, which is false for an object alone in its group (every
     ///   entity, until multi-tile groups are ported);
-    /// - objects on the same tile and objects next to one, which need positions (unsupported,
-    ///   except where 2017 fails first).
+    /// - objects on the pointer object's tile, wrapping around to the lowest ID;
+    /// - objects next to the anchor object in a local: the first object on each neighboring tile,
+    ///   north, east, south, then west, continuing after the side the pointer object is on.
     ///
     /// When the operand's top flag bit is clear, 2017 ignores the stored target and uses the
     /// stack object ID; the operand keeps the stored bytes so it encodes back unchanged.
@@ -81,12 +82,15 @@ extension Primitives {
                 // ported yet, so every entity is a group of one.
                 return .gotoFalse
             case .objectAdjacentToObjectInLocal:
-                throw .unsupported("finding adjacent objects needs positions")
+                return try nextAdjacentObject(after: target, operand: operand, in: frame)
             case .career, .neighborID, .neighborOfType:
                 throw .nullReference("TSO has no neighborhood or careers")
             case .objectOnSameTile:
-                guard vm.entity(id: target) != nil else { throw .nullReference("no object \(target)") }
-                throw .unsupported("finding objects on a tile needs positions")
+                // Same tile wraps around to the lowest ID, so it always finds the pointer itself.
+                guard let pointer = vm.entity(id: target) else { throw .nullReference("no object \(target)") }
+                guard let onTile = vm.objects(at: pointer.position), let first = onTile.first else { return .gotoFalse }
+                try frame.setValue((onTile.first { $0.objectID > target } ?? first).objectID, of: operand.target)
+                return .gotoTrue
             case .person, .familyMember:
                 candidates = [] // Sims aren't ported, so there are none
             case .objectOfType:
@@ -104,6 +108,40 @@ extension Primitives {
             guard let next = candidates.first(where: { $0.objectID > target }) else { return .gotoFalse }
             try frame.setValue(next.objectID, of: operand.target)
             return .gotoTrue
+        }
+
+        /// The four neighboring tiles, north, east, south, then west.
+        private static let neighborSteps: [(x: Int16, y: Int16)] = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+        private static func nextAdjacentObject(after target: Int16, operand: Operand,
+                                               in frame: StackFrame) throws(SimAnticsError) -> ExitCode {
+            let vm = frame.vm
+            guard Int(operand.local) < frame.locals.count else { throw .indexOutOfRange("local \(operand.local)") }
+            let anchor = vm.entity(id: frame.locals[Int(operand.local)])
+            var start = 0
+            if let pointer = vm.entity(id: target) {
+                guard let anchor else { throw .nullReference("no anchor object") }
+                let side = side(of: pointer.position, from: anchor.position)
+                if side == 3 { return .gotoFalse }
+                start = side + 1
+            }
+            guard let anchor else { throw .nullReference("no anchor object") }
+            for step in neighborSteps[start...] {
+                let tile = LotPosition.center(ofTileX: anchor.position.tileX &+ step.x, y: anchor.position.tileY &+ step.y,
+                                              level: anchor.position.level)
+                if let first = vm.objects(at: tile)?.first {
+                    try frame.setValue(first.objectID, of: operand.target)
+                    return .gotoTrue
+                }
+            }
+            return .gotoFalse
+        }
+
+        /// Which neighbor a position is, as 2017 judges it: 0 north, 1 east, 2 south, 3 west.
+        private static func side(of position: LotPosition, from anchor: LotPosition) -> Int {
+            let dx = Int(position.tileX) - Int(anchor.tileX), dy = Int(position.tileY) - Int(anchor.tileY)
+            if dx == 0 { return dy < 0 ? 0 : 2 }
+            return dx < 0 ? 3 : 1
         }
     }
 }

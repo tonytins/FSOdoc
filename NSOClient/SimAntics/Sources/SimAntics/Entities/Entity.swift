@@ -20,8 +20,9 @@ public final class Entity {
     public private(set) var attributes: [Int16] = []
     /// The entity's list (`MyList`), front first.
     public var list: [Int16] = []
-    /// The facing, as an index into the eight compass directions from north, clockwise.
-    public var directionNotch: Int16 = 0
+    /// Where the entity is; set it with ``VM/move(_:to:)`` so the tile index follows.
+    public internal(set) var position = LotPosition.outOfWorld
+    public var direction = Direction.north
 
     /// The lead object of the entity's multi-tile group (`MultitileGroup.BaseObject`). Groups
     /// aren't ported yet, so every entity is a group of one and leads itself, as a lone object
@@ -244,7 +245,7 @@ public final class Entity {
         case .objectID:
             return objectID
         case .direction:
-            return directionNotch
+            return Int16(direction.notch)
         case .containerID, .parentID, .slotNumber, .slotCount:
             throw .unsupported("object data \(variable) needs containers and slots")
         case .useCount:
@@ -268,7 +269,7 @@ public final class Entity {
             // The stored value is the notch; the facing snaps to the object's rotation step.
             value = Int16((Int(value) + 65536) % 8)
             let step = objectData[Int(ObjectVariable.rotationNotches.rawValue)]
-            directionNotch = step > 1 ? value - value % step : value
+            direction = Direction(notch: Int(step > 1 ? value - value % step : value))
         case .lockoutCount:
             lockoutTimestamp = vm.scheduler.currentTick
         case .fsoEngineQuery where value == 1:

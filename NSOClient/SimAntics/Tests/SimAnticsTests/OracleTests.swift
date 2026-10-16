@@ -73,12 +73,18 @@ struct OracleCase {
         let vm = try VM(content: content, seed: seed)
         let callerID = Int16(request["caller"] as? Int ?? 1)
         let stackObjectID = Int16(request["stackObject"] as? Int ?? 0)
-        // Rebuild every object on the oracle's lot, with the categories it registered.
+        // Rebuild every object on the oracle's lot: categories, positions, and facings.
+        if let size = response["lotSize"] as? [Int], size.count == 2 { vm.lotSize = (size[0], size[1]) }
         for entry in response["lot"] as? [[Any]] ?? [] {
             let id = Int16(try required(entry[0] as? Int)), category = Int16(try required(entry[2] as? Int))
             let entity = try vm.addObject(guid: try required(UInt32(try required(entry[1] as? String), radix: 16)), id: id)
             entity.objectData[Int(ObjectVariable.category.rawValue)] = category
             if entry[3] as? Bool == true { vm.changeCategory(of: entity, from: nil, to: category) }
+            if entry.count >= 8, let x = entry[4] as? Int, let y = entry[5] as? Int, let level = entry[6] as? Int,
+               let direction = entry[7] as? Int {
+                vm.move(entity, to: LotPosition(x: Int16(x), y: Int16(y), level: Int8(level)))
+                entity.direction = try required(Direction(rawValue: UInt8(direction)))
+            }
         }
         if vm.entity(id: callerID) == nil { try vm.addObject(guid: try guid("callerGUID"), id: callerID) }
         if response["stackObjectGUID"] != nil, vm.entity(id: stackObjectID) == nil {
@@ -97,7 +103,7 @@ struct OracleCase {
             for (index, value) in state["data"] as? [String: Int] ?? [:] { entity.objectData[Int(index)!] = Int16(value) }
             for (index, value) in state["attributes"] as? [String: Int] ?? [:] { entity.setAttribute(Int16(value), at: UInt16(index)!) }
             if let list = state["list"] as? [Int] { entity.list = list.map { Int16($0) } }
-            if let direction = state["direction"] as? Int { entity.directionNotch = Int16(direction) }
+            if let direction = state["direction"] as? Int { entity.direction = Direction(notch: direction) }
         }
         if let tick = request["currentTick"] as? Int { vm.scheduler.currentTick = UInt32(tick) }
         if let start = request["idleStart"] as? Int { caller.thread.idleStartTick = UInt32(start) }
@@ -142,7 +148,7 @@ struct OracleCase {
 /// The state a primitive can change outside its frame, as the oracle snapshots it.
 struct Snapshot {
     struct EntityState {
-        var data: [Int16], attributes: [Int16], list: [Int16], direction: Int16
+        var data: [Int16], attributes: [Int16], list: [Int16], direction: Direction, position: LotPosition
     }
 
     let globals: [Int16]
@@ -151,7 +157,8 @@ struct Snapshot {
     init(_ vm: VM) {
         globals = vm.globalState
         entities = Dictionary(uniqueKeysWithValues: vm.entities.map {
-            ($0.objectID, EntityState(data: $0.objectData, attributes: $0.attributes, list: $0.list, direction: $0.directionNotch))
+            ($0.objectID, EntityState(data: $0.objectData, attributes: $0.attributes, list: $0.list, direction: $0.direction,
+                                      position: $0.position))
         })
     }
 
@@ -165,7 +172,10 @@ struct Snapshot {
             if !data.isEmpty { changes["data"] = data }
             if !attributes.isEmpty { changes["attributes"] = attributes }
             if old.list != state.list { changes["list"] = state.list.map(Int.init) }
-            if old.direction != state.direction { changes["direction"] = 1 << Int(state.direction) } // 2017's Direction flags
+            if old.position != state.position {
+                changes["position"] = [Int(state.position.x), Int(state.position.y), Int(state.position.level)]
+            }
+            if old.direction != state.direction { changes["direction"] = Int(state.direction.rawValue) }
             if !changes.isEmpty { objects[String(id)] = changes }
         }
         fields["objects"] = objects
@@ -282,7 +292,10 @@ struct OracleObjectRunTests {
                 actual.append("tick \(tick) seed \(String(format: "%016llx", vm.random.seed)) entities \(vm.entities.count) digest \(StateDigest.hex(of: vm))")
             }
             do {
-                try vm.addObject(guid: guid, id: 1).initialize()
+                // As CreateObjectInstance does: initialize, then place out of the world facing north.
+                let entity = try vm.addObject(guid: guid, id: 1)
+                try entity.initialize()
+                vm.move(entity, to: .outOfWorld)
                 record(0)
                 for tick in 1...30 {
                     vm.tick()

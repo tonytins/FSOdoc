@@ -178,10 +178,12 @@ namespace FSO.Oracle
             // Every object on the lot as the primitive sees it, so a test can rebuild the lot.
             lotObjects = new JsonArray(vm.Entities.OrderBy(entity => entity.ObjectID).Select(entity => (JsonNode)new JsonArray(
                 entity.ObjectID, entity.Object.OBJ.GUID.ToString("x8"), entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category],
-                vm.Context.ObjectQueries.GetObjectsByCategory(entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category])?.Contains(entity) ?? false)).ToArray());
+                vm.Context.ObjectQueries.GetObjectsByCategory(entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category])?.Contains(entity) ?? false,
+                entity.Position.x, entity.Position.y, entity.Position.Level, (byte)entity.Direction)).ToArray());
             var (idleStartBefore, interruptBefore, scheduledBefore) = (thread.ScheduleIdleStart, thread.Interrupt, thread.ScheduleIdleEnd);
             var response = Response(id, null, null);
             response["lot"] = lotObjects;
+            response["lotSize"] = new JsonArray(vm.Context.Architecture.Width, vm.Context.Architecture.Height);
             if (primitive == null)
             {
                 // ExecuteInstruction treats an opcode with no primitive as GOTO_TRUE.

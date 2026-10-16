@@ -102,8 +102,11 @@ extension Primitives {
                 return branch(try lhs() > (try rhs()))
             case .greaterThanOrEqualTo:
                 let left = try lhs(), right = try rhs()
+                // 2017's stairs check: "room >= 1024" on the caller means "is upstairs of the callee".
                 if right == 1024, operand.lhs == Variable(.myObject, ObjectVariable.room.rawValue) {
-                    throw .unsupported("the upstairs room test needs positions")
+                    guard let caller = frame.caller, let callee = frame.callee else { throw .nullReference("no caller or callee") }
+                    let calleeFloor = Int(callee.position.level) - Int(callee.object.definition.levelOffset)
+                    return branch(Int(caller.position.level) - calleeFloor > 0)
                 }
                 return branch(left >= right)
             case .notEqualTo:

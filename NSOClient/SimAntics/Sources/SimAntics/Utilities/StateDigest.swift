@@ -5,8 +5,7 @@
 /// then for each entity in object ID order: object ID (16), GUID (32), tile x (16),
 /// tile y (16), level (8), direction (8, 2017's compass flag), the object data count (32)
 /// and values (16 each), and the stack depth (32), then each frame's routine ID (16) and
-/// instruction pointer (16). Positions aren't ported yet, so every entity is out of the
-/// world (x and y -32768, level 1), which is right only for objects 2017 keeps there.
+/// instruction pointer (16).
 public enum StateDigest {
     public static let version = 0
 
@@ -28,10 +27,10 @@ public enum StateDigest {
         for entity in vm.entities {
             append(entity.objectID)
             append(entity.object.guid)
-            append(Int16.min)
-            append(Int16.min)
-            append(Int8(1))
-            append(UInt8(1) << UInt8(entity.directionNotch & 7))
+            append(entity.position.x)
+            append(entity.position.y)
+            append(entity.position.level)
+            append(entity.direction.rawValue)
             append(Int32(entity.objectData.count))
             for value in entity.objectData { append(value) }
             append(Int32(entity.thread.stack.count))

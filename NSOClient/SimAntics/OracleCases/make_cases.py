@@ -198,6 +198,12 @@ def set_to_next_cases(stack_guid):
                     yield f"set-to-next-{search}-{start}-{guid_label}-{category}", {
                         "operand": set_to_next_operand(guid, 0x80 | search, TEMPS, 0, 3),
                         "temps": [0, 0, 0, start], "args": [category, 0, 0, 0]}
+    # Objects next to the anchor in local 0, from every lot object and several starting points.
+    for anchor in range(1, 14):
+        for start in (0, 1, 2, 5, 9, 12):
+            yield f"set-to-next-adjacent-{anchor}-{start}", {
+                "operand": set_to_next_operand(0, 0x80 | 9, TEMPS, 0, 3), "temps": [0, 0, 0, start], "locals": [anchor]}
+    yield "set-to-next-adjacent-bad-local", {"operand": set_to_next_operand(0, 0x80 | 9, TEMPS, 2, 3), "locals": [1]}
     # Without the top flag bit, the stored target is ignored for the stack object ID.
     for start in (0, 2, 12):
         yield f"set-to-next-flagless-{start}", {"operand": set_to_next_operand(0, 0, TEMPS, 0, 3), "temps": [0, 0, 0, 9],

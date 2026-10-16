@@ -32,6 +32,10 @@ public final class VM {
     }
 
     private var entitiesByID: [Int16: Entity] = [:]
+    /// The lot's size in tiles; the tile index numbers tiles by it.
+    public var lotSize: (width: Int, height: Int) = (64, 64)
+    /// Objects by tile, in object ID order (`VMObjectQueries.TileToObjects`), keyed as 2017 does.
+    private var tileIndex: [Int: [Entity]] = [:]
     /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
     /// is listed once its category is set through object data, not when it's created.
     private var categoryIndex: [Int16: [Entity]] = [:]
@@ -125,6 +129,38 @@ public final class VM {
     /// Objects whose category was set to `category`, in object ID order, or `nil` if there are none.
     public func objects(inCategory category: Int16) -> [Entity]? {
         categoryIndex[category]
+    }
+
+    /// Objects on a tile, in object ID order, or `nil` if there are none (`GetObjectsAt`).
+    /// Every object out of the world shares one entry.
+    public func objects(at position: LotPosition) -> [Entity]? {
+        tileIndex[tileKey(position)]
+    }
+
+    /// Moves an entity and keeps the tile index current, as 2017's position change does for
+    /// queries. Rooms, footprints, portals, lighting, and the placement entry point come with
+    /// the lot model.
+    public func move(_ entity: Entity, to position: LotPosition) {
+        removeFromTileIndex(entity)
+        entity.position = position
+        var list = tileIndex[tileKey(position)] ?? []
+        if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
+        tileIndex[tileKey(position)] = list
+    }
+
+    private func removeFromTileIndex(_ entity: Entity) {
+        let key = tileKey(entity.position)
+        guard var list = tileIndex[key], let index = list.firstIndex(where: { $0 === entity }) else { return }
+        list.remove(at: index)
+        tileIndex[key] = list.isEmpty ? nil : list
+    }
+
+    /// 2017's tile offset: out of the world is -1; otherwise tiles are numbered across, down, then
+    /// up, so a position past the lot's edge shares a key with another tile, as in 2017.
+    private func tileKey(_ position: LotPosition) -> Int {
+        guard !position.isOutOfWorld else { return -1 }
+        return Int(position.tileX) + Int(position.tileY) * lotSize.width
+            + (Int(position.level) - 1) * lotSize.width * lotSize.height
     }
 
     /// Moves an object between categories, as `RemoveCategory` and `RegisterCategory` do.
