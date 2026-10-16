@@ -142,7 +142,7 @@ rea --help
 If both checks succeed, use REA's relevant command to help inspect the target.
 For an application overview, start with `rea analyze <path>` and consult
 `rea analyze --help` for its options. Treat its output as inspection evidence
-to cross-check against the artifact and source, not as a replacement for
+to cross-reference against the artifact and source, not as a replacement for
 verification. If `rea` is missing or cannot run, continue with the available
 local tools and state that REA was unavailable; do not install it as part of
 the inspection. Skip REA for ordinary source-repository architecture analysis.
@@ -203,7 +203,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
      ours: choose the structure, names, and algorithms that suit Swift, and
      take creative liberties where they reach the same results more simply.
      Say in the doc comment which 2017 type a Swift type corresponds to, so
-     the two can be cross-checked. Where the results do differ (to avoid a
+     the two can be cross-referenced. Where the results do differ (to avoid a
      crash, reject hostile input, fix a clear bug, or replace a FreeSO
      workaround), record it in the doc comment and in the scorecard's
      "Known differences from 2017".
