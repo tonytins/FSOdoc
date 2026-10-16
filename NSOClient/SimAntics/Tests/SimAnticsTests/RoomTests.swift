@@ -3,58 +3,6 @@ import Testing
 import TSOContent
 @testable import SimAntics
 
-/// The owner's lots, in `NSOClient/Lots`.
-let ownerLotsDirectory = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent().appendingPathComponent("../../../Lots").standardizedFileURL
-
-/// Compares room generation with `fso-oracle room-maps` over FreeSO's empty lot, the owner's lots,
-/// and the synthetic blueprints from `OracleCases/make_blueprints.py`.
-@Suite(.enabled(if: oracleDirectory != nil, "TSO_ORACLE_DIR is not set"))
-struct OracleRoomMapTests {
-    @Test func matchesFreeSO() throws {
-        let directory = try required(oracleDirectory)
-        var matched = 0, mismatches: [String] = []
-        for response in try jsonLines(directory.appendingPathComponent("rooms.jsonl")) {
-            let file = try required(response["file"] as? String)
-            guard response["error"] == nil else { continue }
-            let candidates = [directory.appendingPathComponent("blueprints/\(file)"),
-                              freeSOContentDirectory.appendingPathComponent("Blueprints/\(file)"),
-                              ownerLotsDirectory.appendingPathComponent(file)]
-            let url = try required(candidates.first { FileManager.default.fileExists(atPath: $0.path) }, "blueprint \(file)")
-            let architecture = try Blueprint(xml: try Data(contentsOf: url)).architecture()
-
-            var actual: [String: Any] = ["size": [architecture.width, architecture.height]]
-            actual["maps"] = architecture.roomMaps.map { $0.map.map(Int.init) }
-            actual["rooms"] = architecture.rooms.dropFirst().map { room -> [Any] in
-                [Int(room.id), Int(room.lightBaseRoom), Int(room.level) - 1, room.isOutside, Int(room.area), room.isPool,
-                 room.adjacentRooms.map(Int.init),
-                 [room.bounds.x, room.bounds.y, room.bounds.width, room.bounds.height],
-                 room.supportRooms.map(Int.init)]
-            }
-            let expected = response.filter { ["size", "maps", "rooms"].contains($0.key) }
-            if canonical(actual) == canonical(expected) {
-                matched += 1
-            } else {
-                mismatches.append("\(file): \(firstDifference(expected, actual))")
-            }
-        }
-        print("Room maps against FreeSO: \(matched) matched, \(mismatches.count) mismatched")
-        #expect(matched > 1)
-        #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5).joined(separator: "\n"))")
-    }
-
-    private func firstDifference(_ expected: [String: Any], _ actual: [String: Any]) -> String {
-        for key in ["size", "rooms", "maps"] {
-            let lhs = (expected[key] as? [Any]) ?? [], rhs = (actual[key] as? [Any]) ?? []
-            for (index, pair) in zip(lhs, rhs).enumerated() where canonical(["v": pair.0]) != canonical(["v": pair.1]) {
-                return "\(key)[\(index)]: FreeSO \(canonical(["v": pair.0]).prefix(300)) Swift \(canonical(["v": pair.1]).prefix(300))"
-            }
-            if lhs.count != rhs.count { return "\(key): FreeSO has \(lhs.count), Swift \(rhs.count)" }
-        }
-        return "?"
-    }
-}
-
 /// Hand-built lots, checked against what FreeSO's fill does.
 struct RoomTests {
     /// Walls around a rectangle of tiles, as blueprints store them.

@@ -1,4 +1,6 @@
-# tsofiles-check
+# Tools
+
+## tsofiles-check
 
 `tsofiles-check` (the TSOFilesCheck package) is the first test of the file readers against a real
 install. It opens every FAR1, FAR3, DBPF, and IFF file, reads every archive entry, and parses every
@@ -8,7 +10,7 @@ supported chunk, then reports counts and failures.
 swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check
 ```
 
-## Which installs it checks
+### Which installs it checks
 
 - **With a folder argument,** it checks that folder.
 - **Without one,** it checks every install named by `TSO_GAME_DIR` (the 2002 production copy) and
@@ -18,7 +20,7 @@ swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check
 Each folder must contain an `objectdata` folder, in any letter case. One that doesn't is reported
 and skipped, and the other install is still checked.
 
-## What it prints
+### What it prints
 
 For each install, a header and a summary:
 
@@ -42,10 +44,10 @@ without reading entries. `--far1-variant a` reads The Sims 1's FAR layout.
 Exit codes: 0 when everything reads, 1 when anything fails, 2 when a folder isn't an install or
 can't be listed.
 
-## The differences report, once
+### The differences report, once
 
 The first time it checks both installs, it compares them and writes
-[`docs/install-differences.md`](../install-differences.md) (or the path in `--differences`). After
+[`docs/results/install-differences.md`](../results/install-differences.md) (or the path in `--differences`). After
 that it only says the file exists. Delete the file to compare again.
 
 The report lists files only in one install, then, for each file that differs:
@@ -57,3 +59,29 @@ The report lists files only in one install, then, for each file that differs:
 It holds names, sizes, chunk IDs, and GUIDs, never game data, so it can be committed. It's the
 reference for backwards compatibility: when something behaves differently on the beta, check
 there what the files change before calling it a port bug.
+
+## nso-oracle
+
+`nso-oracle` (the NSOOracle package) answers `fso-oracle`'s questions by running NSOClient, in
+`fso-oracle`'s formats, so the two can be compared line for line:
+
+| Command | Answers |
+| --- | --- |
+| `list-objects` | What loads for every registered object: label, resource, semi-global, routine and tuning counts, entry points |
+| `run-objects` | Each GUID on standard input run alone on an empty lot, with a state digest after creation and as it ticks |
+| `room-maps` | Each blueprint path on standard input: its room maps and rooms |
+| `compare` | Both sides' answers compared, and with `--review FILE`, that install's section of the review written |
+
+Where NSOClient can't answer yet, `run-objects` adds an `unsupported` line naming what isn't
+ported; comparisons count those as skipped, ranked, so they show what to port next.
+`run-primitive` and `run-lot` follow once NSOClient can load a lot by itself (phase D).
+
+```sh
+cut -f1 objects.tsv | swift run --package-path NSOClient/NSOOracle nso-oracle run-objects --ticks 30 --every 10
+```
+
+`NSOClient/scripts/oracle-review.sh [--review]` runs both oracles on every install it's given
+(`TSO_GAME_DIR` as "production", `TSO_BETA_DIR` as "beta") and compares them. With `--review` it
+writes [docs/results/nso-review.md](../results/nso-review.md); do that after a phase or milestone,
+since it reruns every object. The same comparisons run as NSOOracle's tests against the oracle
+fixtures, sharing the same code, so the tests and the review can't disagree.

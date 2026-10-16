@@ -42,12 +42,12 @@ How the Swift libraries behave today, with code examples (the oracle and SimsScr
 | [lot.md](nso/lot.md) | The lot model: positions, the tile index, walls, floors, rooms, blueprints |
 | [tools.md](nso/tools.md) | `tsofiles-check` and the install differences report |
 
-### install-differences.md: how the owner's two installs differ
+### [results/](results/README.md): how NSOClient measures up
 
-Written once by `tsofiles-check` when both `TSO_GAME_DIR` and `TSO_BETA_DIR` are set: the files,
-archive entries, IFF chunks, and object GUIDs that differ between them, with no game data. It's
-the reference for backwards compatibility with the 2002 beta. It doesn't exist until both
-installs have been scanned.
+| Page | Covers |
+| --- | --- |
+| [nso-review.md](results/nso-review.md) | `fso-oracle` and `nso-oracle` run side by side on each install, compared: matches, mismatches, what's not ported yet, and timings. Written after a phase or milestone, for sessions and public peer review |
+| [install-differences.md](results/install-differences.md) | How the owner's two installs (2002 production, 2002 beta) differ: files, archive entries, IFF chunks, and object GUIDs, with no game data. Written once by `tsofiles-check`; the reference for backwards compatibility with the beta |
 
 ### [fso/](fso/README.md): the 2017 FreeSO snapshot
 

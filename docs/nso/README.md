@@ -7,9 +7,9 @@ owner's 2002 TSO beta working. This folder describes how the code behaves today.
 finished and how that's proven, see the [scorecard](../scorecard.md); for what comes next, the
 [roadmap](../roadmap.md).
 
-These pages cover the four libraries and the checker tool. The oracle (`fso-oracle`, which runs
-FreeSO's code to produce reference answers) and SimsScript (the scripting proof of concept) are
-left out.
+These pages cover the four libraries and two tools: the checker and `nso-oracle`. FreeSO's own
+oracle (`fso-oracle`, which runs FreeSO's code to produce reference answers) and SimsScript (the
+scripting proof of concept) are left out.
 
 ## The packages
 
@@ -29,6 +29,7 @@ TSOFiles  ──▶  TSOContent  ──▶  SimAntics
 | SimAntics | Runs object behavior: the VM, entities, threads, primitives, and variables | [simantics.md](simantics.md) |
 | SimAntics (lot model) | Positions, the tile index, walls, floors, rooms, and blueprints | [lot.md](lot.md) |
 | TSOFilesCheck | `tsofiles-check`, which opens everything in one or two installs and compares them | [tools.md](tools.md) |
+| NSOOracle | `nso-oracle`, which answers `fso-oracle`'s questions with NSOClient and compares the two | [tools.md](tools.md#nso-oracle) |
 
 ## How the code behaves
 
@@ -45,7 +46,7 @@ A few rules hold everywhere. Knowing them makes each package easier to follow.
   `GameContent` is created and passed in, so tests and tools can load several installs side by side.
 - **Degrade gracefully on the beta.** Where the 2002 beta's files differ from the 2003 production
   files FreeSO expects, the port skips what doesn't fit, reports it, and keeps going. For example,
-  a PIFF patch that doesn't fit an object is skipped, not fatal. [`install-differences.md`](../install-differences.md)
+  a PIFF patch that doesn't fit an object is skipped, not fatal. [`install-differences.md`](../results/install-differences.md)
   records how the owner's two installs differ.
 - **Deterministic simulation.** SimAntics uses wrapping 16-bit arithmetic, never iterates a
   `Dictionary` or `Set` where order matters, and keeps entities in object ID order. Two VMs given

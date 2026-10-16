@@ -12,12 +12,6 @@ let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].ma
 let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 
-/// `objects.tsv` (`fso-oracle list-objects`) in the folder `NSOClient/scripts/oracle-fixtures.sh`
-/// writes, named by `TSO_ORACLE_DIR`, or `nil`.
-let oracleObjects: URL? = ProcessInfo.processInfo.environment["TSO_ORACLE_DIR"].map {
-    URL(fileURLWithPath: $0).appendingPathComponent("objects.tsv")
-}
-
 /// Checks against a real TSO install. Skipped unless `TSO_GAME_DIR` is set; no game data is in the repository.
 @Suite(.enabled(if: gameDirectory != nil, "TSO_GAME_DIR is not set"))
 struct RealInstallTests {
@@ -76,52 +70,5 @@ struct RealInstallTests {
         #expect(loaded > 2_000)
         #expect(failures.isEmpty, "\(failures.count) failures, first: \(failures.prefix(5))")
         #expect(tuningFailures.isEmpty, "\(tuningFailures.prefix(5))")
-    }
-
-    private func loadingError(guid: UInt32) -> ContentError? {
-        do {
-            _ = try content.objects.object(guid: guid)
-            return nil
-        } catch {
-            return error
-        }
-    }
-
-    /// Compares every object with what FreeSO's content system loads (`fso-oracle list-objects`).
-    ///
-    /// Where FreeSO loads an object, the label, resource, semi-global, routine names, BHAV
-    /// count, and tuning table count must match. Where FreeSO fails (on an older install,
-    /// FreeSO's patches for 2003 files don't fit), the object must still load here.
-    @Test(.enabled(if: oracleObjects != nil, "TSO_ORACLE_DIR is not set"))
-    func matchesFreeSOsContentSystem() throws {
-        let expected = try String(contentsOf: try #require(oracleObjects), encoding: .utf8)
-            .split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
-        var compared = 0, recovered = 0, mismatches: [String] = []
-        for fields in expected {
-            let guid = try #require(UInt32(fields[0], radix: 16))
-            switch fields[1] {
-            case "missing":
-                if try content.objects.object(guid: guid) != nil { mismatches.append("\(fields[0]): FreeSO has no OBJD") }
-            case "error":
-                // skillcheater's IFF isn't in the beta (FreeSO fails with a null reference); anything else must load.
-                switch loadingError(guid: guid) {
-                case nil: recovered += 1
-                case .missingFile? where fields[2] == "NullReferenceException": break
-                case let error?: mismatches.append("\(fields[0]): \(error)")
-                }
-            default:
-                let object = try #require(try content.objects.object(guid: guid), "\(fields[0])")
-                let resource = object.resource
-                let actual = [fields[0], object.definition.label, resource.name, resource.semiGlobal?.name ?? "-",
-                              "\(resource.treesByName.count)", "\(try resource.mainFile.chunks(BHAV.self).count)",
-                              "\(resource.tuning?.tables.count ?? 0)"]
-                // Later columns describe SimAntics entities and are compared in that package.
-                if actual != Array(fields.prefix(actual.count)) { mismatches.append("FreeSO \(fields) Swift \(actual)") }
-                compared += 1
-            }
-        }
-        print("TSOContent against FreeSO: \(compared) objects compared, \(mismatches.count) mismatched, \(recovered) loaded where FreeSO failed")
-        #expect(compared > 2_000)
-        #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5))")
     }
 }

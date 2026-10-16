@@ -57,7 +57,9 @@ docs/                        the Markdown documentation
     future/                  FreeSO's branches before and after the snapshot (lot-serialize, server-rebuild, upgrades, lotview-refactor)
   simantics/                 SimAntics Wiki pages in Markdown, with notes against FreeSO (CC BY-SA 3.0, see its README)
   nso/                       how NSOClient's code behaves, with examples (keep it current when behavior changes)
-  install-differences.md     how the TSO_GAME_DIR and TSO_BETA_DIR installs differ (written once by tsofiles-check)
+  results/                   how NSOClient measures up (see its README)
+    nso-review.md            fso-oracle and nso-oracle compared, per install (written after a phase or milestone)
+    install-differences.md   how the TSO_GAME_DIR and TSO_BETA_DIR installs differ (written once by tsofiles-check)
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions, for the oracle
   swift-guidelines/          Swift conventions for the NSOClient packages
@@ -65,7 +67,8 @@ TSOClient/                   the 2017 FreeSO snapshot (all paths below are relat
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
-  Oracle/                    .NET tool that runs FreeSO's SimAntics sources headless, for reference results
+  Oracle/                    fso-oracle: .NET tool that runs FreeSO's SimAntics sources headless, for reference results
+  NSOOracle/                 nso-oracle: NSOClient's answers to fso-oracle's questions, and the two compared; depends on ../SimAntics, ../TSOContent, ../TSOFiles, and swift-argument-parser
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
   TSOFilesCheck/             tsofiles-check, which scans an install; depends on ../TSOFiles and swift-argument-parser
@@ -223,7 +226,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
    - **The TSO beta.** The owner's 2002 beta install must keep working.
      Where its files differ from production, degrade gracefully: skip what
      doesn't fit, report it, and keep going, never fail outright.
-     [`docs/install-differences.md`](./docs/install-differences.md), when it
+     [`docs/results/install-differences.md`](./docs/results/install-differences.md), when it
      exists, lists how the install in `TSO_GAME_DIR` differs from the beta in
      `TSO_BETA_DIR`, file by file and chunk by chunk. Use it as the
      backwards-compatibility notes: check it before calling a mismatch on one
@@ -275,7 +278,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
 6. **No EA data in the repository.** Tests build synthetic files in code
    (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
    files read `TSO_GAME_DIR` (and `tsofiles-check` also `TSO_BETA_DIR`) and
-   skip when it isn't set. `docs/install-differences.md` holds names, sizes,
+   skip when it isn't set. `docs/results/install-differences.md` holds names, sizes,
    chunk IDs, and GUIDs only, never file contents.
 7. **Tests are the gate.** Swift Testing (`import Testing`, `@Test`), never
    XCTest. Cover every kept quirk and every error path, keep tests
@@ -375,7 +378,7 @@ oracle follows the [.NET guidelines](./.agents/skills/dotnet-guidelines/SKILL.md
 ### NSOClient work
 
 ```sh
-for package in TSOFiles TSOFilesCheck TSOContent SimAntics SimsScript; do  # every package, even ones you didn't touch
+for package in TSOFiles TSOFilesCheck TSOContent SimAntics SimsScript NSOOracle; do  # every package, even ones you didn't touch
     swift build --package-path "NSOClient/$package" &&
     swift test --package-path "NSOClient/$package"
 done
@@ -384,12 +387,16 @@ swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if
 dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
 python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR
-TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/TSOContent  # then compare with FreeSO
-TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics  # then compare with FreeSO: primitives
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/NSOOracle  # content, entry points, objects run alone, room maps
+NSOClient/scripts/oracle-review.sh --review                            # only after a phase or milestone, or when asked
 git status --short -- TSOClient                                        # must print nothing
 ```
 
 - Every package must build with no new warnings and pass all tests.
+- Write `docs/results/nso-review.md` (`oracle-review.sh --review`) only at the end of a phase or
+  milestone, or when the owner asks, not every session; it reruns every object on every install.
+  Commit it with the work it reviews.
 - Look over your diff for force unwraps (`!`) by eye; the search above can't
   tell them apart from `!=` and `!condition`.
 - If you touched a reader and `TSO_GAME_DIR` or `TSO_BETA_DIR` is set, the scan must still

@@ -57,7 +57,8 @@ In order:
    - [ ] Mock install wiring: unit tests read `NSOClient/MockInstall` instead of building fixtures in
      code, the oracle loads it (its install overlay can't find the object table yet), and CI runs
      the oracle comparisons against it.
-   - [ ] D. Lot loading from blueprint XML, then `run-lot` digests compared with FreeSO tick by tick.
+   - [ ] D. Lot loading from blueprint XML, then `run-lot` digests compared with FreeSO tick by tick, and
+     `nso-oracle run-primitive` and `run-lot`.
 2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
 
 ## Milestones
@@ -158,6 +159,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | `nso-oracle` (NSOClient/NSOOracle) answers `fso-oracle`'s `list-objects`, `run-objects`, and `room-maps` by running NSOClient, and `compare` sets the two side by side; `oracle-review.sh --review` writes `docs/results/nso-review.md`, per install, after a phase or milestone. The content, entry point, single-object, and room-map comparisons moved into NSOOracle's tests, sharing the review's code. First review: 0 mismatches on the 2002 production copy and the 2002 beta. The install differences moved to `docs/results/`. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase C3: container slots and what they hold (`placeInSlot`, the containment object data, the slot scopes), contents moving with their container and placed nearby when it's deleted, stacking onto a slot when placing, the buildable-area check (empty on blueprint lots, as in FreeSO), and Find Location For (16). Objects running alone and matching FreeSO went from 2,597 to 2,743; Expression now runs all 3,809 cases, Create Object Instance 1,245 of 1,255, and Find Location For all 1,538, every one matching. `run-primitive` reports each lot object's slots. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase C2: placement as `ChangePosition` does it: footprints, the bounds, wall, floor, and overlap checks, multi-tile offsets turned with the facing and undone when a part doesn't fit, room entity lists, wall use, door and window wall styles, dynamic multi-tile joining, and the placement entry point. Create Object Instance now places in the world; all 1,167 of its 1,255 cases the port can run match, 672 of them placed objects. `run-primitive` now reports lot objects' state (object data, attributes, footprint) and groups, so tests rebuild the lot exactly. The owner's house (`NSOClient/Lots`, 564 walls, 211 objects) joined the room-map comparison and matches; the oracle now leaves out objects FreeSO can't load on the install, such as one whose FreeSO patch doesn't fit the 2002 files. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase C1: multi-tile groups (`MultitileGroup`), object creation as `CreateObjectInstance` does it, deletion of objects that keep failing, Set To Next's part search, and the Create Object Instance primitive out of the world (all 314 of 475 cases the port can run match). The oracle fixtures now come from the 2002 production copy; every comparison still matches, and objects running alone and matching FreeSO went from 2,163 to 2,597. |

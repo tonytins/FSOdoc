@@ -6,6 +6,10 @@ milestone). It compiles FreeSO's SimAntics, Files, Content, LotView, HIT, and
 Vitaboy sources unchanged: `SnapshotSources.props` links them read-only from
 `TSOClient/`, and nothing under `TSOClient/` is ever edited.
 
+Its Swift counterpart, `nso-oracle` (`NSOClient/NSOOracle`), answers the same questions in the same
+formats by running NSOClient, and compares the two; `NSOClient/scripts/oracle-review.sh` runs both
+and, with `--review`, writes `docs/results/nso-review.md`.
+
 ## Running it
 
 ```sh

@@ -45,7 +45,7 @@ struct TSOFilesCheck: ParsableCommand {
     var install: InstallChoice = .all
 
     @Option(help: "Where to note how the two installs differ, if it doesn't exist yet.")
-    var differences = "docs/install-differences.md"
+    var differences = "docs/results/install-differences.md"
 
     @Argument(help: "The install folder. Defaults to $TSO_GAME_DIR and $TSO_BETA_DIR.")
     var directory: String?
