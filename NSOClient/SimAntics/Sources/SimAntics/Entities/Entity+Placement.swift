@@ -23,18 +23,17 @@ extension Entity {
 
     /// Whether the entity may go to a position (`VMEntity.PositionValid`): on the lot, against the
     /// walls it needs and clear of those it can't have, on a floor it allows, and clear of other
-    /// objects, unless `flags` allow overlapping. The lot is flat, so slopes never fail.
+    /// objects, unless `flags` allow overlapping. With `userBuildableLimit`, it must also be in the
+    /// buildable area. The lot is flat, so slopes never fail.
     ///
-    /// - Throws: ``SimAnticsError/unsupported(_:)`` for the buildable-area limit (lot sizes aren't
-    ///   ported); any error an "allow intersection" entry point throws.
+    /// - Throws: any error an "allow intersection" entry point throws.
     public func placement(at position: LotPosition, facing direction: Direction,
                           flags: PlaceRequestFlags = []) throws(SimAnticsError) -> PlacementResult {
         guard !position.isOutOfWorld else { return PlacementResult() }
-        if flags.contains(.userBuildableLimit) {
-            throw .unsupported("the buildable area needs lot sizes")
-        }
         let architecture = vm.architecture
-        guard !architecture.isOutOfBounds(position) else { return PlacementResult(.locationOutOfBounds) }
+        if (flags.contains(.userBuildableLimit) && architecture.isUserOutOfBounds(position)) || architecture.isOutOfBounds(position) {
+            return PlacementResult(.locationOutOfBounds)
+        }
 
         let wall = try architecture.wall(atX: Int(position.tileX), y: Int(position.tileY), level: Int(position.level))
         let wallStatus = wallChangeValid(wall, facing: direction, checkUnused: true)
@@ -117,7 +116,7 @@ extension Entity {
                                            arguments: [objectID, 0, 0, 0]) { continue }
             result = PlacementResult(.cantIntersectOtherObjects, object: other)
             // Something solid is here; maybe this object stacks on its first slot.
-            guard allowedHeights > 1, other.containerSlotCount > 0, other.slot(0) == nil || other.slot(0) === self else {
+            guard allowedHeights > 1, other.totalSlots > 0, other.slot(0) == nil || other.slot(0) === self else {
                 continue
             }
             if (1 << ((other.slotHeight(0) - 1) & 31)) & Int(allowedHeights) != 0 {
@@ -134,14 +133,6 @@ extension Entity {
             }
         }
         return result
-    }
-
-    /// The entity in a container slot. Containment isn't ported yet, so every slot is empty.
-    func slot(_ index: Int) -> Entity? { nil }
-
-    /// The height of the first container slot, whatever the index, or -1 past the last (`GetSlotHeight`).
-    func slotHeight(_ index: Int) -> Int {
-        index < containerSlotCount ? Int(containerSlots[0].height) : -1
     }
 
     /// `SetWallUse`: records which walls the object is against in object data 5 and, for exclusive

@@ -57,12 +57,12 @@ func withTable(rightLeads: Bool = false, _ body: (VM, Entity) throws -> Void) th
             let lamp = try #require(try vm.createObject(guid: lampGUID)?.objects.first)
             #expect(lamp.objectID == 4)
             let left = table.objects[0]
-            vm.delete(left)
+            try vm.delete(left)
             #expect(left.isDead && vm.entity(id: 2) == nil && table.objects.map(\.objectID) == [3])
-            vm.delete(left)                                          // twice does nothing
+            try vm.delete(left)                                          // twice does nothing
             #expect(vm.entities.map(\.objectID) == [1, 3, 4])
             #expect(try vm.createObject(guid: lampGUID)?.objects.first?.objectID == 2)   // the lowest free ID
-            vm.delete(table.objects[0], wholeGroup: true)
+            try vm.delete(table.objects[0], wholeGroup: true)
             #expect(vm.entities.map(\.objectID) == [1, 2, 4] && table.objects.isEmpty)
             #expect(vm.objects(withGUID: rightGUID) == nil)
         }

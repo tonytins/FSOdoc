@@ -181,7 +181,8 @@ namespace FSO.Oracle
                 vm.Context.ObjectQueries.GetObjectsByCategory(entity.ObjectData[(int)FSO.SimAntics.Model.VMStackObjectVariable.Category])?.Contains(entity) ?? false,
                 entity.Position.x, entity.Position.y, entity.Position.Level, (byte)entity.Direction,
                 Values(entity.ObjectData), Values((List<short>)AttributesField.GetValue(entity)),
-                entity.Footprint == null ? null : new JsonArray(entity.Footprint.x1, entity.Footprint.y1, entity.Footprint.x2, entity.Footprint.y2)
+                entity.Footprint == null ? null : new JsonArray(entity.Footprint.x1, entity.Footprint.y1, entity.Footprint.x2, entity.Footprint.y2),
+                Values(Enumerable.Range(0, entity.TotalSlots()).Select(slot => entity.GetSlot(slot)?.ObjectID ?? (short)0))
                 )).ToArray());
             var (idleStartBefore, interruptBefore, scheduledBefore) = (thread.ScheduleIdleStart, thread.Interrupt, thread.ScheduleIdleEnd);
             var response = Response(id, null, null);

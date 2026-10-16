@@ -7,7 +7,7 @@ import TSOFiles
 /// does in FreeSO. Each scope either behaves as
 /// in FreeSO, fails as FreeSO does (``SimAnticsError/simantics(_:)`` and the other
 /// FreeSO failures), or throws ``SimAnticsError/unsupported(_:)`` because what it
-/// reads (Sims, slots, object definitions) isn't ported yet.
+/// reads (Sims) isn't ported yet.
 enum VMMemory {
     // MARK: 16-bit variables
 
@@ -96,8 +96,9 @@ enum VMMemory {
         case .stackObjectLeadTileAttribute:
             return try stackObject(of: frame).leadObject.attribute(at: UInt16(bitPattern: data))
         case .stackObjectSlot:
-            _ = try stackObject(of: frame)
-            throw .unsupported("reading scope \(scope) needs slots")
+            return try stackObject(of: frame).slot(Int(data))?.objectID ?? 0
+        case .mySlot:
+            return try caller(of: frame).slot(Int(data))?.objectID ?? 0
         case .stackObjectAttributeByParameter:
             let index = try element(frame.arguments, data, "parameter")
             return try stackObject(of: frame).attribute(at: UInt16(bitPattern: index))
@@ -117,8 +118,6 @@ enum VMMemory {
         case .stackObjectList:
             guard let entity = frame.stackObject else { return 0 }
             return try listValue(of: entity, data: data)
-        default:
-            throw .unsupported("reading scope \(scope)")
         }
     }
 

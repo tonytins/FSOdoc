@@ -293,6 +293,24 @@ def create_object_instance_cases(lot_guids, masters):
                                                         "caller": anchor, "locals": [direction]}
 
 
+# MARK: Find Location For
+
+def find_location_for_cases():
+    # Every mode (6 and 7 do nothing), the flags (4 is the buildable area), objects to place out of
+    # the world (2, 3, 5) and on the lot (7 to 12), and references: the caller, or an object in local 0.
+    for mode in range(8):
+        for flags in (0, 2, 4):
+            for target in (2, 3, 5, 7, 9, 10, 11, 12):
+                for caller in (1, 7, 11, 12):
+                    yield f"find-location-{mode}-{flags}-{target}-{caller}", {
+                        "operand": struct.pack("<BBB", mode, 0, flags).hex(), "stackObject": target, "caller": caller}
+                for reference in (7, 10, 12, 99):
+                    yield f"find-location-local-{mode}-{flags}-{target}-{reference}", {
+                        "operand": struct.pack("<BBB", mode, 0, flags | 1).hex(), "stackObject": target, "locals": [reference]}
+    yield "find-location-bad-local", {"operand": struct.pack("<BBB", 0, 3, 1).hex(), "stackObject": 2, "locals": [7]}
+    yield "find-location-no-stack-object", {"operand": struct.pack("<BBB", 0, 0, 0).hex()}
+
+
 # MARK: Writing
 
 # Each primitive's opcode, whether its cases name real objects, and its cases given
@@ -306,6 +324,7 @@ GENERATORS = {
     "set_to_next": (31, True, lambda guids: set_to_next_cases(guids[0][1])),
     "test_object_type": (32, True, lambda guids: test_object_type_cases(guids[0][0], guids[0][1])),
     "create_object_instance": (42, True, lambda guids: create_object_instance_cases(*guids)),
+    "find_location_for": (16, False, lambda guids: find_location_for_cases()),
 }
 
 

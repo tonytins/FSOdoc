@@ -40,7 +40,7 @@ ORACLE_GUIDS=$(echo "$lot" | python3 -I -c 'import json, sys; print(",".join(ent
 ORACLE_MASTERS=$(echo "$lot" | python3 -I -c 'import json, sys; print(",".join(group[1] for group in json.load(sys.stdin)["groups"] if group[1]))')
 export ORACLE_GUIDS ORACLE_MASTERS
 
-for primitive in expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance; do
+for primitive in expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance find_location_for; do
     echo "Running $primitive cases..."
     python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_cases.py" "$primitive" "$output/$primitive.requests.jsonl"
     oracle run-primitive <"$output/$primitive.requests.jsonl" >"$output/$primitive.responses.jsonl" 2>"$output/$primitive.log"

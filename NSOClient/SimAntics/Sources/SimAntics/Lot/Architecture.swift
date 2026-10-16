@@ -79,6 +79,12 @@ public struct Architecture: Sendable {
     /// Every room on every level, from the last regeneration. Index 0 is an unused placeholder,
     /// so room IDs start at 1 (FreeSO's `RoomData`).
     public private(set) var rooms: [Room]
+    /// Where players may build, and on how many floors (`BuildableArea`, `BuildableFloors`).
+    /// FreeSO sets these from a lot's size when it restores a saved lot or the size changes; a lot
+    /// loaded from a blueprint keeps an empty area, so everywhere is outside it. Lot sizes come
+    /// with saves.
+    public var buildableArea = TileRect(x: 0, y: 0, width: 0, height: 0)
+    public var buildableFloors = 0
     /// Whether walls or floors changed since rooms were last generated.
     public private(set) var isDirty = false
     /// Identifies one generation of ``rooms``, so a VM can tell its room lists are out of date.
@@ -134,6 +140,13 @@ public struct Architecture: Sendable {
     public func isOutOfBounds(_ position: LotPosition) -> Bool {
         position.x < 0 || position.y < 0 || position.level < 1 || Int(position.tileX) >= width
             || Int(position.tileY) >= height || Int(position.level) > Self.stories
+    }
+
+    /// Whether a position is outside the buildable area (`VMContext.IsUserOutOfBounds`).
+    public func isUserOutOfBounds(_ position: LotPosition) -> Bool {
+        let tileX = Int(position.tileX), tileY = Int(position.tileY), area = buildableArea
+        return tileX < area.x || tileY < area.y || position.level < 1 || tileX >= area.x + area.width
+            || tileY >= area.y + area.height || Int(position.level) > buildableFloors
     }
 
     /// The floor under a position, or on a diagonal tile, the pattern of the half it's in (`GetPreciseFloor`).

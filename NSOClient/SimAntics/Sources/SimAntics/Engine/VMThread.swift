@@ -128,7 +128,7 @@ public final class VMThread {
         frame.caller?.reset()
         if recentlyFailed {
             // An object that fails again within 10 ticks is deleted, with every part of it.
-            vm.delete(entity, wholeGroup: true)
+            do { try vm.delete(entity, wholeGroup: true) } catch { vm.report(error, by: entity) }
         }
     }
 

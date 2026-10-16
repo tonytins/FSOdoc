@@ -70,8 +70,30 @@ let result = try vm.place(table, at: .center(ofTileX: 4, y: 4, level: 1), facing
 if result.status != .success { print(result.status, result.object?.objectID as Any) }  // e.g. cantIntersectOtherObjects 7
 ```
 
-The lot is flat, so slopes never fail; the buildable area isn't ported yet, so the
-`userBuildableLimit` flag throws `unsupported`, as does stacking onto a slot (containment).
+The lot is flat, so slopes never fail. With `userBuildableLimit`, a position must also be in the
+buildable area; a lot loaded from a blueprint has none, as in FreeSO (its size comes from a saved
+lot), so nothing fits.
+
+## Slots and containment
+
+An object can hold others in its container slots: one for each slot of type 0 in its `SLOT` chunk,
+created when it's initialized. A tray holds a plate, a counter holds a sink. `placeInSlot(_:slot:cleanOld:)`
+puts an object in a slot, as FreeSO's `PlaceInSlot` does: it's refused if the slot holds something
+else, doesn't exist, or would hold its own container. The held object takes its container's
+position, and has no footprint of its own.
+
+```swift
+if try tray.placeInSlot(plate, slot: 0, cleanOld: true) {
+    print(tray.slot(0) === plate, plate.container === tray)   // true true
+}
+```
+
+Containment shows up in object data (`containerID` and `parentID`, `slotNumber`, `slotCount`) and in
+the "my slot" and "stack object's slot" scopes, which read the ID of what a slot holds. When a
+container moves, what it holds moves with it. Placing an object where another stands puts it in
+the other's first slot, with `acceptSlots`, if the slot's height is one it allows and it isn't too
+heavy. Deleting a container moves what it held out of the world and, if the container was on the
+lot, to the nearest spot that fits (`FindLocationFor`).
 
 ## Walls, floors, and rooms
 

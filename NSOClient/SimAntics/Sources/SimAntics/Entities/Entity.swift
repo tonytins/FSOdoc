@@ -4,9 +4,9 @@ import TSOFiles
 /// An object on the lot.
 ///
 /// Ports the parts of FreeSO's `VMEntity` and `VMGameObject` that SimAntics variables
-/// read and write, and the entity's place in its ``MultitileGroup``. Sims (`VMAvatar`),
-/// containers and slots, and interactions aren't ported yet; reading values that need them
-/// throws ``SimAnticsError/unsupported(_:)``.
+/// read and write, its place in its ``MultitileGroup``, and the objects in its container slots.
+/// Sims (`VMAvatar`) and interactions aren't ported yet; reading values that need them throws
+/// ``SimAnticsError/unsupported(_:)``.
 ///
 public final class Entity {
     public let objectID: Int16
@@ -33,10 +33,14 @@ public final class Entity {
     /// A group whose objects placement ignores, while an object is created underneath its creator
     /// (`IgnoreIntersection`).
     var ignoreIntersection: MultitileGroup?
-    /// The definition's container slots (`SLOT` slots of type 0), and how many the entity has once
-    /// initialized (`TotalSlots`).
+    /// The definition's container slots (`SLOT` slots of type 0).
     let containerSlots: [SLOT.Slot]
-    public internal(set) var containerSlotCount = 0
+    /// What each container slot holds (`Contained`); the entity gets a slot for each of the
+    /// definition's when it's initialized.
+    var contained: [Entity?] = []
+    /// The object this one is in, and which of its slots (`Container`, `ContainerSlot`).
+    public internal(set) var container: Entity?
+    public internal(set) var containerSlot: Int16 = 0
 
     /// Whether the entity was deleted (`Dead`).
     public internal(set) var isDead = false
@@ -207,7 +211,7 @@ public final class Entity {
     /// Starts the entity, as `VMGameObject.Init` does: schedules it, runs init to completion,
     /// pushes main (with ``mainParameter`` and ``mainStackObjectID``), then disables it if the lot's category isn't one its definition allows.
     public func initialize() throws(SimAnticsError) {
-        containerSlotCount = containerSlots.count
+        contained = Array(repeating: nil, count: containerSlots.count)
         vm.scheduler.scheduleTick(for: self, in: 1)
         try executeEntryPoint(.initialize, runImmediately: true)
         var arguments: [Int16]?
@@ -288,8 +292,12 @@ public final class Entity {
             return objectID
         case .direction:
             return Int16(direction.notch)
-        case .containerID, .parentID, .slotNumber, .slotCount:
-            throw .unsupported("object data \(variable) needs containers and slots")
+        case .containerID, .parentID:
+            return container?.objectID ?? 0
+        case .slotNumber:
+            return container == nil ? -1 : containerSlot
+        case .slotCount:
+            return Int16(truncatingIfNeeded: totalSlots)
         case .useCount:
             throw .unsupported("object data \(variable) needs interactions")
         case .lockoutCount:

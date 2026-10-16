@@ -181,11 +181,13 @@ public final class VM {
     ///
     /// While entities are running, deletion waits until the tick ends, after the random seed
     /// advances. A deleted entity leaves the entity list, the queries, the schedule, and its group,
-    /// and its object ID becomes free again. Deleting one twice does nothing. Contained objects
-    /// aren't moved out yet (containers come with slots).
-    public func delete(_ entity: Entity, wholeGroup: Bool = false) {
+    /// and its object ID becomes free again. Deleting one twice does nothing. What it held leaves
+    /// its slots and is placed nearby, or out of the world if it was out of the world.
+    ///
+    /// - Throws: any error an entry point throws while placing what it held.
+    public func delete(_ entity: Entity, wholeGroup: Bool = false) throws(SimAnticsError) {
         if wholeGroup {
-            for part in entity.group.objects { delete(part) }
+            for part in entity.group.objects { try delete(part) }
             return
         }
         guard !entity.isDead else { return }
@@ -203,8 +205,51 @@ public final class VM {
             lowestFreeObjectID = min(lowestFreeObjectID, entity.objectID)
         }
         entity.group.remove(entity)
+        // What it held goes out of the world, then, if the deleted object was on the lot, to the
+        // nearest spot that fits (FreeSO moves the deleted object to each one's position first).
+        for index in 0..<entity.totalSlots {
+            guard let held = entity.slot(index) else { continue }
+            entity.position = held.position
+            try place(held.group, at: .outOfWorld, facing: held.direction)
+            if !entity.position.isOutOfWorld { _ = try findLocation(for: held, near: entity, flags: []) }
+        }
         // A deleted entity never runs again; dropping its stack breaks the frames' references to it.
         entity.thread.stack.removeAll()
+    }
+
+    /// `VMFindLocationFor.FindLocationFor`: places an object at the reference's position in each
+    /// compass facing, then on rings of tiles around it, out to nine tiles, and returns whether
+    /// one fit.
+    ///
+    /// - Throws: any error an entry point throws.
+    func findLocation(for object: Entity, near reference: Entity, flags: PlaceRequestFlags) throws(SimAnticsError) -> Bool {
+        let base = reference.position
+        for facing in [Direction.north, .east, .south, .west] {
+            if try place(object.group, at: base, facing: facing, flags: flags).status == .success { return true }
+        }
+        for ring in 1..<10 {
+            func tile(_ dx: Int, _ dy: Int) -> LotPosition {
+                .center(ofTileX: Int16(truncatingIfNeeded: Int(base.tileX) + dx),
+                        y: Int16(truncatingIfNeeded: Int(base.tileY) + dy), level: base.level)
+            }
+            for dx in -ring...ring {
+                for j in 0..<8 {
+                    let position = tile(dx, (j % 2 * 2 - 1) * ring)
+                    if try place(object.group, at: position, facing: Direction(notch: j / 2 * 2), flags: flags).status == .success {
+                        return true
+                    }
+                }
+            }
+            for dy in (1 - ring)..<ring {
+                for j in 0..<8 {
+                    let position = tile((j % 2 * 2 - 1) * ring, dy)
+                    if try place(object.group, at: position, facing: Direction(notch: j / 2 * 2), flags: flags).status == .success {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
     }
 
     /// Puts entities already on the lot into one new group, in the order given, as a saved lot
@@ -307,8 +352,7 @@ public final class VM {
     /// moves and faces the new way, then each takes its place: room, footprint, walls, and the
     /// placement entry point.
     ///
-    /// - Throws: ``SimAnticsError/unsupported(_:)`` for stacking onto a slot (containment isn't
-    ///   ported); any error an entry point throws.
+    /// - Throws: any error an entry point throws.
     @discardableResult
     public func place(_ group: MultitileGroup, at position: LotPosition, facing direction: Direction,
                       flags: PlaceRequestFlags = []) throws(SimAnticsError) -> PlacementResult {
@@ -316,6 +360,7 @@ public final class VM {
         guard !group.objects.isEmpty, let lead = group.leadObject,
               let leadIndex = group.objects.firstIndex(where: { $0 === lead }) else { return PlacementResult() }
         let parts = group.objects
+        let oldContainers = parts.map { ($0.container, Int($0.containerSlot)) }
         for part in parts { leavePosition(part) }
 
         let leadOffset = group.offsets[leadIndex]
@@ -334,17 +379,21 @@ public final class VM {
                                      level: Int8(truncatingIfNeeded: Int(position.level) + Int(offset.level)))
             let result = try part.placement(at: target, facing: direction, flags: flags)
             guard result.status == .success else {
-                // Back to where they were.
-                for part in parts { try takePosition(part, runsPlacementEntryPoint: true) }
+                // Back to where they were, slots included.
+                for (part, (oldContainer, oldSlot)) in zip(parts, oldContainers) {
+                    if let oldContainer { try oldContainer.placeInSlot(part, slot: oldSlot, cleanOld: false) }
+                    try takePosition(part, runsPlacementEntryPoint: true)
+                }
                 return result
             }
             targets.append(target)
             results.append(result)
         }
         for (part, (target, result)) in zip(parts, zip(targets, results)) {
-            if result.object != nil { throw .unsupported("stacking an object onto a slot needs containment") }
+            // `SetIndivPosition`: an object stacked onto another goes in its first slot.
             part.direction = direction
             part.position = target
+            if let base = result.object { try base.placeInSlot(part, slot: 0, cleanOld: false) }
         }
         for part in parts { try takePosition(part, runsPlacementEntryPoint: true) }
         return PlacementResult()
@@ -367,23 +416,35 @@ public final class VM {
     }
 
     /// `VMGameObject.PrePositionChange`: the entity leaves its place. Its footprint goes, it leaves
-    /// its room and tile, and in the world, a door or window takes its style off the walls and the
-    /// object stops using them.
+    /// its room and tile, and its container's slot if it's in one; otherwise, in the world, a door
+    /// or window takes its style off the walls and the object stops using them.
     func leavePosition(_ entity: Entity) {
         entity.footprint = nil
         unregisterPosition(entity)
+        if let container = entity.container {
+            container.clearSlot(Int(entity.containerSlot))
+            return
+        }
         guard !entity.position.isOutOfWorld, !architecture.isOutOfBounds(entity.position) else { return }
         try? entity.setArchitecturalWallStyles(to: 0)          // in range, so these can't fail
         try? entity.setWallUse(occupied: false, exclusive: entity.objectData[Int(ObjectVariable.exclusivePlacementFlags.rawValue)] & 2 != 0)
     }
 
-    /// `VMGameObject.PositionChange`: the entity takes its place. It joins the room and tile; in the
-    /// world, a door or window puts its style on the walls, the object marks the walls it uses,
+    /// `VMGameObject.PositionChange`: the entity takes its place. What it holds moves with it, and
+    /// it joins the room and tile; unless it's in a container, in the world a door or window puts
+    /// its style on the walls, the object marks the walls it uses,
     /// a dynamic multi-tile object joins its neighbors, and it gets a footprint and (unless loading)
     /// runs the placement entry point.
     func takePosition(_ entity: Entity, runsPlacementEntryPoint: Bool) throws(SimAnticsError) {
         entity.setRoom(architecture.room(at: entity.position))
+        // What it holds comes along.
+        for case let held? in entity.contained {
+            unregisterPosition(held)
+            held.position = entity.position
+            try takePosition(held, runsPlacementEntryPoint: runsPlacementEntryPoint)
+        }
         registerPosition(entity)
+        guard entity.container == nil else { return }
         guard !entity.position.isOutOfWorld, !architecture.isOutOfBounds(entity.position) else { return }
         try entity.setArchitecturalWallStyles(to: entity.object.definition.wallStyle)
         try entity.setWallUse(occupied: true, exclusive: entity.objectData[Int(ObjectVariable.exclusivePlacementFlags.rawValue)] & 2 != 0)

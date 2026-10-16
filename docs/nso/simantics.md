@@ -58,6 +58,7 @@ An `Entity` is an object on the lot (FreeSO's `VMEntity` and `VMGameObject`). It
 | `attributes` | Per-object attributes; grow with zeros on any access past the end, as in FreeSO |
 | `list` | The entity's list, for the push and pop operators |
 | `position`, `direction` | Where it is and which way it faces ([lot.md](lot.md)) |
+| `container`, `slot(_:)` | The object it's in, and what each of its container slots holds ([lot.md](lot.md#slots-and-containment)) |
 | `entryPoints` | The routines for init, main, load, cleanup, and the rest, from the `OBJD` or its `OBJf` |
 | `thread` | Its interpreter |
 
@@ -102,8 +103,9 @@ if let table = try vm.createObject(guid: tableGUID) {        // a multi-tile mas
 
 `VM.delete(_:wholeGroup:)` takes an entity (or every part of its object) off the lot: out of the
 entity list, the queries, and the schedule, and its ID is free again. While entities are running,
-deletion waits until the tick ends, after the random seed has counted the entity. That's how FreeSO
-deletes an object whose routines fail twice within 10 ticks, and the port does the same.
+deletion waits until the tick ends, after the random seed has counted the entity. What the object
+held leaves its slots and is placed nearby (or out of the world, if the object was). That's how
+FreeSO deletes an object whose routines fail twice within 10 ticks, and the port does the same.
 
 ## Threads and routines
 
@@ -168,8 +170,8 @@ let big = try frame.bigValue(of: Variable(.tempXL, 0))      // 32-bit; only Temp
 
 Every scope objects use is ported: temps and TempXL, parameters and locals, globals, object data
 and attributes of the caller, stack object, and others, lists, definition fields, the clock, entry
-points, tuning, and room data. Each scope either behaves as in FreeSO, fails as FreeSO does, or throws
-`unsupported` (slots, and anything only Sims have).
+points, tuning, room data, and container slots. Each scope either behaves as in FreeSO, fails as
+FreeSO does, or throws `unsupported` (anything only Sims have).
 
 **Tuning** (`Variable(.tuning, …)`) picks a table with the top 9 bits of the data and a key with
 the low 7. Tables 0–63 are the code owner's, 64–127 its semi-global's, and 128–191 the global's.
@@ -188,6 +190,7 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 2 | `Expression` | Compares, assigns, does arithmetic and flag operations, pushes and pops lists |
 | 7 | `Refresh` | Refreshes graphics, lighting, or room score (headless: changes nothing yet) |
 | 8 | `RandomNumber` | Draws a number below a limit into a variable |
+| 16 | `FindLocationFor` | Places the stack object near a reference, out of the world, or along a facing |
 | 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |

@@ -4,12 +4,12 @@ extension Primitives {
     /// Ports FreeSO's `VMCreateObjectInstance`. The position mode picks where the new object goes:
     /// a tile next to or under the caller or an object, a slot, or out of the world. The object is
     /// created as ``VM/createObject(guid:at:facing:mainStackObjectID:mainParameter:)`` does, then
-    /// becomes the stack object; anywhere but out of the world, an object that didn't get placed is
-    /// deleted again and the primitive is false. The new object's main can get the stack object's ID
+    /// becomes the stack object; anywhere but out of the world, an object that didn't get placed (in
+    /// the world or in a slot) is deleted again and the primitive is false. The new object's main can get the stack object's ID
     /// and, as argument 0, temp 0 or the caller's ID.
     ///
-    /// Not ported yet: slots and hands (containment), callbacks
-    /// that run an interaction on the new object, and a neighbor's Sim (The Sims 1). Each throws
+    /// Not ported yet: callbacks that run an interaction on the new object, and a neighbor's Sim
+    /// (The Sims 1). Each throws
     /// ``SimAnticsError/unsupported(_:)``. Persisting the object gives it a database ID in FreeSO,
     /// which nothing here models.
     public enum CreateObjectInstance: Primitive {
@@ -82,9 +82,6 @@ extension Primitives {
             let vm = frame.vm
             guard let mode = Position(rawValue: operand.rawPosition) else { throw .simantics("Where do I put this??") }
             let (position, direction) = try target(of: mode, operand: operand, in: frame)
-            if mode == .inSlot0OfStackObject || mode == .inMyHand {
-                throw .unsupported("creating an object in a slot needs containment")
-            }
 
             let flags = operand.flags
             let mainStackObjectID = flags.contains(.passObjectIDs) ? frame.stackObject?.objectID ?? 0 : 0
@@ -101,15 +98,25 @@ extension Primitives {
                                                   mainStackObjectID: mainStackObjectID, mainParameter: mainParameter),
                   let object = group.leadObject else { return .gotoFalse }
 
-            if mode == .underneathMe && object.position.isOutOfWorld {
+            switch mode {
+            case .inSlot0OfStackObject:
+                guard let stackObject = frame.stackObject else { throw .nullReference("no stack object") }
+                try stackObject.placeInSlot(object, slot: 0, cleanOld: true)
+            case .inMyHand:
+                // A Sim's hand is its slot; an object's is its first container slot.
+                guard let caller = frame.caller else { throw .nullReference("no caller") }
+                try caller.placeInSlot(object, slot: 0, cleanOld: true)
+            case .underneathMe where object.position.isOutOfWorld:
                 guard let caller = frame.caller else { throw .nullReference("no caller") }
                 // Placed under the caller, the new object may overlap it.
                 for part in group.objects { part.ignoreIntersection = caller.group }
                 defer { for part in group.objects { part.ignoreIntersection = nil } }
                 try vm.place(group, at: caller.position, facing: direction)
+            default:
+                break
             }
-            if mode != .outOfWorld && object.position.isOutOfWorld {
-                vm.delete(object, wholeGroup: true)
+            if mode != .outOfWorld && object.position.isOutOfWorld && object.container == nil {
+                try vm.delete(object, wholeGroup: true)
                 return .gotoFalse
             }
             if flags.contains(.returnImmediately) {

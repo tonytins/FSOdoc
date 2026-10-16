@@ -19,7 +19,7 @@ let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
 /// are compared. Cases that need behavior this port doesn't have yet are counted, not failed.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OraclePrimitiveTests {
-    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number", "play_sound", "create_object_instance"])
+    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number", "play_sound", "create_object_instance", "find_location_for"])
     func matchesFreeSO(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))
@@ -100,6 +100,18 @@ struct OracleCase {
                 for (index, value) in try required(entry[8] as? [Int]).enumerated() { entity.objectData[index] = Int16(value) }
                 for (index, value) in try required(entry[9] as? [Int]).enumerated() { entity.setAttribute(Int16(value), at: UInt16(index)) }
                 entity.footprint = (entry[10] as? [Int]).map { Obstacle($0[0], $0[1], $0[2], $0[3]) }
+            }
+        }
+        // Container slots and what's in them, once every object exists.
+        for entry in response["lot"] as? [[Any]] ?? [] where entry.count >= 12 {
+            let entity = try required(vm.entity(id: Int16(try required(entry[0] as? Int))))
+            let slots = try required(entry[11] as? [Int])
+            entity.contained = Array(repeating: nil, count: slots.count)
+            for (index, id) in slots.enumerated() where id != 0 {
+                let held = try required(vm.entity(id: Int16(id)))
+                entity.contained[index] = held
+                held.container = entity
+                held.containerSlot = Int16(index)
             }
         }
         // Objects that form one group, such as the parts of a multi-tile object.

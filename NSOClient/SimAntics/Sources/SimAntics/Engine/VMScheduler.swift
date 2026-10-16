@@ -66,7 +66,10 @@ public final class VMScheduler {
         isRunning = false
         let deletions = pendingDeletion
         pendingDeletion.removeAll()
-        for entity in deletions { vm.delete(entity) }
+        for entity in deletions {
+            // FreeSO lets an error here escape the tick; this reports it against the object.
+            do { try vm.delete(entity) } catch { vm.report(error, by: entity) }
+        }
     }
 
     /// Queues an entity to be deleted when the tick ends (`Delete`).

@@ -89,7 +89,7 @@ Response fields:
 | `noPrimitive` | `true` if FreeSO has no primitive for the opcode; it then counts as `GOTO_TRUE` |
 | `temps`, `tempXL`, `locals`, `args`, `stackObject`, `seed` | the values after running |
 | `thread` | what the primitive changed on the caller's thread: `idleStart`, `interrupt`, and `scheduledTick` (the tick it's scheduled to run next, `ScheduleIdleEnd`) |
-| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered, x, y, level, direction, objectData, attributes, footprint]`, where `registered` says whether the object is listed under its category (FreeSO lists an object once its category is set), `direction` is FreeSO's compass flag, `objectData` all 80 values, and `footprint` the object's rectangle `[x1, y1, x2, y2]` or `null`, so a test can rebuild the lot |
+| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered, x, y, level, direction, objectData, attributes, footprint, slots]`, where `registered` says whether the object is listed under its category (FreeSO lists an object once its category is set), `direction` is FreeSO's compass flag, `objectData` all 80 values, `footprint` the object's rectangle `[x1, y1, x2, y2]` or `null`, and `slots` the ID in each container slot (0 for empty), so a test can rebuild the lot |
 | `groups` | the objects that share a group, or came from a multi-tile master, each `[multiTile, masterGUID, objectIDs]` in the group's own order; `masterGUID` is `null` without a master |
 | `lotSize` | the lot's width and height in tiles |
 | `callerGUID`, `stackObjectGUID` | the GUIDs (8 hex digits) of the caller and the requested stack object, so a test can build the same objects |
