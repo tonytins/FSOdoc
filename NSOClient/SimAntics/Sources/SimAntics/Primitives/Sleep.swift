@@ -3,9 +3,9 @@ extension Primitives {
     ///
     /// Ports FreeSO's `VMSleep`. Each time it runs, the argument goes down by the ticks since
     /// the wait began (or by 1 on the first run), wrapping like a C# `short`. At exactly -1 the
-    /// wait ends: the thread's idle start is cleared, one random number is drawn (2017 does this
+    /// wait ends: the thread's idle start is cleared, one random number is drawn (FreeSO does this
     /// so desynced clients drift apart), and it takes the true branch. Otherwise the caller is
-    /// scheduled `argument + 1` ticks ahead, the count read as unsigned as in 2017, so a value
+    /// scheduled `argument + 1` ticks ahead, the count read as unsigned as in FreeSO, so a value
     /// below -1 waits about 2^32 ticks. An interrupted thread ends the wait at once.
     public enum Sleep: Primitive {
         public static let name = "sleep"

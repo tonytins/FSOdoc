@@ -13,7 +13,7 @@ public struct TileRect: Sendable, Hashable {
     }
 }
 
-/// One room: a region of floor bounded by walls, a change of floor, or water (2017's `VMRoom`).
+/// One room: a region of floor bounded by walls, a change of floor, or water (FreeSO's `VMRoom`).
 ///
 /// Routing obstacles and lighting's wall lines aren't ported yet.
 public struct Room: Sendable, Hashable {
@@ -34,13 +34,13 @@ public struct Room: Sendable, Hashable {
     /// For a light base room, the rooms that share its light.
     public var supportRooms: [UInt16]
 
-    /// Room 0, which 2017 keeps as an unused first entry.
+    /// Room 0, which FreeSO keeps as an unused first entry.
     static let placeholder = Room(id: 0, lightBaseRoom: 0, level: 0, isOutside: false, area: 0, isPool: false,
                                   adjacentRooms: [], bounds: TileRect(x: 0, y: 0, width: 0, height: 0),
                                   supportRooms: [])
 }
 
-/// Which room each tile of one level is in (2017's `VMRoomMap`).
+/// Which room each tile of one level is in (FreeSO's `VMRoomMap`).
 ///
 /// Each entry packs two room IDs, one per side of a diagonal wall: the low 16 bits, then
 /// bits 16 to 30. Bit 31 marks a tile split by a horizontal diagonal. A tile without a
@@ -50,11 +50,11 @@ public struct RoomMap: Sendable {
     public let height: Int
     public private(set) var map: [UInt32]
 
-    /// Generates a level's rooms with 2017's flood fill (`GenerateMap`), appending them to `rooms`.
+    /// Generates a level's rooms with FreeSO's flood fill (`GenerateMap`), appending them to `rooms`.
     ///
     /// Tiles are taken across then down; each one not yet in a room starts a new room, which
     /// spreads to its neighbors until walls, a change of floor, or water stop it. The fill wraps
-    /// around the lot's edges, as 2017's does. The first room on each level is outside, as are
+    /// around the lot's edges, as FreeSO's does. The first room on each level is outside, as are
     /// rooms that touch it without a wall between. Above the ground floor, tiles without floor
     /// only join each other.
     init(walls: [WallTile], floors: [UInt16], width: Int, height: Int, level: Int8, rooms: inout [Room]) {

@@ -91,7 +91,7 @@ func setTemp(_ index: Int16, to value: Int16, true truePointer: UInt8 = 254, fal
     }
 
     @Test func stopsARoutineThatCallsAnEmptyRoutineForever() throws {
-        // 2017 never pushes an empty routine, so the call repeats until the loop guard.
+        // FreeSO never pushes an empty routine, so the call repeats until the loop guard.
         try withVM(chair: [
             bhavChunk(id: 4096, [InstructionFixture(opcode: 4097, operand: call([0, 0, 0, 0]))]),
             bhavChunk(id: 4097, []),

@@ -10,7 +10,7 @@ import FoundationXML
 /// extension), a display name (`o`), a group (`m`), and a sub-index (`i`). Other
 /// attributes are ignored.
 ///
-/// The 2002 beta's table has no `o`, which 2017 can't read (it fails on the
+/// The 2002 beta's table has no `o`, which FreeSO can't read (it fails on the
 /// missing attribute). Here ``Entry/name`` is `nil` instead.
 public struct ObjectTable: Sendable, Equatable {
     public struct Entry: Sendable, Equatable {

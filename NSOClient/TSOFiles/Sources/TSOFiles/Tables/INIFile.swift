@@ -5,7 +5,7 @@ import Foundation
 /// Ports FreeSO's `IniFile`, which the content system uses for `sys/*.ini`.
 /// Lines starting with `;` are comments. Key and value lines before the first
 /// section, or with an empty key or value, are ignored, and a repeated key
-/// keeps its last value, as in 2017.
+/// keeps its last value, as in FreeSO.
 public struct INIFile: Sendable, Equatable {
     /// One section.
     public struct Section: Sendable, Equatable {
@@ -52,7 +52,7 @@ public struct INIFile: Sendable, Equatable {
                 guard let close = line.lastIndex(of: "]") else { throw .unclosedSection(line: lineIndex + 1) }
                 let name = String(line[line.index(after: line.startIndex)..<close])
                 guard !sections.contains(where: { $0.name == name }) else {
-                    throw .repeatedSection(name) // 2017 adds sections to a dictionary, which fails on a repeat
+                    throw .repeatedSection(name) // FreeSO adds sections to a dictionary, which fails on a repeat
                 }
                 sections.append(Section(name: name))
                 continue
@@ -94,7 +94,7 @@ public struct INIFile: Sendable, Equatable {
 
 /// An error from reading an INI file.
 public enum INIError: Error, Equatable, Sendable {
-    /// A `[` line has no closing `]`; 2017 throws here too.
+    /// A `[` line has no closing `]`; FreeSO throws here too.
     case unclosedSection(line: Int)
     case repeatedSection(String)
 }

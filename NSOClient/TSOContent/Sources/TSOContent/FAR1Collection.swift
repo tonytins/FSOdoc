@@ -4,8 +4,8 @@ import TSOFiles
 /// Several FAR1 archives read as one, by entry name.
 ///
 /// Ports FreeSO's `FAR1Provider` lookup: when two entries share a name, the later
-/// one wins, archives being read in sorted path order (2017's order was the file
-/// system's). Names match exactly, as in 2017.
+/// one wins, archives being read in sorted path order (FreeSO's order was the file
+/// system's). Names match exactly, as in FreeSO.
 struct FAR1Collection: Sendable {
     private let archives: [FAR1Archive]
     private let entriesByName: [String: (archive: Int, entry: FAR1Archive.Entry)]

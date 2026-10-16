@@ -64,7 +64,7 @@ func record(_ typeCode: String, id: UInt16 = 1, label: String = "", _ build: (in
         #expect((bhav.type, bhav.argumentCount, bhav.localCount) == (0, 0, 0))
     }
 
-    @Test func leavesUnknownVersionsEmptyLike2017() throws {
+    @Test func leavesUnknownVersionsEmptyLikeFreeSO() throws {
         let bhav = try BHAV(record: record("BHAV") { $0.uint16(0x1234); $0.uint16(5) })
         #expect(bhav.instructions.isEmpty)
     }

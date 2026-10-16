@@ -9,7 +9,7 @@ struct DBPFFixture {
     var contents: Data
 }
 
-/// Builds a DBPF archive in the 1.0 or 2.0 header layout the 2017 reader expects.
+/// Builds a DBPF archive in the 1.0 or 2.0 header layout FreeSO's reader expects.
 func makeDBPF(_ files: [DBPFFixture], majorVersion: UInt32 = 1, minorVersion: UInt32 = 0) -> Data {
     let isVersion2 = majorVersion == 2 && minorVersion == 0
     var writer = ByteWriter()

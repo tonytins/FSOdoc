@@ -80,7 +80,7 @@ public struct FAR1Archive: Sendable {
             let compressedLength = Int(try reader.readInt32())
             let dataOffset = Int(try reader.readInt32())
             let nameLength = switch variant {
-            case .a: Int(Int16(truncatingIfNeeded: try reader.readInt32())) // the 2017 reader casts to short
+            case .a: Int(Int16(truncatingIfNeeded: try reader.readInt32())) // FreeSO's reader casts to short
             case .b: Int(try reader.readInt16())
             }
             let fileName = try reader.readASCII(length: nameLength)

@@ -20,7 +20,7 @@ public final class GlobalProvider: @unchecked Sendable {
     /// A global or semi-global by file name without extension, in any letter case.
     ///
     /// Applies the patches registered for `<name>.iff`, and reads `<name>.otf` from the
-    /// patches or beside the IFF if either has it. As in 2017, a missing OTF is
+    /// patches or beside the IFF if either has it. As in FreeSO, a missing OTF is
     /// fine, and a missing IFF is an error. Failures aren't kept, so a later call tries again.
     ///
     /// - Throws: ``ContentError/missingFile(_:)`` if the IFF doesn't exist, or

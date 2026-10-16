@@ -4,14 +4,14 @@ import Foundation
 ///
 /// This follows FreeSO's `Decompresser.Decompress`, which was ported from
 /// DBPF4J. The format is described at http://wiki.niotso.org/RefPack.
-/// Behavior on valid data matches the 2017 code, including these quirks:
+/// Behavior on valid data matches FreeSO's code, including these quirks:
 ///
 /// - Input of 6 bytes or fewer is returned unchanged.
 /// - Output grows past `decompressedSize` if the stream writes more.
 /// - Control bytes 0xFD to 0xFF copy their literal bytes and keep going;
 ///   only 0xFC ends the stream.
 ///
-/// Where the 2017 code would index out of bounds, this throws
+/// Where FreeSO's code would index out of bounds, this throws
 /// ``RefPackError`` instead.
 public enum RefPack {
     /// Decompresses a RefPack stream that starts after its 5-byte header.

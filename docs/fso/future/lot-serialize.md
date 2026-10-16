@@ -40,7 +40,7 @@ state instead of replaying every command since the lot started.
 
 ## In the snapshot
 
-The marshal layer is how the 2017 lot server saves lots (`.fsov` files) and how clients resync.
+The marshal layer is how FreeSO's lot server saves lots (`.fsov` files) and how clients resync.
 See [simantics.md](../simantics.md) for how the snapshot uses it. NSOClient's state digest covers
 far less (IDs, positions, object data, stacks); a saved-lot format compatible with these marshals
 would be needed to load lots saved by FreeSO servers.

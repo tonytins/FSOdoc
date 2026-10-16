@@ -87,13 +87,13 @@ struct RealInstallTests {
         }
     }
 
-    /// Compares every object with what the 2017 content system loads (`fso-oracle list-objects`).
+    /// Compares every object with what FreeSO's content system loads (`fso-oracle list-objects`).
     ///
-    /// Where 2017 loads an object, the label, resource, semi-global, routine names, BHAV
-    /// count, and tuning table count must match. Where 2017 fails (on an older install,
+    /// Where FreeSO loads an object, the label, resource, semi-global, routine names, BHAV
+    /// count, and tuning table count must match. Where FreeSO fails (on an older install,
     /// FreeSO's patches for 2003 files don't fit), the object must still load here.
     @Test(.enabled(if: oracleObjects != nil, "TSO_ORACLE_DIR is not set"))
-    func matchesThe2017ContentSystem() throws {
+    func matchesFreeSOsContentSystem() throws {
         let expected = try String(contentsOf: try #require(oracleObjects), encoding: .utf8)
             .split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
         var compared = 0, recovered = 0, mismatches: [String] = []
@@ -101,9 +101,9 @@ struct RealInstallTests {
             let guid = try #require(UInt32(fields[0], radix: 16))
             switch fields[1] {
             case "missing":
-                if try content.objects.object(guid: guid) != nil { mismatches.append("\(fields[0]): 2017 has no OBJD") }
+                if try content.objects.object(guid: guid) != nil { mismatches.append("\(fields[0]): FreeSO has no OBJD") }
             case "error":
-                // skillcheater's IFF isn't in the beta (2017 fails with a null reference); anything else must load.
+                // skillcheater's IFF isn't in the beta (FreeSO fails with a null reference); anything else must load.
                 switch loadingError(guid: guid) {
                 case nil: recovered += 1
                 case .missingFile? where fields[2] == "NullReferenceException": break
@@ -116,11 +116,11 @@ struct RealInstallTests {
                               "\(resource.treesByName.count)", "\(try resource.mainFile.chunks(BHAV.self).count)",
                               "\(resource.tuning?.tables.count ?? 0)"]
                 // Later columns describe SimAntics entities and are compared in that package.
-                if actual != Array(fields.prefix(actual.count)) { mismatches.append("2017 \(fields) Swift \(actual)") }
+                if actual != Array(fields.prefix(actual.count)) { mismatches.append("FreeSO \(fields) Swift \(actual)") }
                 compared += 1
             }
         }
-        print("TSOContent against 2017: \(compared) objects compared, \(mismatches.count) mismatched, \(recovered) loaded where 2017 failed")
+        print("TSOContent against FreeSO: \(compared) objects compared, \(mismatches.count) mismatched, \(recovered) loaded where FreeSO failed")
         #expect(compared > 2_000)
         #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5))")
     }

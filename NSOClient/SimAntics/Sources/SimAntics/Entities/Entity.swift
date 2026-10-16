@@ -8,7 +8,7 @@ import TSOFiles
 /// containers and slots, and interactions aren't ported yet; reading values that need them
 /// throws ``SimAnticsError/unsupported(_:)``.
 ///
-/// A known gap in writes, which stores the value but skips a 2017 side effect: `flags`
+/// A known gap in writes, which stores the value but skips a FreeSO side effect: `flags`
 /// doesn't recompute the footprint (no routing yet).
 public final class Entity {
     public let objectID: Int16
@@ -16,7 +16,7 @@ public final class Entity {
     public unowned let vm: VM
     /// The 80 object data values (see ``ObjectVariable``).
     public var objectData = [Int16](repeating: 0, count: ObjectVariable.count)
-    /// Attributes, grown with zeros whenever an index past the end is read or written, as in 2017.
+    /// Attributes, grown with zeros whenever an index past the end is read or written, as in FreeSO.
     public private(set) var attributes: [Int16] = []
     /// The entity's list (`MyList`), front first.
     public var list: [Int16] = []
@@ -88,7 +88,7 @@ public final class Entity {
         case prepareForSale, houseUnload
     }
 
-    /// The table 2017 builds: from the definition's tree IDs when it doesn't use a function
+    /// The table FreeSO builds: from the definition's tree IDs when it doesn't use a function
     /// table, else from the `OBJf` with the definition's chunk ID, if there is one.
     static func entryPoints(of object: GameObject) throws(SimAnticsError) -> [EntryPoint]? {
         let definition = object.definition
@@ -114,7 +114,7 @@ public final class Entity {
             }
             table = functionTable?.functions.map { EntryPoint(conditionFunction: $0.conditionFunction, actionFunction: $0.actionFunction) }
         }
-        // 2017 clears entry point 17 of one object by GUID.
+        // FreeSO clears entry point 17 of one object by GUID.
         if object.guid == 0xA9BB_3A76 {
             guard var entries = table else { throw .nullReference("no entry point table") }
             guard entries.count > 17 else { throw .indexOutOfRange("entry point 17") }
@@ -175,8 +175,8 @@ public final class Entity {
     @discardableResult
     public func executeEntryPoint(at index: Int, runImmediately: Bool, stackObject: Entity? = nil,
                                   arguments: [Int16]? = nil) throws(SimAnticsError) -> Bool {
-        // Entry point 11 (user placement) also fixes floors under stairs in 2017; entities have
-        // no position yet, which skips that in 2017 too.
+        // Entry point 11 (user placement) also fixes floors under stairs in FreeSO; entities have
+        // no position yet, which skips that in FreeSO too.
         guard let table = entryPoints else { throw .nullReference("no entry point table") }
         guard index < table.count, table[index].actionFunction > 255,
               let routine = try vm.routine(opcode: table[index].actionFunction, codeOwner: object) else { return false }
@@ -217,7 +217,7 @@ public final class Entity {
     /// Restarts the entity, as `VMEntity.Reset` does: clears its stack, runs its reset entry point
     /// (cleanup) to completion if it has one, pushes main, and schedules it for the next tick.
     ///
-    /// 2017 treats an error here as fatal; this reports it and carries on.
+    /// FreeSO treats an error here as fatal; this reports it and carries on.
     public func reset() {
         guard !isResetting else { return }
         isResetting = true
@@ -287,7 +287,7 @@ public final class Entity {
         }
     }
 
-    /// Sets an object data value, as `VMEntity.SetValue` does. Always returns `true`, as in 2017.
+    /// Sets an object data value, as `VMEntity.SetValue` does. Always returns `true`, as in FreeSO.
     @discardableResult
     public func setValue(_ value: Int16, of variable: Int16) throws(SimAnticsError) -> Bool {
         var value = value

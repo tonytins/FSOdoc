@@ -52,8 +52,8 @@ public struct StringTable: Sendable, Equatable {
 
     /// The strings to use for a language.
     ///
-    /// Like the 2017 lookup, a language with no strings falls back to English (US).
-    /// A language beyond the stored sets (possible in format -4, where the 2017
+    /// Like FreeSO's lookup, a language with no strings falls back to English (US).
+    /// A language beyond the stored sets (possible in format -4, where the FreeSO
     /// code would crash) falls back the same way.
     ///
     /// - Parameters:
@@ -78,7 +78,7 @@ public struct StringTable: Sendable, Equatable {
         return items.indices.contains(index) ? items[index].value : nil
     }
 
-    /// The number of English (US) strings, which the 2017 code treats as the table's length.
+    /// The number of English (US) strings, which FreeSO's code treats as the table's length.
     public var count: Int { languageSets.first?.count ?? 0 }
 
     static let fixedLanguageSetCount = 20
@@ -88,7 +88,7 @@ public struct StringTable: Sendable, Equatable {
         let formatCode = try reader.readInt16()
         var sets = [[Item]](repeating: [], count: fixedLanguageSetCount)
 
-        // The 2017 reader returns empty sets when fewer than two bytes follow the format code.
+        // FreeSO's reader returns empty sets when fewer than two bytes follow the format code.
         guard reader.remaining >= 2 else { return StringTable(formatCode: formatCode, languageSets: sets) }
 
         switch formatCode {
@@ -137,7 +137,7 @@ public struct StringTable: Sendable, Equatable {
                 sets.append(items)
             }
         default:
-            // The 2017 reader leaves every set null here, so any later lookup crashes.
+            // FreeSO's reader leaves every set null here, so any later lookup crashes.
             throw ChunkFormatError(reason: "unknown string table format \(formatCode)")
         }
         return StringTable(formatCode: formatCode, languageSets: sets)

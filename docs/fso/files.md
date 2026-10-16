@@ -142,7 +142,7 @@ against sample files.
   static `isReadingSomething` flag. Make archives `IDisposable` and
   required to dispose. A bad header should throw `InvalidDataException`.
 - **Validation.** Check chunk sizes and offsets against the stream length
-  before slicing. The 2017 reader trusts the file, and a corrupt chunk can
+  before slicing. FreeSO's reader trusts the file, and a corrupt chunk can
   skip past the end.
 - **Finalizer caching.** `IffFile` uses a finalizer to re-register itself
   with `TimedReferenceController`. Replace that with an explicit cache

@@ -5,7 +5,7 @@
 
 FreeSO's shipped blueprints have floors but no walls, so these lots exercise what they
 can't: rooms walled in (style 1) and fenced (other styles), diagonal walls with a floor on
-each half, pools, upper floors with and without floor, walls on the lot's edges (2017's
+each half, pools, upper floors with and without floor, walls on the lot's edges (FreeSO's
 fill wraps around), and values .NET truncates or ignores (patterns past 65535, segments
 that are 0 or negative). The lots are random but the same on every run.
 

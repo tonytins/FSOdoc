@@ -377,13 +377,13 @@ Returns Avatar's ID.
 ## Notes for NSOClient
 
 Checked against the 2017 FreeSO snapshot (`VMMemory.cs`), which NSOClient's `VMMemory`
-matches case for case (scorecard VM-4 and FID-9). Where 2017 differs from the text above:
+matches case for case (scorecard VM-4 and FID-9). Where FreeSO differs from the text above:
 
 - **2 and 5 (target object):** fail with "Target Object is Deprecated!".
 - **12 (check tree ad range):** reads 0; writes do nothing and return false.
-- **13 (stack obj's temp), 28, and 29:** not implemented in 2017; reading fails.
-- **21 (stack object's definition):** the field table above matches 2017's `VMOBJDVariable` (0 to 96).
-- **23 (room):** 2017 has no lighting or level data per room: 0 always reads 100 and 2 reads 0.
+- **13 (stack obj's temp), 28, and 29:** not implemented in FreeSO; reading fails.
+- **21 (stack object's definition):** the field table above matches FreeSO's `VMOBJDVariable` (0 to 96).
+- **23 (room):** FreeSO has no lighting or level data per room: 0 always reads 100 and 2 reads 0.
   Any index other than 0 to 4 fails with "Invalid room data!". Writing fails.
 - **24, 32, 33, and 38:** The Sims 1 only; in TSO, reading fails with "Only valid in TS1.".
 - **26 (tuning):** the table isn't always 4096 + (data >> 7). Tables 0 to 63 are the code owner's
@@ -392,7 +392,7 @@ matches case for case (scorecard VM-4 and FID-9). Where 2017 differs from the te
   a BCON, then an OTF table, and reads 0 if neither has the table.
 - **36 and 37 (type attributes):** read 0 in TSO; writes are ignored.
 - **42 (tempXL):** only Expression handles 32-bit values. Other primitives fail when they read it.
-- **43 and 45 (city time, game time):** 2017 reads both the same way: 0 seconds, 1 minutes, 2 hours,
+- **43 and 45 (city time, game time):** FreeSO reads both the same way: 0 seconds, 1 minutes, 2 hours,
   3 time of day; any other index fails. The Game Time indexes above (0 hour to 8 year) are the
   layout of the deprecated globals instead.
 - **44 (TSO standard time):** reads 0.

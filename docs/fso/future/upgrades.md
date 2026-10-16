@@ -83,8 +83,8 @@ summaries) and better tuning views in preparation. `feature/lotview-refactor` co
 
 - **Bug fixes as evidence.** Fixes such as "Fix double scheduling bug", "Fix Semiglobal
   TreeByName", "Fix portals not updating target room when moved", and the interaction queue
-  changes point at places where 2017 behaves oddly. NSOClient matches 2017 by default; where it
-  chooses to fix a 2017 bug, these show what FreeSO did.
+  changes point at places where the snapshot behaves oddly. NSOClient matches the snapshot by default;
+  where it chooses to fix one of the snapshot's bugs, these show what FreeSO later did.
 - **Extensions.** The AOT compiler, the new TSO calls, tuning presets, and upgrades are prior art
   for NSOClient's own extensions.
 - **The patches.** Many new PIFF patches and "TSOPorts" target the 2003 production files, as the

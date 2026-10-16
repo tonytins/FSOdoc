@@ -1,9 +1,9 @@
 /// A hash of the VM state that matches `fso-oracle`'s digest version 0, for comparing a
-/// Swift VM with the 2017 one tick by tick.
+/// Swift VM with FreeSO's tick by tick.
 ///
 /// SHA-256 over little-endian values: the random seed (64 bits); the entity count (32);
 /// then for each entity in object ID order: object ID (16), GUID (32), tile x (16),
-/// tile y (16), level (8), direction (8, 2017's compass flag), the object data count (32)
+/// tile y (16), level (8), direction (8, FreeSO's compass flag), the object data count (32)
 /// and values (16 each), and the stack depth (32), then each frame's routine ID (16) and
 /// instruction pointer (16).
 public enum StateDigest {

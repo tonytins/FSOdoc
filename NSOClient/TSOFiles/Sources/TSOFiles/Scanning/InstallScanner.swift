@@ -53,7 +53,7 @@ public struct ScanReport: Sendable {
     public var failures: [ScanFailure] = []
     /// Chunks that failed to parse but that nothing in their file refers to, so the
     /// game never loads them (for example, an old `TTAB` no `OBJD` points at).
-    /// The 2017 reader parses chunks only on demand, so it never meets these.
+    /// FreeSO's reader parses chunks only on demand, so it never meets these.
     public var unreferencedChunkFailures: [ScanFailure] = []
 
     /// Whether every recognized file read without error.

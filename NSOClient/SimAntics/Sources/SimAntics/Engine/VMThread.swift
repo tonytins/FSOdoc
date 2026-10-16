@@ -24,7 +24,7 @@ public final class Registers {
 /// threads (``evaluateCheck(entity:frame:)``), and error handling. An error resets the
 /// frame's caller and callee, and is reported at most once every 600 ticks (20 seconds).
 public final class VMThread {
-    /// 2017's guard against routines that never yield; the count restarts each entity tick.
+    /// FreeSO's guard against routines that never yield; the count restarts each entity tick.
     public static let maximumInstructionsPerTick = 500_000
     /// Ticks between error reports (`DialogCooldown`).
     static let errorCooldownTicks = 30 * 20
@@ -109,7 +109,7 @@ public final class VMThread {
         }
     }
 
-    /// 2017's handler: report the error unless one was reported recently, then reset the frame's
+    /// FreeSO's handler: report the error unless one was reported recently, then reset the frame's
     /// caller and callee (or clear a check thread's stack).
     private func handle(_ error: SimAnticsError) {
         lastError = error
@@ -123,7 +123,7 @@ public final class VMThread {
             stack.removeAll()
             return
         }
-        // When the caller is the callee, 2017 resets it twice; its reset guard only stops nesting.
+        // When the caller is the callee, FreeSO resets it twice; its reset guard only stops nesting.
         frame.callee?.reset()
         frame.caller?.reset()
         if recentlyFailed {
@@ -132,7 +132,7 @@ public final class VMThread {
         }
     }
 
-    /// Adds a routine to the top of the stack with fresh locals. Empty routines aren't pushed, as in 2017.
+    /// Adds a routine to the top of the stack with fresh locals. Empty routines aren't pushed, as in FreeSO.
     public func push(_ frame: StackFrame) {
         guard !frame.routine.instructions.isEmpty else { return }
         stack.append(frame)
@@ -227,7 +227,7 @@ public final class VMThread {
         default:
             frame.instructionPointer = UInt16(pointer)
         }
-        // As in 2017, this overrides whatever a pop above decided.
+        // As in FreeSO, this overrides whatever a pop above decided.
         continuesExecution = continuing
     }
 

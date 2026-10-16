@@ -1,6 +1,6 @@
 """Writes SnapshotSources.props: the 2017 source files the oracle compiles.
 
-Each 2017 folder holds files its project doesn't compile, so the list comes
+Each FreeSO folder holds files its project doesn't compile, so the list comes
 from each project's own <Compile> items, not from a folder wildcard. Run it
 again if the project list below changes:
 
@@ -12,7 +12,7 @@ import re
 ORACLE = pathlib.Path(__file__).resolve().parent
 REPOSITORY = ORACLE.parent.parent
 
-# The engine-free 2017 libraries SimAntics needs, in dependency order.
+# The engine-free FreeSO libraries SimAntics needs, in dependency order.
 PROJECTS = [
     "TSOClient/tso.common/FSO.Common.csproj",
     "TSOClient/tso.files/FSO.Files.csproj",

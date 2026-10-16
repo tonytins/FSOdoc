@@ -1,6 +1,6 @@
 import TSOFiles
 
-/// The entities that make up one object (2017's `VMMultitileGroup`).
+/// The entities that make up one object (FreeSO's `VMMultitileGroup`).
 ///
 /// Most objects are a group of one. A multi-tile object, such as a two-tile bed or a counter run,
 /// is one entity per part, each with its own definition (`OBJD`) and object ID, created together

@@ -130,7 +130,7 @@ and several need XNA Game Studio, which isn't available anymore.
 - **Patcher and watchdog updater**: use the platform's packaging
   instead (an installer on Windows, AppImage or Flatpak on Linux, a
   signed app bundle on macOS), or a small cross-platform updater that
-  verifies a signature before extracting. The 2017 patcher extracts any
+  verifies a signature before extracting. FreeSO's patcher extracts any
   zip it finds without checking it.
 - **FSOInstaller**: replace with a cross-platform CLI or a first-run
   screen in the client that downloads over HTTPS and verifies file

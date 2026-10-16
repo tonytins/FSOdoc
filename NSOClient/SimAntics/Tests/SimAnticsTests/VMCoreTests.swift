@@ -10,7 +10,7 @@ import TSOContent
         (UInt64(0x0F50_D0C5_EED0_0001), UInt64(97), UInt64(0x9E95_3801_3229_EF5D)),
         (1, 65, 0x0000_0000_0200_0001),
     ])
-    func drawsTheSameNumbersAs2017(seed: UInt64, value: UInt64, nextSeed: UInt64) {
+    func drawsTheSameNumbersAsFreeSO(seed: UInt64, value: UInt64, nextSeed: UInt64) {
         var random = VMRandom(seed: seed)
         #expect(random.next(below: 100) == value)
         #expect(random.seed == nextSeed)
@@ -24,7 +24,7 @@ import TSOContent
 }
 
 @Suite struct EntityTests {
-    @Test func objectVariablesMatch2017Indexes() {
+    @Test func objectVariablesMatchFreeSOIndexes() {
         #expect(ObjectVariable.allCases.count == ObjectVariable.count)
         #expect(ObjectVariable.room.rawValue == 29)
         #expect(ObjectVariable.fsoEngineQuery.rawValue == 79)
@@ -224,7 +224,7 @@ struct RealOperandEncodingTests {
         }
     }
 
-    @Test func sharesKeysPastTheLotEdgeAs2017Does() throws {
+    @Test func sharesKeysPastTheLotEdgeAsFreeSODoes() throws {
         try withVM { vm, chair throws in
             vm.architecture = try Architecture(width: 10, height: 10)
             vm.move(chair, to: LotPosition.center(ofTileX: 10, y: 0, level: 1)) // one past the edge

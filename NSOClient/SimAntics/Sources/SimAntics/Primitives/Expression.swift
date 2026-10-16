@@ -3,7 +3,7 @@ extension Primitives {
     ///
     /// Ports FreeSO's `VMExpression`. Values are read as 32-bit integers (only `TempXL`
     /// holds more than 16 bits) and written back truncated. Arithmetic wraps, as C#'s
-    /// unchecked `int` does, and shift counts are masked to 5 bits. Quirks kept from 2017:
+    /// unchecked `int` does, and shift counts are masked to 5 bits. Quirks kept from FreeSO:
     ///
     /// - Dividing by zero sets -1; a remainder by zero leaves the value unchanged.
     /// - `int.MinValue / -1` and `% -1` fail, as .NET throws on them.
@@ -27,7 +27,7 @@ extension Primitives {
             public var rhs: Variable
             /// The raw operator byte; one with no ``Operator`` fails when run.
             public var rawOperator: UInt8
-            /// Stored but ignored, as in 2017.
+            /// Stored but ignored, as in FreeSO.
             public var isSigned: UInt8
 
             public init(_ lhs: Variable, _ rawOperator: UInt8, _ rhs: Variable, isSigned: UInt8 = 0) {
@@ -102,7 +102,7 @@ extension Primitives {
                 return branch(try lhs() > (try rhs()))
             case .greaterThanOrEqualTo:
                 let left = try lhs(), right = try rhs()
-                // 2017's stairs check: "room >= 1024" on the caller means "is upstairs of the callee".
+                // FreeSO's stairs check: "room >= 1024" on the caller means "is upstairs of the callee".
                 if right == 1024, operand.lhs == Variable(.myObject, ObjectVariable.room.rawValue) {
                     guard let caller = frame.caller, let callee = frame.callee else { throw .nullReference("no caller or callee") }
                     let calleeFloor = Int(callee.position.level) - Int(callee.object.definition.levelOffset)

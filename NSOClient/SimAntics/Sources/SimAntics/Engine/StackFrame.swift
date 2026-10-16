@@ -8,7 +8,7 @@ public final class StackFrame {
     public unowned var thread: VMThread
     public var routine: Routine
     public var instructionPointer: UInt16 = 0
-    /// The entity whose behavior this is. `nil` where 2017 allows a null caller.
+    /// The entity whose behavior this is. `nil` where FreeSO allows a null caller.
     public var caller: Entity?
     /// The entity the code runs on.
     public var callee: Entity?
@@ -42,7 +42,7 @@ public final class StackFrame {
         }
     }
 
-    /// The stack object's ID. Setting an ID with no entity keeps the ID and clears the object, as in 2017.
+    /// The stack object's ID. Setting an ID with no entity keeps the ID and clears the object, as in FreeSO.
     public var stackObjectID: Int16 {
         get { storedStackObjectID }
         set {

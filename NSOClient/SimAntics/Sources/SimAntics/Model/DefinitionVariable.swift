@@ -22,7 +22,7 @@ public enum DefinitionVariable: Int16, Sendable, CaseIterable {
     case typeAttributeGUID1, typeAttributeGUID2, interactionResultStrings, clientHouseJoinTreeID
     case prepareForSaleTreeID
 
-    /// A definition field as 2017 reads it, quirks included.
+    /// A definition field as FreeSO reads it, quirks included.
     ///
     /// Version 1 and GUID 1 are the value modulo 0xFFFF, not its low 16 bits.
     /// Serving Surface Tree and Rating Comfort both read the catalog popup ID, and

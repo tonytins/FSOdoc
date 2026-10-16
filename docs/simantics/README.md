@@ -3,7 +3,7 @@
 A Markdown copy of the [SimAntics Wiki](https://simantics.wikidot.com/), a community reference for
 the scripting language behind objects and Sims in The Sims and The Sims Online. It describes what
 the game does; the [FreeSO docs](../fso/simantics.md) describe how the 2017 snapshot implements it.
-Where the two disagree, the 2017 code is what NSOClient matches, and the "Notes for NSOClient"
+Where the two disagree, FreeSO's code is what NSOClient matches, and the "Notes for NSOClient"
 sections at the end of each page say so.
 
 | Page | What it covers |
@@ -20,7 +20,7 @@ sections at the end of each page say so.
 | [Walking Animations](walking-animations.md) | Animations the walking engine uses |
 
 The wiki is unfinished, and much of it is marked as guesswork. Treat it as a map, and check
-anything that matters against the 2017 code or `fso-oracle` (see `NSOClient/Oracle/README.md`).
+anything that matters against FreeSO's code or `fso-oracle` (see `NSOClient/Oracle/README.md`).
 
 ## License and attribution
 

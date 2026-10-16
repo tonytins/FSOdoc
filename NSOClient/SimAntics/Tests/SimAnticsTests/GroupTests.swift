@@ -129,7 +129,7 @@ private func withTable(rightLeads: Bool = false, _ body: (VM, Entity) throws -> 
         }
     }
 
-    @Test func failsAs2017Does() throws {
+    @Test func failsAsFreeSODoes() throws {
         try withTable { vm, chair throws in
             var operand = Primitives.CreateObjectInstance.Operand(guid: lampGUID, position: .outOfWorld)
             operand.rawPosition = 10

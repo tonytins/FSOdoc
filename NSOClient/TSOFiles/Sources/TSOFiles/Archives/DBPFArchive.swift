@@ -83,7 +83,7 @@ public struct DBPFArchive: Sendable {
 
         var byLookupID: [UInt64: Int] = [:]
         for (index, entry) in header.entries.enumerated() where byLookupID[entry.lookupID] == nil {
-            byLookupID[entry.lookupID] = index // the 2017 reader keeps the first entry for an ID
+            byLookupID[entry.lookupID] = index // FreeSO's reader keeps the first entry for an ID
         }
 
         majorVersion = header.majorVersion
@@ -110,7 +110,7 @@ public struct DBPFArchive: Sendable {
 
     /// Every entry of one type, in index order.
     ///
-    /// The 2017 reader throws when the archive has no entry of the type; this
+    /// FreeSO's reader throws when the archive has no entry of the type; this
     /// returns an empty array.
     public func entries(ofType typeID: DBPFTypeID) -> [Entry] {
         entries.filter { $0.typeID == typeID }
@@ -141,7 +141,7 @@ public struct DBPFArchive: Sendable {
 
         let majorVersion = try reader.readUInt32()
         let minorVersion = try reader.readUInt32()
-        // Computed as in 2017, so the version comparisons below behave the same.
+        // Computed as in FreeSO, so the version comparisons below behave the same.
         let version = Double(majorVersion) + Double(minorVersion) / 10.0
         try reader.skip(12)
 
@@ -164,7 +164,7 @@ public struct DBPFArchive: Sendable {
             _ = try reader.readUInt32() // index minor version
             indexOffset = try reader.readUInt32()
         }
-        // The 2017 reader then skips padding, but seeks to the index right after, so the skip has no effect.
+        // FreeSO's reader then skips padding, but seeks to the index right after, so the skip has no effect.
         try reader.seek(to: Int(indexOffset))
 
         var entries: [Entry] = []

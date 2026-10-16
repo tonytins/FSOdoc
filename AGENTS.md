@@ -7,9 +7,20 @@ classic **.NET Framework** (mostly 4.5) and Visual Studio 2017 on Windows, and
 builds on it. Write the name as **SimsCraft** in prose. The upstream game is
 **FreeSO**, and the original game is **The Sims Online** (TSO).
 
+**"FreeSO" means the snapshot.** In this repository, in prose, comments, and
+names alike, "FreeSO" on its own means that snapshot: the code in
+[TSOClient/](./TSOClient/) that the docs describe and NSOClient matches. Write
+"2017" only to place the snapshot in time ("the 2017 snapshot", "How it works
+(2017)"), never as a stand-in for FreeSO. FreeSO has kept going since; name
+that work explicitly ("FreeSO's later branches", "after the snapshot"), as
+[docs/fso/future/](./docs/fso/future/README.md) does. Swift names that carry
+FreeSO's own names for compatibility use `fsoCompat` (such as
+`PrimitiveTable.fsoCompat` and `ExitCode.fsoCompatName`); use a `compat`
+suffix the same way for anything kept only for the TSO beta.
+
 The project's goals:
 
-1. Explain the 2017 codebase: what each project does, how the pieces fit,
+1. Explain FreeSO's codebase: what each project does, how the pieces fit,
    and how data flows through the client, the simulation, and the servers.
    This is the reference the reimplementation draws on.
 2. Reimplement the engine-free parts in **Swift** as independent packages
@@ -44,7 +55,7 @@ docs/                        the Markdown documentation
     common.md, files.md, content.md, simantics.md, rendering.md,
     audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
     future/                  FreeSO's branches before and after the snapshot (lot-serialize, server-rebuild, upgrades, lotview-refactor)
-  simantics/                 SimAntics Wiki pages in Markdown, with notes against 2017 (CC BY-SA 3.0, see its README)
+  simantics/                 SimAntics Wiki pages in Markdown, with notes against FreeSO (CC BY-SA 3.0, see its README)
   nso/                       how NSOClient's code behaves, with examples (keep it current when behavior changes)
   install-differences.md     how the TSO_GAME_DIR and TSO_BETA_DIR installs differ (written once by tsofiles-check)
 .agents/skills/
@@ -54,7 +65,7 @@ TSOClient/                   the 2017 FreeSO snapshot (all paths below are relat
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
-  Oracle/                    .NET tool that runs the 2017 SimAntics sources headless, for reference results
+  Oracle/                    .NET tool that runs FreeSO's SimAntics sources headless, for reference results
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
   TSOFilesCheck/             tsofiles-check, which scans an install; depends on ../TSOFiles and swift-argument-parser
@@ -162,7 +173,7 @@ before building on top of it.
   with `try`; use `guard let … else { throw … }`. Unfinished features throw
   rather than trap.
 - **No silent fallbacks for bad data.** Invalid input is reported, never
-  quietly replaced. The one exception is a tolerance the 2017 code had and
+  quietly replaced. The one exception is a tolerance FreeSO's code had and
   real files may rely on (such as `ByteReader.readBytes(upTo:)` for .NET's
   short reads): keep it, and say so in the doc comment.
 - **File-derived numbers are hostile.** Check every size, offset, and count
@@ -171,14 +182,14 @@ before building on top of it.
   for values that can grow, and check indices with `indices.contains`
   before subscripting.
 - **Bound loops and recursion** that data can drive: decompression output,
-  nested containers, BHAV execution (the 2017 VM stops a thread after
+  nested containers, BHAV execution (FreeSO's VM stops a thread after
   500,000 instructions in one tick), call depth, and graph walks.
 - **Failures change nothing.** A reader that throws returns nothing partial.
   Build results in locals and return them only when complete.
 - **Contain failures.** One bad file or entry must not stop a scan or a
   content load: collect it and report it, as `InstallScanner` does. In
   SimAntics, an error in one entity's thread is contained to that entity,
-  as in 2017.
+  as in FreeSO.
 - **Prove it.** Every crash or bad-input fix comes with a small regression
   test that failed before the fix.
 - **Checked by hand for now.** Until a lint runs in CI (scorecard TST-5),
@@ -199,14 +210,14 @@ These apply to everything under [NSOClient/](./NSOClient/).
      code. On valid input and on TSO's 2003 production files, which FreeSO
      targets, the observable behavior must agree, including quirks that
      change results (SimAntics state, what loads and how), and `fso-oracle`
-     checks it wherever 2017 has an answer. How the Swift gets there is
+     checks it wherever FreeSO has an answer. How the Swift gets there is
      ours: choose the structure, names, and algorithms that suit Swift, and
      take creative liberties where they reach the same results more simply.
-     Say in the doc comment which 2017 type a Swift type corresponds to, so
+     Say in the doc comment which FreeSO type a Swift type corresponds to, so
      the two can be cross-referenced. Where the results do differ (to avoid a
      crash, reject hostile input, fix a clear bug, or replace a FreeSO
      workaround), record it in the doc comment and in the scorecard's
-     "Known differences from 2017".
+     "Known differences from FreeSO".
    - **The TSO beta.** The owner's 2002 beta install must keep working.
      Where its files differ from production, degrade gracefully: skip what
      doesn't fit, report it, and keep going, never fail outright.
@@ -218,7 +229,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
      `tsofiles-check` writes it once, the first time it scans both installs;
      don't regenerate it unless the owner asks (delete it to compare again).
 
-   Learn from everything available: the 2017 code, the
+   Learn from everything available: FreeSO's code, the
    [SimAntics Wiki copy](./docs/simantics/README.md), and the wider Sims
    community's documentation, such as
    [SimsWiki](https://simswiki.info/wiki.php?title=Main_Page) and its
@@ -244,7 +255,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
    point that feeds simulation state.
 4. **Values, not shared state.** Model data as `Sendable` structs and enums
    that are immutable once loaded. Archives are values over memory-mapped
-   bytes. No singletons: where 2017 used `Content.Get()` or `HITVM.Get()`,
+   bytes. No singletons: where FreeSO used `Content.Get()` or `HITVM.Get()`,
    pass the dependency in.
 5. **Independent packages.** Each package builds and tests on its own.
    Dependencies point one way through local paths (TSOFiles, then
@@ -314,14 +325,14 @@ project files, and `packages.config`. Use `grep`, `find`, `git`, and
 ordinary shell tools.
 
 **One exception: the SimAntics oracle.** `NSOClient/Oracle/` is a small
-.NET console tool that compiles the 2017 SimAntics, Files, and Content
+.NET console tool that compiles FreeSO's SimAntics, Files, and Content
 sources (linked read-only, never copied or edited) on modern .NET, with
 stubs for the rendering and audio types they touch. It exists only to
 produce reference results for the Swift port (roadmap decision 2). `dotnet`
 may be run for that project and nothing else, either directly or through
 `NSOClient/NSOClient.slnx`, which contains only the oracle. Don't add other
 projects to that solution. The exception doesn't cover
-building or running the 2017 solution itself, and the oracle must never
+building or running FreeSO's solution itself, and the oracle must never
 change a file under `TSOClient/`.
 
 ## 3. Code style
@@ -364,7 +375,7 @@ swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if
 dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
 python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR
-TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/TSOContent  # then compare with 2017
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/TSOContent  # then compare with FreeSO
 TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics
 git status --short -- TSOClient                                        # must print nothing
 ```
@@ -381,12 +392,12 @@ Then bring the docs up to date in the same change:
 
 - [docs/scorecard.md](./docs/scorecard.md): flip the rows you moved, with
   their new evidence; update the summary counts and the "As of" line; add
-  any new difference from 2017 under "Known differences".
+  any new difference from FreeSO under "Known differences".
 - [docs/roadmap.md](./docs/roadmap.md): update the milestone row's done
   percentage and remaining estimate, the alpha gate if a row changed, the
   current focus, and the status line, and add a revision-history row.
 - [docs/fso/](./docs/fso/README.md) only if the port showed that a page
-  describes the 2017 code wrongly.
+  describes FreeSO's code wrongly.
 
 ### Documentation work
 
@@ -431,7 +442,7 @@ The owner often reviews changes alone, so make review easy:
   decision 3).
 - State new dependencies and framework choices, with the alternative you
   weighed, as judgment calls for the owner to decide.
-- For NSOClient, list every deliberate difference from the 2017 behavior
+- For NSOClient, list every deliberate difference from FreeSO's behavior
   and every addition past the compatibility baseline, and say which checks
   ran: the tests, the real-install scan, and the `fso-oracle` comparisons.
 - If you notice a risk in the snapshot, such as a security issue, a

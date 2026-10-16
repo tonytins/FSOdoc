@@ -152,7 +152,7 @@ The packet layouts are the compatibility surface between client, city,
 and lot servers. Keep them byte-for-byte, and replace the libraries
 around them:
 
-| 2017 | Replacement |
+| FreeSO | Replacement |
 | --- | --- |
 | Mina.NET (forked) `IoBuffer`, filters, codecs | `System.IO.Pipelines` with `SequenceReader<byte>` for decoding and `IBufferWriter<byte>` for encoding |
 | `AsyncSocketConnector` and acceptors | `Socket` with `ConnectAsync`/`AcceptAsync`, or Kestrel's connection middleware (`UseConnectionHandler<T>`) on the server |

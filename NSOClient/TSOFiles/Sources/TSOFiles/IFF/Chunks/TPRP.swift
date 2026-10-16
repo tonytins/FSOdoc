@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Ports FreeSO's `TPRP`. Version 5 stores names with a one-byte length;
 /// other versions store them NUL-terminated. Trailing flags aren't read,
-/// as in 2017.
+/// as in FreeSO.
 public struct TPRP: IFFChunk {
     public static let typeCode = "TPRP"
 

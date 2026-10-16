@@ -7,7 +7,7 @@ import Foundation
 /// for 138, 94 for 139, 95 for 140 and 141, 103 for 142). Every named field is
 /// a fixed word position in that list, so this type keeps the words and reads
 /// the fields from them. A field beyond a version's words reads as zero, as the
-/// 2017 defaults did. Property names follow the 2017 field names, which the
+/// FreeSO defaults did. Property names follow FreeSO's field names, which the
 /// VM and editors refer to.
 public struct OBJD: IFFChunk {
     public static let typeCode = "OBJD"
@@ -46,7 +46,7 @@ public struct OBJD: IFFChunk {
         }
     }
 
-    /// The number of words a version stores: the 2017 field count minus two.
+    /// The number of words a version stores: FreeSO's field count minus two.
     static func wordCount(forVersion version: UInt32) -> Int {
         let fieldCount = switch version {
         case 138: 95

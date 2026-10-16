@@ -15,7 +15,7 @@ ORACLE = pathlib.Path(__file__).resolve().parent
 
 
 def check(responses):
-    """Yields a message for each answer that isn't what 2017 gives."""
+    """Yields a message for each answer that isn't what FreeSO gives."""
     def expect(request_id, description, condition):
         if not condition(responses.get(request_id, {})):
             yield f"{request_id}: expected {description}, got {json.dumps(responses.get(request_id))}"
@@ -23,7 +23,7 @@ def check(responses):
     yield from expect("assign", "temp 0 = 5", lambda r: r.get("temps", [None])[0] == 5)
     yield from expect("plus", "temp 1 = 7", lambda r: r.get("temps", [None, None])[1] == 7)
     yield from expect("less", "GOTO_TRUE", lambda r: r.get("exit") == "GOTO_TRUE")
-    yield from expect("divide-by-zero", "temp 0 = -1 (2017 doesn't fail)", lambda r: r.get("temps", [None])[0] == -1)
+    yield from expect("divide-by-zero", "temp 0 = -1 (FreeSO doesn't fail)", lambda r: r.get("temps", [None])[0] == -1)
     yield from expect("global", "global 10 = 3", lambda r: r.get("globals") == {"10": 3})
     yield from expect("object-data", "object 1 data 3 = 9", lambda r: r.get("objects") == {"1": {"data": {"3": 9}}})
     yield from expect("object-data-again", "the same answer (requests are isolated)",

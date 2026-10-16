@@ -13,7 +13,7 @@ using FSO.SimAntics.Engine;
 namespace FSO.Oracle
 {
     /// <summary>
-    /// Runs single 2017 primitives on request, for the Swift port's differential tests.
+    /// Runs single FreeSO primitives on request, for the Swift port's differential tests.
     /// </summary>
     /// <remarks>
     /// Reads one JSON request per line, skipping blank lines and lines starting with
@@ -27,11 +27,11 @@ namespace FSO.Oracle
     {
         public const int ProtocolVersion = 1;
 
-        /// <summary>BHAV operands are 8 bytes in every version the 2017 reader accepts.</summary>
+        /// <summary>BHAV operands are 8 bytes in every version FreeSO's reader accepts.</summary>
         private const int OperandLength = 8;
 
         /// <summary>
-        /// 2017 keeps entity attributes private (<c>VMEntity.Attributes</c>), and
+        /// FreeSO keeps entity attributes private (<c>VMEntity.Attributes</c>), and
         /// <c>GetAttribute</c> grows the list as a side effect, so snapshots read the list itself.
         /// </summary>
         private static readonly FieldInfo AttributesField =
@@ -199,7 +199,7 @@ namespace FSO.Oracle
                 }
                 catch (Exception error)
                 {
-                    // 2017 lets this reach VMThread.Tick, which resets the thread.
+                    // FreeSO lets this reach VMThread.Tick, which resets the thread.
                     response["exception"] = $"{error.GetType().Name}: {error.Message}";
                 }
             }

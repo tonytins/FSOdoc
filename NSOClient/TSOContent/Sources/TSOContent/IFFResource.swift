@@ -71,7 +71,7 @@ public struct ObjectResource: IFFResource {
     public let tuning: OTFFile?
     public let semiGlobal: GlobalResource?
     public let patches: PatchReport
-    /// Why the tuning couldn't be loaded, if it exists but failed. 2017 ignores these silently.
+    /// Why the tuning couldn't be loaded, if it exists but failed. FreeSO ignores these silently.
     public let tuningFailure: String?
     /// Routines by name for Run Tree by Name: the object's BHAVs, then its semi-global's.
     /// A name is the chunk label up to its first NUL, and the first routine with a name wins.

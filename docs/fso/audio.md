@@ -106,5 +106,5 @@ hardware.
   [content.md](./content.md#changes)), because station folder names in
   the original install mix case.
 - **Backend.** MonoGame DesktopGL uses OpenAL Soft, which works on all
-  three desktop platforms. The 2017 client ships `soft_oal.dll` by hand;
+  three desktop platforms. FreeSO's client ships `soft_oal.dll` by hand;
   stock MonoGame packages include the native library per runtime.

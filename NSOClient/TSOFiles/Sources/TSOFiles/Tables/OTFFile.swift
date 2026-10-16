@@ -7,7 +7,7 @@ import FoundationXML
 ///
 /// Ports FreeSO's `OTFFile`. Every `T` element anywhere in the document is a
 /// table with an ID (`i`) and name (`n`); its child elements are keys with an
-/// ID (`i`), label (`l`), and value (`v`). Comments are ignored, as in 2017.
+/// ID (`i`), label (`l`), and value (`v`). Comments are ignored, as in FreeSO.
 /// The VM reads a BCON first and falls back to these tables (see
 /// `VMMemory.GetTuningVariable`).
 public struct OTFFile: Sendable, Equatable {

@@ -23,7 +23,7 @@ public protocol IFFChunk: Sendable {
 public enum IFFChunkError: Error, Equatable, Sendable {
     /// The chunk data ends early.
     case truncated(typeCode: String, id: UInt16, EndOfDataError)
-    /// The chunk data is malformed in a way the 2017 reader would also reject.
+    /// The chunk data is malformed in a way FreeSO's reader would also reject.
     case invalid(typeCode: String, id: UInt16, reason: String)
 }
 

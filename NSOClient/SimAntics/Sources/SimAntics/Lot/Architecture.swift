@@ -1,4 +1,4 @@
-/// Which edges and diagonals of a tile have a wall (2017's `WallSegments`).
+/// Which edges and diagonals of a tile have a wall (FreeSO's `WallSegments`).
 ///
 /// A tile owns the walls on its top-left (−x) and top-right (−y) edges; the bottom edges
 /// belong to the neighbors, though blueprints mark them on both.
@@ -19,7 +19,7 @@ public struct WallSegments: OptionSet, Sendable, Hashable {
     public static let anySide: WallSegments = [.topLeft, .topRight, .bottomLeft, .bottomRight]
 }
 
-/// The walls on one tile (2017's `WallTile`, without the state objects set at run time).
+/// The walls on one tile (FreeSO's `WallTile`, without the state objects set at run time).
 ///
 /// Style 1 is a normal wall; other styles are fences and the like, which divide rooms only
 /// where a floor or pool does. On a diagonal tile, `topLeftStyle` and `topLeftPattern` hold
@@ -49,15 +49,15 @@ public struct WallTile: Sendable, Hashable {
     public static let empty = WallTile()
 }
 
-/// A lot's walls, floors, and the rooms they make (2017's `VMArchitecture`).
+/// A lot's walls, floors, and the rooms they make (FreeSO's `VMArchitecture`).
 ///
-/// Changes mark the architecture dirty; rooms are regenerated on the next tick, as in 2017, so
+/// Changes mark the architecture dirty; rooms are regenerated on the next tick, as in FreeSO, so
 /// a room lookup between a change and the tick still sees the old rooms. Terrain, roofs,
 /// support for upper floors, and build-mode costs aren't ported yet.
 public struct Architecture: Sendable {
     /// Levels, ground floor first.
     public static let stories = 5
-    /// The pattern 2017 gives pool tiles; anything above 65533 counts as water.
+    /// The pattern FreeSO gives pool tiles; anything above 65533 counts as water.
     public static let poolPattern: UInt16 = 65535
 
     public let width: Int
@@ -69,18 +69,18 @@ public struct Architecture: Sendable {
     /// Each level's room map, from the last regeneration.
     public private(set) var roomMaps: [RoomMap]
     /// Every room on every level, from the last regeneration. Index 0 is an unused placeholder,
-    /// so room IDs start at 1 (2017's `RoomData`).
+    /// so room IDs start at 1 (FreeSO's `RoomData`).
     public private(set) var rooms: [Room]
     /// Whether walls or floors changed since rooms were last generated.
     public private(set) var isDirty = false
 
     /// An empty lot: no walls and no floors, with its rooms generated.
     ///
-    /// 2017 generates rooms only once a lot loads; this port keeps a fresh architecture
+    /// FreeSO generates rooms only once a lot loads; this port keeps a fresh architecture
     /// consistent from the start instead.
     ///
     /// - Throws: ``SimAnticsError/simantics(_:)`` if the size is outside 1...255 tiles, the
-    ///   most 2017's 16-bit tile offsets can number.
+    ///   most FreeSO's 16-bit tile offsets can number.
     public init(width: Int, height: Int) throws(SimAnticsError) {
         guard (1...255).contains(width), (1...255).contains(height) else {
             throw .simantics("lot size \(width)x\(height) is outside 1...255")

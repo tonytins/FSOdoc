@@ -38,7 +38,7 @@ public struct LotPosition: Sendable, Hashable, CustomStringConvertible {
     }
 }
 
-/// The eight compass facings, as 2017 stores them: one bit each, north first, clockwise.
+/// The eight compass facings, as FreeSO stores them: one bit each, north first, clockwise.
 public enum Direction: UInt8, Sendable, CaseIterable {
     case north = 0x01, northEast = 0x02, east = 0x04, southEast = 0x08
     case south = 0x10, southWest = 0x20, west = 0x40, northWest = 0x80

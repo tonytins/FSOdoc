@@ -1,5 +1,5 @@
 // Stands in for Mina.NET's IoBuffer, which FreeSO took from a fork that isn't checked
-// out here. It implements the members the 2017 SimAntics and FSO.Common sources call,
+// out here. It implements the members FreeSO's SimAntics and FSO.Common sources call,
 // with Mina's semantics: a position, a limit, an optional auto-expanding capacity, and
 // big-endian order by default.
 using System;

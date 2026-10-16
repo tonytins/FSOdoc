@@ -1,8 +1,8 @@
 /// A SimAntics variable: a scope and the data that picks a value in it.
 ///
-/// 2017 calls these the owner and the data. The data is usually an index (temp 3, attribute
+/// FreeSO calls these the owner and the data. The data is usually an index (temp 3, attribute
 /// 7) and for the literal scope it's the value itself. Operands store scopes in 8 or 16 bits,
-/// so the raw scope keeps 16; one with no ``VariableScope`` fails when used, as in 2017.
+/// so the raw scope keeps 16; one with no ``VariableScope`` fails when used, as in FreeSO.
 public struct Variable: Sendable, Hashable, CustomStringConvertible {
     public var rawScope: UInt16
     public var data: Int16
@@ -33,7 +33,7 @@ public struct Variable: Sendable, Hashable, CustomStringConvertible {
 // MARK: - Reading and writing
 
 extension StackFrame {
-    /// A variable's value, as 2017's `VMMemory.GetVariable` reads it.
+    /// A variable's value, as FreeSO's `VMMemory.GetVariable` reads it.
     public func value(of variable: Variable) throws(SimAnticsError) -> Int16 {
         try VMMemory.value(of: variable, in: self)
     }

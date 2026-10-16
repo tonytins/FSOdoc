@@ -33,13 +33,13 @@ public struct TTAB: IFFChunk {
         public var attenuationValue: Float
         public var autonomyThreshold: UInt32
         public var joiningIndex: Int32
-        /// The `TSOFlags` bits, version 10 and up. Earlier versions get 0x1F, as in 2017.
+        /// The `TSOFlags` bits, version 10 and up. Earlier versions get 0x1F, as in FreeSO.
         public var tsoFlags: UInt32 = 0x1F
     }
 
     public let id: UInt16
     public let label: String
-    /// The format version, or `nil` when the table is empty (the 2017 reader stops before it).
+    /// The format version, or `nil` when the table is empty (FreeSO's reader stops before it).
     public let version: UInt16?
     public let interactions: [Interaction]
 
@@ -69,7 +69,7 @@ public struct TTAB: IFFChunk {
                 interactions = try Self.readInteractions(count: count, version: version, from: &values)
             }
 
-            // The 2017 reader indexes interactions by string index and fails on a repeat.
+            // FreeSO's reader indexes interactions by string index and fails on a repeat.
             var seen = Set<UInt32>()
             for interaction in interactions where !seen.insert(interaction.ttaIndex).inserted {
                 throw ChunkFormatError(reason: "repeated TTA index \(interaction.ttaIndex)")

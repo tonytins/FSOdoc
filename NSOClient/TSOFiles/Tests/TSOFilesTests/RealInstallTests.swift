@@ -94,8 +94,8 @@ struct RealInstallTests {
         #expect(tables > 0)
     }
 
-    /// The INI files the 2017 client reads. Others may be malformed: `sys/nametohostmap.ini`
-    /// repeats a section, which the 2017 reader rejects too, but no code loads that file.
+    /// The INI files FreeSO's client reads. Others may be malformed: `sys/nametohostmap.ini`
+    /// repeats a section, which FreeSO's reader rejects too, but no code loads that file.
     @Test(arguments: ["sys/gameentry.ini", "sys/cityselector.ini"])
     func readsTheINIFilesTheClientUses(path: String) throws {
         let directory = try #require(gameDirectory)
@@ -113,7 +113,7 @@ struct RealInstallTests {
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
         let registry = try PatchRegistry(directory: repository.appendingPathComponent("TSOClient/tso.content/Content/Patch"))
-        // The snapshot ships one empty patch file; 2017 skipped it silently.
+        // The snapshot ships one empty patch file; FreeSO skipped it silently.
         #expect(registry.failures.map(\.path) == ["skillobjects_10xmultiplier.piff"])
 
         let archive = try FAR1Archive(contentsOf: directory.appendingPathComponent("objectdata/objects/objiff.far"),

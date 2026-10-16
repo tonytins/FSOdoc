@@ -10,7 +10,7 @@ extension Primitives {
     ///
     /// Not ported yet: placing in the world (placement), slots and hands (containment), callbacks
     /// that run an interaction on the new object, and a neighbor's Sim (The Sims 1). Each throws
-    /// ``SimAnticsError/unsupported(_:)``. Persisting the object gives it a database ID in 2017,
+    /// ``SimAnticsError/unsupported(_:)``. Persisting the object gives it a database ID in FreeSO,
     /// which nothing here models.
     public enum CreateObjectInstance: Primitive {
         public static let name = "create_object_instance"
@@ -23,7 +23,7 @@ extension Primitives {
             case nextToMeInDirectionOfLocal
         }
 
-        /// The operand flags, with 2017's bit values.
+        /// The operand flags, with FreeSO's bit values.
         public struct Flags: OptionSet, Sendable, Hashable {
             public var rawValue: UInt8
             public init(rawValue: UInt8) { self.rawValue = rawValue }
@@ -117,13 +117,13 @@ extension Primitives {
             }
             frame.stackObject = object
             if flags.contains(.useNeighbor) {
-                throw .invalidCast("only a Sim can inherit a neighbor") // 2017 casts the new object to a Sim
+                throw .invalidCast("only a Sim can inherit a neighbor") // FreeSO casts the new object to a Sim
             }
             return .gotoTrue
         }
 
         /// Where a mode puts the new object, before placement: out of the world, or relative to the
-        /// caller or another object, which fails as 2017 does when that object doesn't exist.
+        /// caller or another object, which fails as FreeSO does when that object doesn't exist.
         private static func target(of mode: Position, operand: Operand,
                                    in frame: StackFrame) throws(SimAnticsError) -> (LotPosition, Direction) {
             func object(_ id: Int16) throws(SimAnticsError) -> Entity {

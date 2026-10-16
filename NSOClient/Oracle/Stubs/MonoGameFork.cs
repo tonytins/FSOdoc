@@ -1,4 +1,4 @@
-// Members the 2017 code uses that stock MonoGame 3.8 lacks: XNA 4.0 members MonoGame
+// Members FreeSO's code uses that stock MonoGame 3.8 lacks: XNA 4.0 members MonoGame
 // dropped, and additions from FreeSO's MonoGame fork (not checked out here). C# 14
 // extension members add them without editing the 2017 sources.
 using Microsoft.Xna.Framework;

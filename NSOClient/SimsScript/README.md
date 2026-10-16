@@ -2,7 +2,7 @@
 
 Text forms of SimAntics behavior, so objects can be read, edited, and written on any platform
 instead of only in a visual editor. Everything compiles to ordinary BHAV and `OBJf` chunks, so the
-2017 VM, NSOClient's VM, and lockstep multiplayer run the result unchanged.
+FreeSO VM, NSOClient's VM, and lockstep multiplayer run the result unchanged.
 
 This is a proof of concept for a later milestone (Yatesport, roadmap decision 5). It shows the
 idea is feasible; it isn't a usable language yet.

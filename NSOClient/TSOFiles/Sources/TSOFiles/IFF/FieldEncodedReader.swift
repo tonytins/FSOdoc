@@ -7,7 +7,7 @@ import Foundation
 /// one bit: 0 means the value is zero. Otherwise two bits pick a width (5, 8,
 /// 13, or 16 bits for 16-bit fields; 6, 11, 21, or 32 for 32-bit fields), and
 /// that many bits follow, most significant first, then are sign-extended.
-/// Bits past the end of the data read as zero, as in 2017.
+/// Bits past the end of the data read as zero, as in FreeSO.
 struct FieldEncodedReader {
     private static let shortWidths: [Int] = [5, 8, 13, 16]
     private static let longWidths: [Int] = [6, 11, 21, 32]
@@ -16,7 +16,7 @@ struct FieldEncodedReader {
     private var currentByte: UInt8
     private var bitPosition = 0
 
-    /// Starts reading at the reader's position. Like 2017, this fails if no byte is left.
+    /// Starts reading at the reader's position. Like FreeSO, this fails if no byte is left.
     init(_ reader: ByteReader) throws(EndOfDataError) {
         self.reader = reader
         currentByte = try self.reader.readUInt8()
@@ -32,7 +32,7 @@ struct FieldEncodedReader {
 
     /// Reads a 32-bit field and converts the integer to a float.
     ///
-    /// This isn't a bit-pattern reinterpretation. The 2017 code converts the
+    /// This isn't a bit-pattern reinterpretation. FreeSO's code converts the
     /// integer value (its comment says "this is incredibly wrong"), and the VM
     /// depends on the result, so it's kept.
     mutating func readFloat() -> Float { Float(readField(isLong: true)) }
@@ -60,7 +60,7 @@ struct FieldEncodedReader {
         bitPosition += 1
         if bitPosition > 7 {
             bitPosition = 0
-            currentByte = (try? reader.readUInt8()) ?? 0 // past the end reads zero, as in 2017
+            currentByte = (try? reader.readUInt8()) ?? 0 // past the end reads zero, as in FreeSO
         }
         return bit
     }

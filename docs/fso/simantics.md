@@ -203,7 +203,7 @@ no-op. The SimAntics library then no longer references MonoGame.
 ### Determinism checks
 
 - **Floating point.** Modern .NET uses SSE or AVX everywhere and is far
-  more consistent than 2017's x87 JIT on 32-bit Mono, but results can
+  more consistent than FreeSO's x87 JIT on 32-bit Mono, but results can
   still differ across ARM64 and x64 for some math functions. List every
   `float`/`double` use in VM logic (routing and animation timing are
   likely places) and move them to fixed-point or integer math, or confirm
@@ -239,5 +239,5 @@ no-op. The SimAntics library then no longer references MonoGame.
 
 Changing primitive behavior, the random number generator, the tick rate,
 or the marshal format breaks compatibility with existing lot saves and
-with any client running the 2017 code. Treat each of those as a breaking
+with any client running FreeSO's code. Treat each of those as a breaking
 change and version it.

@@ -431,7 +431,7 @@ private struct RoutineGenerator {
     // MARK: Calls
 
     /// Emits a call. Plain-number arguments go in the operand; otherwise all four go through temps,
-    /// with every argument -1, which 2017 reads as "take the temp" when arguments 1 to 3 aren't all 0.
+    /// with every argument -1, which FreeSO reads as "take the temp" when arguments 1 to 3 aren't all 0.
     private mutating func call(_ name: String, _ arguments: [ScriptExpression], _ position: SourcePosition) throws(ScriptError) -> (Edge, Edge) {
         guard let routine = routines[name] else { throw ScriptCompiler.error("\(name) isn't a function", position) }
         guard arguments.count == routine.parameters else {

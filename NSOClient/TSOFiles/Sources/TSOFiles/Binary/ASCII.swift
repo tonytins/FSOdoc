@@ -2,7 +2,7 @@ import Foundation
 
 /// ASCII text decoding that matches .NET's `Encoding.ASCII`.
 ///
-/// The 2017 readers decode names and labels with `Encoding.ASCII`, which turns
+/// FreeSO's readers decode names and labels with `Encoding.ASCII`, which turns
 /// every byte above 0x7F into `?`. Decoding the same way keeps names, and
 /// therefore lookups by name, identical.
 public enum ASCII {

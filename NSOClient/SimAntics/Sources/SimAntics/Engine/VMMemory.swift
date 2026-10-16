@@ -4,9 +4,9 @@ import TSOFiles
 /// Reads and writes SimAntics variables; ``StackFrame/value(of:)`` and its siblings call it.
 ///
 /// Corresponds to FreeSO's `VMMemory`. A raw scope with no ``VariableScope`` fails as it
-/// does in 2017. Each scope either behaves as
-/// in 2017, fails as 2017 does (``SimAnticsError/simantics(_:)`` and the other
-/// 2017 failures), or throws ``SimAnticsError/unsupported(_:)`` because what it
+/// does in FreeSO. Each scope either behaves as
+/// in FreeSO, fails as FreeSO does (``SimAnticsError/simantics(_:)`` and the other
+/// FreeSO failures), or throws ``SimAnticsError/unsupported(_:)`` because what it
 /// reads (Sims, slots, object definitions) isn't ported yet.
 enum VMMemory {
     // MARK: 16-bit variables
@@ -61,9 +61,9 @@ enum VMMemory {
             let rooms = frame.vm.architecture.rooms
             let room = rooms[max(0, min(rooms.count - 1, Int(thread.tempRegisters[0])))]
             switch data {
-            case 0: return 100 // ambient light; 2017 doesn't compute it
+            case 0: return 100 // ambient light; FreeSO doesn't compute it
             case 1: return room.isOutside ? 1 : 0
-            case 2: return 0   // level; 2017 doesn't fill it in
+            case 2: return 0   // level; FreeSO doesn't fill it in
             case 3: return Int16(truncatingIfNeeded: room.area)
             case 4: return room.isPool ? 1 : 0
             default: throw .simantics("Invalid room data!")
@@ -222,7 +222,7 @@ enum VMMemory {
             frame.thread.tempXL[try index(variable.data, in: frame.thread.tempXL, "TempXL")] = value
             return true
         case .moneyOverHead32Bit:
-            // 2017 casts the caller to a Sim to show the headline; no Sims are ported yet.
+            // FreeSO casts the caller to a Sim to show the headline; no Sims are ported yet.
             _ = try caller(of: frame)
             throw .invalidCast("the caller isn't a Sim")
         default:
@@ -278,7 +278,7 @@ enum VMMemory {
             tableID -= 128
             if let value = try constant(in: frame.vm.global, table: tableID + 256, key: keyID, checked: true) { return value }
         default:
-            // The owner's BCONs aren't bounds-checked in 2017.
+            // The owner's BCONs aren't bounds-checked in FreeSO.
             if let value = try constant(in: owner, table: tableID &+ 4096, key: keyID, checked: false) { return value }
         }
         return 0
@@ -304,7 +304,7 @@ enum VMMemory {
 
     // MARK: Helpers
 
-    /// A scope only Sims have. 2017 casts the entity to a Sim first, which fails for an
+    /// A scope only Sims have. FreeSO casts the entity to a Sim first, which fails for an
     /// object, then evaluates the index, then calls into the Sim, which fails for none.
     /// No Sims are ported yet, so this always fails.
     private static func simOnly(_ entity: Entity?, index: () throws(SimAnticsError) -> Int16) throws(SimAnticsError) -> Never {

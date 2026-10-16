@@ -1,7 +1,7 @@
 """Writes `fso-oracle run-primitive` requests for a ported primitive, one JSON line each.
 
 The output is deterministic, so it isn't committed; `NSOClient/scripts/oracle-fixtures.sh`
-writes it beside the 2017 answers. Cases that name real objects take the GUIDs of the lot's
+writes it beside FreeSO's answers. Cases that name real objects take the GUIDs of the lot's
 objects 1 and 2 from ORACLE_GUIDS ("caller,stack" in hex), which the fixture script reads from
 the oracle. Every value a case reads is set by the request, so the Swift tests can build the
 same state.
@@ -15,7 +15,7 @@ import pathlib
 import struct
 import sys
 
-# Variable scopes and Expression operators, as 2017 numbers them.
+# Variable scopes and Expression operators, as FreeSO numbers them.
 MY_OBJECT, LITERAL, TEMPS, STACK_OBJECT_ID, TUNING, LOCAL, TEMP_XL, MY_LIST, STACK_LIST = 3, 7, 8, 10, 26, 25, 42, 46, 47
 ASSIGN, PUSH, POP = 5, 18, 19
 # The oracle lot's caller and the object tests use as the stack object.
@@ -31,7 +31,7 @@ def expression_preset(stack_object):
     """State every read can rely on: distinct, recognizable values."""
     data = {str(i): 1000 + i for i in range(80) if i not in (1, 25)}
     # Every attribute index a case can reach (operand data, temps, and arguments as indexes), since
-    # the 2017 lot's objects may already have values there and fresh Swift entities don't.
+    # the objects on FreeSO's lot may already have values there and fresh Swift entities don't.
     reachable = list(range(21)) + [80, 600]
     objects = {str(CALLER): {"data": data, "attributes": {str(i): 300 + i for i in reachable}, "list": [4, 5, 6]}}
     if stack_object:

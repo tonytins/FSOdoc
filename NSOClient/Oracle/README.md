@@ -1,8 +1,8 @@
 # SimAntics oracle
 
-`fso-oracle` runs FreeSO's 2017 SimAntics VM headless on modern .NET, to produce
+`fso-oracle` runs FreeSO's SimAntics VM (the 2017 snapshot) headless on modern .NET, to produce
 reference results for the Swift port (roadmap decision 2, the West Darrington
-milestone). It compiles the 2017 SimAntics, Files, Content, LotView, HIT, and
+milestone). It compiles FreeSO's SimAntics, Files, Content, LotView, HIT, and
 Vitaboy sources unchanged: `SnapshotSources.props` links them read-only from
 `TSOClient/`, and nothing under `TSOClient/` is ever edited.
 
@@ -19,7 +19,7 @@ It reads the game from `TSO_GAME_DIR` (or `--game`), loads a lot from blueprint 
 tick 0 seed 0f50d0c5eed00001 entities 12 digest daa28213a5e94dc0fc7678d346b6f691998fae08a839aadfe49d795303d78700
 ```
 
-Standard output carries only results. The 2017 code's own messages (such as
+Standard output carries only results. FreeSO's own messages (such as
 `Failed to get Object ID`) are sent to standard error.
 
 Options: `--game`, `--content` (FreeSO's `Content` folder), `--blueprint`,
@@ -54,7 +54,7 @@ with `#` are skipped. Each request runs on a freshly loaded lot, so requests nev
 see each other's effects. [Examples/expression.jsonl](Examples/expression.jsonl)
 has annotated examples.
 
-The oracle calls the primitive's 2017 handler directly, the way
+The oracle calls the primitive's FreeSO handler directly, the way
 `VMThread.ExecuteInstruction` does. The handler runs on a one-instruction routine
 whose frame is pushed onto the caller's thread, with the caller as the callee and
 code owner. The oracle reports the exit code but doesn't act on it: no branching
@@ -83,13 +83,13 @@ Response fields:
 | Field | Meaning |
 | --- | --- |
 | `protocol`, `id` | the protocol version (1) and the request's `id` |
-| `primitive` | the 2017 primitive's name |
+| `primitive` | the primitive's name in FreeSO |
 | `exit` | the exit code name, such as `GOTO_TRUE` or `CONTINUE_NEXT_TICK` |
-| `exception` | instead of `exit`, if the handler threw: `Type: message` (2017 resets the thread when this happens) |
-| `noPrimitive` | `true` if 2017 has no primitive for the opcode; it then counts as `GOTO_TRUE` |
+| `exception` | instead of `exit`, if the handler threw: `Type: message` (FreeSO resets the thread when this happens) |
+| `noPrimitive` | `true` if FreeSO has no primitive for the opcode; it then counts as `GOTO_TRUE` |
 | `temps`, `tempXL`, `locals`, `args`, `stackObject`, `seed` | the values after running |
 | `thread` | what the primitive changed on the caller's thread: `idleStart`, `interrupt`, and `scheduledTick` (the tick it's scheduled to run next, `ScheduleIdleEnd`) |
-| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered, x, y, level, direction]`, where `registered` says whether the object is listed under its category (2017 lists an object once its category is set), and `direction` is 2017's compass flag, so a test can rebuild the lot |
+| `lot` | every object on the lot before running, in object ID order: `[objectID, guid, category, registered, x, y, level, direction]`, where `registered` says whether the object is listed under its category (FreeSO lists an object once its category is set), and `direction` is FreeSO's compass flag, so a test can rebuild the lot |
 | `lotSize` | the lot's width and height in tiles |
 | `callerGUID`, `stackObjectGUID` | the GUIDs (8 hex digits) of the caller and the requested stack object, so a test can build the same objects |
 | `frames` | stack frames from the request's frame up; more than 1 means the primitive pushed one |
@@ -124,7 +124,7 @@ Reads object GUIDs (hexadecimal) from standard input, one per line. For each, it
 lot with every object taken out, creates the object out of the world as
 `VMContext.CreateObjectInstance` does (running its init), and prints
 `guid tick N seed S entities E digest D` (digest version 0) after creation (tick 0), every
-`--every` ticks, and at the end. It prints `guid missing` if 2017 can't create the object and
+`--every` ticks, and at the end. It prints `guid missing` if FreeSO can't create the object and
 `guid error Type` if creating or ticking throws; the full exception goes to standard error.
 
 The SimAntics tests run each object the same way and compare every line. Objects that reach
@@ -144,7 +144,7 @@ Reads blueprint XML paths from standard input, one per line. For each, it loads 
 | `file` | the blueprint's file name |
 | `size` | the lot's width and height in tiles |
 | `maps` | each level's room map (`VMRoomMap.Map`), ground floor first: one number per tile, across then down |
-| `rooms` | every room after 2017's unused room 0, each `[id, lightBaseRoom, floor, isOutside, area, isPool, adjacentRooms, [x, y, width, height], supportRooms]`; `floor` is 0 for the ground floor, and `adjacentRooms` is in 2017's iteration order |
+| `rooms` | every room after FreeSO's unused room 0, each `[id, lightBaseRoom, floor, isOutside, area, isPool, adjacentRooms, [x, y, width, height], supportRooms]`; `floor` is 0 for the ground floor, and `adjacentRooms` is in FreeSO's iteration order |
 
 If loading throws, the line is `{"file":…,"error":Type}` and the full exception goes to standard
 error. FreeSO's blueprints have floors but no walls, so `NSOClient/SimAntics/OracleCases/make_blueprints.py`
@@ -157,12 +157,12 @@ SimAntics tests read each blueprint with the Swift `Blueprint` and compare every
 dotnet run --project NSOClient/Oracle -c Release -- list-objects > objects.tsv
 ```
 
-Loads every object registered at startup through the 2017 content system and prints one
+Loads every object registered at startup through FreeSO's content system and prints one
 tab-separated line per GUID, sorted by GUID:
 
 | Result | Fields after the GUID (8 hex digits) |
 | --- | --- |
-| loaded | the `OBJD` label, the resource name, the semi-global (lower-case file name without extension, or `-`), the number of routines by name, the number of BHAVs, the number of tuning tables, and the entry point table a 2017 entity builds (`condition:action` pairs, comma-separated, or `none`) |
+| loaded | the `OBJD` label, the resource name, the semi-global (lower-case file name without extension, or `-`), the number of routines by name, the number of BHAVs, the number of tuning tables, and the entry point table a FreeSO entity builds (`condition:action` pairs, comma-separated, or `none`) |
 | no `OBJD` with the GUID | `missing` |
 | loading threw | `error` and the exception type; the full exception goes to standard error |
 
@@ -170,7 +170,7 @@ The TSOContent real-install tests compare each line with the Swift content syste
 
 ## Fixtures for the Swift tests
 
-`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every 2017 answer the
+`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every FreeSO answer the
 Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
 `objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, for each ported
 primitive its cases from `NSOClient/SimAntics/OracleCases/make_cases.py` with their
@@ -185,7 +185,7 @@ TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics
 
 The answers depend on the install, so don't commit them.
 
-## How it stands in for the 2017 build
+## How it stands in for FreeSO's build
 
 Four kinds of help, each kept as small as possible:
 
@@ -193,7 +193,7 @@ Four kinds of help, each kept as small as possible:
 | --- | --- |
 | `Stubs/MinaIoBuffer.cs` | A working `IoBuffer` with the members the sources call. FreeSO's Mina.NET fork isn't checked out. |
 | `Stubs/MonoGameFork.cs` | C# 14 extension members for what stock MonoGame 3.8 lacks: XNA 4.0's `Color.TransparentBlack` and the fork's `RenderTarget2D.InheritDepthStencil`. |
-| `Stubs/GlobalUsings.cs` | Resolves `Color` to XNA's, which the 2017 build saw without ambiguity. |
+| `Stubs/GlobalUsings.cs` | Resolves `Color` to XNA's, which FreeSO's build saw without ambiguity. |
 | `Stubs/Ninject.cs`, `Stubs/MP3Player.cs` | Names the VM never uses at run time. |
 
 Two files are left out (`Base64JsonConverter.cs`, `MP3Player.cs`) because they need
@@ -203,7 +203,7 @@ types; no window or graphics device is ever created.
 ## Older installs: the game overlay
 
 FreeSO was built against TSO's 2003 production files. An older install, such as the
-2002 beta, lacks some files and has a different shape for others, and the 2017
+2002 beta, lacks some files and has a different shape for others, and FreeSO's
 content system stops on both. `GameOverlay` builds a temporary folder of links to
 the install, adds placeholders or adapted copies only where needed, and reports
 each one on standard error:
@@ -216,12 +216,12 @@ each one on standard error:
   filled in from file names, since the beta's tables have none;
 - blueprint objects the install doesn't have are left out of the lot.
 
-The install is never written to. The 2017 code's user data (such as the sandbox
+The install is never written to. FreeSO's user data (such as the sandbox
 ban list) goes to a scratch folder inside the overlay, which is deleted on exit.
 
 ## Keeping it current
 
-If the list of 2017 projects or their files changes, regenerate the source list:
+If the list of FreeSO projects or their files changes, regenerate the source list:
 
 ```sh
 python3 -I NSOClient/Oracle/generate_sources.py

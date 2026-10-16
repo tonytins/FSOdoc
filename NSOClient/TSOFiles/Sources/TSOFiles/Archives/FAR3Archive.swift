@@ -47,7 +47,7 @@ public struct FAR3Archive: Sendable {
         /// An unknown byte that may count accesses.
         public var accessCount: UInt8
 
-        /// Whether the 2017 reader treats this entry as compressed.
+        /// Whether FreeSO's reader treats this entry as compressed.
         public var isCompressed: Bool { compressionFlag == 0x01 }
     }
 
@@ -69,7 +69,7 @@ public struct FAR3Archive: Sendable {
         }
         guard let manifest else { throw .notAFAR3Archive }
 
-        // Every index keeps the first entry for its key. The 2017 reader indexed by file ID
+        // Every index keeps the first entry for its key. FreeSO's reader indexed by file ID
         // alone and threw on a repeated one; some archives (packingslips.dat) repeat file IDs
         // across type IDs, so lookups by asset ID use both.
         var byName: [String: Int] = [:]
@@ -114,7 +114,7 @@ public struct FAR3Archive: Sendable {
 
     /// The data of an entry, decompressed if needed.
     ///
-    /// For a compressed entry, the 2017 reader skips 9 bytes, reads the
+    /// For a compressed entry, FreeSO's reader skips 9 bytes, reads the
     /// compressed length and a compression ID, and decompresses only if the ID is
     /// RefPack (`0xFB10`). Otherwise it returns the raw bytes from the entry's start.
     public func data(for entry: Entry) throws(FAR3Error) -> Data {

@@ -1,4 +1,4 @@
-/// The primitives, one type each, named after their 2017 classes without the `VM` prefix.
+/// The primitives, one type each, named after their FreeSO classes without the `VM` prefix.
 public enum Primitives {}
 
 /// A SimAntics primitive: an operation with an opcode below 256.
@@ -6,7 +6,7 @@ public enum Primitives {}
 /// Primitives hold no state; everything they change lives in the VM.
 public protocol Primitive: SendableMetatype {
     associatedtype Operand: PrimitiveOperand
-    /// The 2017 registration name, such as `expression`.
+    /// FreeSO's registration name, such as `expression`.
     static var name: String { get }
     static var opcode: UInt8 { get }
     static func execute(_ operand: Operand, in frame: StackFrame) throws(SimAnticsError) -> ExitCode
@@ -68,8 +68,8 @@ public struct PrimitiveTable: Sendable {
         }
     }
 
-    /// The primitives 2017 registers in TSO mode, by opcode, with their registration names.
-    public static let tso2017Names: [UInt8: String] = [
+    /// The primitives FreeSO registers in TSO mode, by opcode, with their registration names.
+    public static let fsoCompat: [UInt8: String] = [
         0: "sleep", 1: "generic_sims_online_call", 2: "expression", 4: "grab", 5: "drop",
         6: "change_suit_or_accessory", 7: "refresh", 8: "random_number", 9: "burn", 11: "get_distance_to",
         12: "get_direction_to", 13: "push_interaction", 14: "find_best_object_for_function", 15: "breakpoint",
@@ -92,7 +92,7 @@ public struct PrimitiveTable: Sendable {
     public func decode(opcode: UInt16, operand bytes: [UInt8]) -> DecodedOperand {
         if opcode >= 256 { return .subroutine(SubroutineOperand(bytes: bytes)) }
         guard let registration = registrations[UInt8(opcode)] else {
-            if let name = Self.tso2017Names[UInt8(opcode)] { return .unportedPrimitive(name) }
+            if let name = Self.fsoCompat[UInt8(opcode)] { return .unportedPrimitive(name) }
             return .missingPrimitive
         }
         return .primitive(registration.prepare(bytes))

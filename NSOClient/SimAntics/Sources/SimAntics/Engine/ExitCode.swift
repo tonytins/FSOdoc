@@ -17,8 +17,8 @@ public enum ExitCode: UInt8, Sendable {
     /// Takes the entity off the schedule for several ticks (idle primitives).
     case continueFutureTick = 10
 
-    /// The 2017 name, such as `GOTO_TRUE`, as `fso-oracle` reports it.
-    public var name2017: String {
+    /// FreeSO's name, such as `GOTO_TRUE`, as `fso-oracle` reports it.
+    public var fsoCompatName: String {
         switch self {
         case .gotoTrue: "GOTO_TRUE"
         case .gotoFalse: "GOTO_FALSE"

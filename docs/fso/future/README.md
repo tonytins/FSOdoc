@@ -44,8 +44,8 @@ NSOClient matches the snapshot's results, so these branches aren't its reference
 in two ways:
 
 - **What came next.** Many fixes past the snapshot (desyncs, interactions, collisions, crashes)
-  show where 2017's behavior was wrong or fragile. When NSOClient decides how to handle a 2017 bug,
-  the later fix is evidence of what FreeSO itself settled on.
-- **Ideas past the baseline.** NSOClient's third goal goes beyond 2017 (SimAntics extensions,
+  show where the snapshot's behavior was wrong or fragile. When NSOClient decides how to handle a bug in
+  the snapshot, the later fix is evidence of what FreeSO itself settled on.
+- **Ideas past the baseline.** NSOClient's third goal goes beyond the snapshot (SimAntics extensions,
   scripting). FreeSO later added an ahead-of-time SimAntics compiler, new TSO calls, object
   upgrades, and tuning presets, which are worth knowing about before designing our own.

@@ -3,20 +3,20 @@
 SimAntics is the virtual machine that runs The Sims Online's object behavior. Every object's
 logic is a set of routines (`BHAV` chunks) built from primitives: compare and assign variables,
 sleep, find another object, play a sound, and about 70 more. The port runs those routines tick by
-tick and gets the same results as FreeSO's 2017 VM, which `fso-oracle` checks case by case.
+tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case by case.
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
 objects use, the scheduler and clock, and 8 of the 49 primitives TSO uses (Expression, Sleep,
 Refresh, Random Number, Play Sound, Set To Next, Test Object Type, and Create Object Instance).
-2,597 objects created alone on an empty lot match 2017's state tick for tick over 30 ticks. Sims,
+2,597 objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks. Sims,
 routing, placement, slots, and lot loading come later; see the
 [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
 [lot.md](lot.md).
 
 ## The VM
 
-A `VM` is one running lot (2017's `VM` and `VMContext`). It owns the entities, the 38 global
+A `VM` is one running lot (FreeSO's `VM` and `VMContext`). It owns the entities, the 38 global
 values, the clock, the random generator, the scheduler, the primitive table, and the
 architecture. It reads code through a `GameContent`.
 
@@ -34,7 +34,7 @@ print(door.objectData[0...3], vm.reportedErrors)
 print(StateDigest.hex(of: vm))     // compare with fso-oracle's digest for the same run
 ```
 
-`createObject(guid:)` works as 2017's `CreateObjectInstance` does; see
+`createObject(guid:)` works as FreeSO's `CreateObjectInstance` does; see
 [Creating and deleting objects](#creating-and-deleting-objects) below.
 
 Each `tick()` follows `VM.InternalTick`:
@@ -44,18 +44,18 @@ Each `tick()` follows `VM.InternalTick`:
 3. Globals 6, 5, 0, and 4 get the clock's seconds, minutes, hours, and time of day.
 4. If walls or floors changed, rooms are regenerated and every entity's room is updated ([lot.md](lot.md)).
 5. The scheduled entities run, in object ID order.
-6. The random seed advances by the number of entities, as 2017 does so desynced clients drift apart quickly.
+6. The random seed advances by the number of entities, as FreeSO does so desynced clients drift apart quickly.
 
 ## Entities
 
-An `Entity` is an object on the lot (2017's `VMEntity` and `VMGameObject`). It holds:
+An `Entity` is an object on the lot (FreeSO's `VMEntity` and `VMGameObject`). It holds:
 
 | Property | What it is |
 | --- | --- |
 | `objectID` | Its ID on the lot; entities are always kept in ID order |
 | `object` | Its `GameObject`: definition and files |
 | `objectData` | The 80 object data values, read through the `myObject` and `stackObject` scopes (see `ObjectVariable` for their names) |
-| `attributes` | Per-object attributes; grow with zeros on any access past the end, as in 2017 |
+| `attributes` | Per-object attributes; grow with zeros on any access past the end, as in FreeSO |
 | `list` | The entity's list, for the push and pop operators |
 | `position`, `direction` | Where it is and which way it faces ([lot.md](lot.md)) |
 | `entryPoints` | The routines for init, main, load, cleanup, and the rest, from the `OBJD` or its `OBJf` |
@@ -65,7 +65,7 @@ Each entity belongs to a `MultitileGroup` (`group`): the parts of one object. Mo
 a group of one; a multi-tile object (a two-tile bed, a long counter) is one entity per part.
 `leadObject` is the part that leads the group, and the lead-tile attribute scopes read through it.
 
-Writing some object data has side effects, as in 2017. Writing the direction snaps it to the
+Writing some object data has side effects, as in FreeSO. Writing the direction snaps it to the
 object's rotation step (data 23); writing the category moves it in the category index; lockout
 counts down. Use `setValue(_:of:)` for writes that should behave that way, and `objectData`
 directly only to set up state.
@@ -78,7 +78,7 @@ door.reset()                       // clears the stack, runs cleanup, queues mai
 
 ## Creating and deleting objects
 
-`VM.createObject(guid:at:facing:mainStackObjectID:mainParameter:)` follows 2017's
+`VM.createObject(guid:at:facing:mainStackObjectID:mainParameter:)` follows FreeSO's
 `CreateObjectInstance`:
 
 1. A multi-tile **master** definition (a master ID, and a sub-index of -1) creates one entity per
@@ -102,13 +102,13 @@ if let table = try vm.createObject(guid: tableGUID) {        // a multi-tile mas
 
 `VM.delete(_:wholeGroup:)` takes an entity (or every part of its object) off the lot: out of the
 entity list, the queries, and the schedule, and its ID is free again. While entities are running,
-deletion waits until the tick ends, after the random seed has counted the entity. That's how 2017
+deletion waits until the tick ends, after the random seed has counted the entity. That's how FreeSO
 deletes an object whose routines fail twice within 10 ticks, and the port does the same.
 
 ## Threads and routines
 
 Each entity's `VMThread` keeps a stack of `StackFrame`s; the last one runs. A `Routine` is a
-`BHAV` with every operand decoded once (2017's `VMRoutine`). `thread.tick()` runs instructions
+`BHAV` with every operand decoded once (FreeSO's `VMRoutine`). `thread.tick()` runs instructions
 until one yields:
 
 - **Primitives** (opcodes below 256) run and return an `ExitCode`: go to the true or false
@@ -139,10 +139,10 @@ returns how it exited. While the scheduler is running, a check shares its entity
 it works on a copy.
 
 **Errors.** A routine that fails throws a `SimAnticsError`. The thread reports it (at most once
-every 600 ticks, as 2017's dialog cooldown does), then resets the frame's caller and callee. More
+every 600 ticks, as FreeSO's dialog cooldown does), then resets the frame's caller and callee. More
 than 500,000 instructions in one tick fails as an infinite loop.
 
-| `SimAnticsError` | 2017 equivalent |
+| `SimAnticsError` | FreeSO equivalent |
 | --- | --- |
 | `simantics(_:)` | `VMSimanticsException` |
 | `indexOutOfRange(_:)`, `nullReference(_:)`, `invalidCast(_:)`, `overflow(_:)` | the .NET exception of the same name |
@@ -150,9 +150,9 @@ than 500,000 instructions in one tick fails as an infinite loop.
 | `content(_:)` | content that couldn't load |
 | `unsupported(_:)` | nothing: behavior not ported yet |
 
-`unsupported` never stands for a 2017 failure, so tests can tell a gap in the port from a
+`unsupported` never stands for a FreeSO failure, so tests can tell a gap in the port from a
 behavior that matches. An unported primitive throws it when it runs; it never silently takes a
-branch. Opcodes 2017 itself has no implementation for take the true branch, as they do there.
+branch. Opcodes FreeSO itself has no implementation for take the true branch, as they do there.
 
 ## Variables
 
@@ -168,7 +168,7 @@ let big = try frame.bigValue(of: Variable(.tempXL, 0))      // 32-bit; only Temp
 
 Every scope objects use is ported: temps and TempXL, parameters and locals, globals, object data
 and attributes of the caller, stack object, and others, lists, definition fields, the clock, entry
-points, tuning, and room data. Each scope either behaves as in 2017, fails as 2017 does, or throws
+points, tuning, and room data. Each scope either behaves as in FreeSO, fails as FreeSO does, or throws
 `unsupported` (slots, and anything only Sims have).
 
 **Tuning** (`Variable(.tuning, …)`) picks a table with the top 9 bits of the data and a key with
@@ -180,7 +180,7 @@ Each looks in a `BCON` first, then an OTF table; nothing found reads as 0.
 A primitive is a type conforming to `Primitive`: a name, an opcode, an `Operand` that decodes the
 instruction's 8 bytes (and encodes them back), and a static `execute` that changes the VM and
 returns an exit code. Primitives hold no state. `PrimitiveTable.standard` registers the ported
-ones; the 2017 names of all 49 TSO primitives are in `PrimitiveTable.tso2017Names`.
+ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 
 | Opcode | Primitive | What it does |
 | --- | --- | --- |
@@ -188,7 +188,7 @@ ones; the 2017 names of all 49 TSO primitives are in `PrimitiveTable.tso2017Name
 | 2 | `Expression` | Compares, assigns, does arithmetic and flag operations, pushes and pops lists |
 | 7 | `Refresh` | Refreshes graphics, lighting, or room score (headless: changes nothing yet) |
 | 8 | `RandomNumber` | Draws a number below a limit into a variable |
-| 23 | `PlaySound` | Plays a sound event (headless, as on 2017's server: changes nothing) |
+| 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |
 | 42 | `CreateObjectInstance` | Creates an object and makes it the stack object (out of the world only, so far) |
@@ -224,12 +224,12 @@ let custom = try VM(content: content, seed: 1, primitives: table)
 - **`VMScheduler`** runs the entities scheduled for each tick in object ID order. An entity that
   doesn't schedule itself while running is scheduled for the next tick; a sleeping one is
   scheduled further ahead and skipped until then.
-- **`VMClock`** counts ticks, minutes, and hours; time of day is always 0, as in 2017.
-- **`VMRandom`** is 2017's xorshift64* generator. `next(below:)` draws from 0 up to a limit; a
+- **`VMClock`** counts ticks, minutes, and hours; time of day is always 0, as in FreeSO.
+- **`VMRandom`** is FreeSO's xorshift64* generator. `next(below:)` draws from 0 up to a limit; a
   limit of 0 returns 0 without advancing. Every client must draw the same numbers in the same
-  order, so only primitives draw, in the order 2017 does.
+  order, so only primitives draw, in the order FreeSO does.
 
-## Comparing with 2017
+## Comparing with FreeSO
 
 `StateDigest.hex(of:)` hashes the VM state (seed, entities, positions, object data, stacks) the
 same way `fso-oracle run-objects` and `run-lot` do. Equal digests after the same ticks mean the

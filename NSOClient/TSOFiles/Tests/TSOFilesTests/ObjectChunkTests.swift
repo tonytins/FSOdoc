@@ -150,7 +150,7 @@ import Testing
         #expect(interaction.attenuationValue == 0.02)
         #expect(interaction.joiningIndex == -1)
         #expect(interaction.motiveEntries == [.init(effectRangeMinimum: -10, effectRangeMaximum: 40, personalityModifier: 7)])
-        #expect(interaction.tsoFlags == 0x1F, "versions before 10 get the 2017 default")
+        #expect(interaction.tsoFlags == 0x1F, "versions before 10 get FreeSO's default")
     }
 
     @Test func readsAnOldTableWithoutVersionSevenFields() throws {
@@ -181,7 +181,7 @@ import Testing
         let interaction = try #require(table.interactions.first)
         #expect(interaction.actionFunction == 0x1001)
         #expect((interaction.flags, interaction.ttaIndex, interaction.attenuationCode) == (0x24, 5, 1))
-        #expect(interaction.attenuationValue == 3, "field-encoded floats are converted integers, as in 2017")
+        #expect(interaction.attenuationValue == 3, "field-encoded floats are converted integers, as in FreeSO")
         #expect(interaction.autonomyThreshold == UInt32(bitPattern: -20))
         #expect(interaction.joiningIndex == -1)
         #expect(interaction.motiveEntries == [.init(effectRangeMinimum: -100, effectRangeMaximum: 100, personalityModifier: 4),

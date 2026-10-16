@@ -2,7 +2,7 @@
 ///
 /// Ports FreeSO's `VMScheduler`. Each tick runs the entities scheduled for it, in object ID
 /// order; an entity that doesn't schedule itself while running is scheduled for the next
-/// tick. After each tick the random seed advances by the number of entities, as 2017 does
+/// tick. After each tick the random seed advances by the number of entities, as FreeSO does
 /// to make clients desync quickly when their entity counts differ.
 public final class VMScheduler {
     /// The current tick (`CurrentTickID`).
@@ -74,8 +74,8 @@ public final class VMScheduler {
         pendingDeletion.append(entity)
     }
 
-    /// 2017's `VM.AddToObjList`: a binary search for the insertion point by object ID. It keeps
-    /// the list sorted and, like 2017, doesn't check whether the entity is already in it.
+    /// FreeSO's `VM.AddToObjList`: a binary search for the insertion point by object ID. It keeps
+    /// the list sorted and, like FreeSO, doesn't check whether the entity is already in it.
     static func insertInObjectIDOrder(_ entity: Entity, into list: inout [Entity]) {
         guard !list.isEmpty else {
             list.append(entity)

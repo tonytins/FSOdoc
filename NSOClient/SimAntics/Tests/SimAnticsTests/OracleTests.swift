@@ -11,7 +11,7 @@ let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].ma
 let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 
-/// Compares each ported primitive with the 2017 answers from `fso-oracle run-primitive`.
+/// Compares each ported primitive with FreeSO's answers from `fso-oracle run-primitive`.
 ///
 /// Each case runs on fresh entities with the GUIDs the oracle reports and the state the
 /// request sets, then the exit code (or failure), registers, and every changed value
@@ -19,7 +19,7 @@ let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OraclePrimitiveTests {
     @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number", "play_sound", "create_object_instance"])
-    func matches2017(primitive: String) throws {
+    func matchesFreeSO(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))
             .map { (try required($0["id"] as? String), $0) })
@@ -39,11 +39,11 @@ struct OraclePrimitiveTests {
                 if canonical(actual) == canonical(expected) {
                     matched += 1
                 } else {
-                    mismatches.append("\(id): 2017 \(canonical(expected)) Swift \(canonical(actual))")
+                    mismatches.append("\(id): FreeSO \(canonical(expected)) Swift \(canonical(actual))")
                 }
             }
         }
-        print("\(primitive) against 2017: \(matched) matched, \(mismatches.count) mismatched, "
+        print("\(primitive) against FreeSO: \(matched) matched, \(mismatches.count) mismatched, "
               + "\(unsupported.values.reduce(0, +)) unsupported \(unsupported.sorted { $0.value > $1.value }.prefix(8))")
         #expect(matched > 0)
         #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5).joined(separator: "\n"))")
@@ -125,7 +125,7 @@ struct OracleCase {
         let threadBefore = (caller.thread.idleStartTick, caller.thread.isInterrupted, caller.thread.scheduledTick)
         var fields: [String: Any] = [:]
         switch Result(catching: { () throws(SimAnticsError) in try primitive.execute(in: ran) }) {
-        case .success(let exit): fields["exit"] = exit.name2017
+        case .success(let exit): fields["exit"] = exit.fsoCompatName
         case .failure(.unsupported(let reason)): return .unsupported(reason)
         case .failure: fields["failed"] = true
         }
@@ -248,10 +248,10 @@ func required<Value>(_ value: Value?, _ what: @autoclosure () -> String = "a fix
     return value
 }
 
-/// Compares every object's entry point table with the one a 2017 entity builds (`objects.tsv`, column 8).
+/// Compares every object's entry point table with the one a FreeSO entity builds (`objects.tsv`, column 8).
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OracleEntryPointTests {
-    @Test func matches2017() throws {
+    @Test func matchesFreeSO() throws {
         let lines = try String(contentsOf: try required(oracleDirectory).appendingPathComponent("objects.tsv"), encoding: .utf8)
             .split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
         let content = try GameContent(.init(gameDirectory: try required(gameDirectory),
@@ -267,10 +267,10 @@ struct OracleEntryPointTests {
             } catch {
                 actual = "error \(error)"
             }
-            if actual != fields[7] { mismatches.append("\(fields[0]): 2017 \(fields[7].prefix(80)) Swift \(actual.prefix(80))") }
+            if actual != fields[7] { mismatches.append("\(fields[0]): FreeSO \(fields[7].prefix(80)) Swift \(actual.prefix(80))") }
             compared += 1
         }
-        print("Entry points against 2017: \(compared) objects compared, \(mismatches.count) mismatched")
+        print("Entry points against FreeSO: \(compared) objects compared, \(mismatches.count) mismatched")
         #expect(compared > 2_000)
         #expect(mismatches.isEmpty, "\(mismatches.prefix(5).joined(separator: "\n"))")
     }
@@ -280,10 +280,10 @@ struct OracleEntryPointTests {
 /// `fso-oracle run-objects` (`objects.digests`) after creation and every 10 ticks to 30.
 ///
 /// Objects whose run needs behavior not ported yet are counted, not compared, as are
-/// multi-tile objects (not ported) and objects 2017 can't create.
+/// multi-tile objects (not ported) and objects FreeSO can't create.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OracleObjectRunTests {
-    @Test func matches2017() throws {
+    @Test func matchesFreeSO() throws {
         let text = try String(contentsOf: try required(oracleDirectory).appendingPathComponent("objects.digests"), encoding: .utf8)
         var expected: [String: [String]] = [:], order: [String] = []
         for line in text.split(separator: "\n") {
@@ -297,7 +297,7 @@ struct OracleObjectRunTests {
         var matched = 0, mismatches: [String] = [], skipped: [String: Int] = [:]
         for guidText in order {
             let lines = try required(expected[guidText])
-            guard lines.first?.hasPrefix("tick") == true else { skipped["2017 couldn't run it", default: 0] += 1; continue }
+            guard lines.first?.hasPrefix("tick") == true else { skipped["FreeSO couldn't run it", default: 0] += 1; continue }
             let guid = try required(UInt32(guidText, radix: 16))
             guard let object = try content.objects.object(guid: guid) else { skipped["not in Swift content", default: 0] += 1; continue }
             let vm = try VM(content: content, seed: 0x0F50_D0C5_EED0_0001)
@@ -322,7 +322,7 @@ struct OracleObjectRunTests {
             }
             if let gap = vm.reportedErrors.first(where: { if case .unsupported = $0.error { true } else { false } }) {
                 if case .unsupported(let reason) = gap.error {
-                    // Name what failed first when 2017 would have deleted the object.
+                    // Name what failed first when FreeSO would have deleted the object.
                     let cause = vm.reportedErrors.first.map { "\($0.error)" } ?? ""
                     skipped["unsupported: \(reason)\(gap == vm.reportedErrors.first ? "" : " after \(cause)")", default: 0] += 1
                 }
@@ -332,10 +332,10 @@ struct OracleObjectRunTests {
                 matched += 1
             } else {
                 let first = zip(lines, actual).first { $0 != $1 }
-                mismatches.append("\(guidText) \(object.definition.label): 2017 \(first?.0 ?? "?") Swift \(first?.1 ?? "?")")
+                mismatches.append("\(guidText) \(object.definition.label): FreeSO \(first?.0 ?? "?") Swift \(first?.1 ?? "?")")
             }
         }
-        print("Objects run against 2017: \(matched) matched, \(mismatches.count) mismatched, skipped \(skipped.sorted { $0.value > $1.value }.prefix(10))")
+        print("Objects run against FreeSO: \(matched) matched, \(mismatches.count) mismatched, skipped \(skipped.sorted { $0.value > $1.value }.prefix(10))")
         #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5).joined(separator: "\n"))")
     }
 }

@@ -10,7 +10,7 @@ namespace FSO.Oracle
     /// placeholders for production files an older install (such as the 2002 beta) lacks.
     /// </summary>
     /// <remarks>
-    /// The 2017 content system loads some files unconditionally, such as every HIT sound
+    /// FreeSO's content system loads some files unconditionally, such as every HIT sound
     /// group, and stops if one is missing. The oracle runs the VM without audio, so a
     /// placeholder is enough. Where an older install's file has a different shape, the
     /// overlay holds an adapted copy instead of the link. The install itself is never
@@ -38,11 +38,11 @@ namespace FSO.Oracle
             ("housedata/floors4/floors4.far", EmptyFAR1()),
         };
 
-        /// <summary>The overlay folder, with a trailing slash, to pass to the 2017 content system.</summary>
+        /// <summary>The overlay folder, with a trailing slash, to pass to FreeSO's content system.</summary>
         public string Path { get; }
 
         /// <summary>
-        /// A scratch folder, with a trailing slash, for files the 2017 code writes as user
+        /// A scratch folder, with a trailing slash, for files FreeSO's code writes as user
         /// data (such as the sandbox ban list), so nothing is written into the repository.
         /// </summary>
         public string UserPath { get; }
@@ -103,7 +103,7 @@ namespace FSO.Oracle
         }
 
         /// <summary>
-        /// The 2017 object provider reads each object's name from the `o` attribute of
+        /// FreeSO's object provider reads each object's name from the `o` attribute of
         /// `packingslips/objecttable.xml`, which the 2002 beta's table lacks. The name is
         /// for display only, so the copy uses the object's file name (`n`).
         /// </summary>
@@ -126,7 +126,7 @@ namespace FSO.Oracle
         }
 
         /// <summary>
-        /// The 2017 catalog reads each entry's name from the `n` attribute of
+        /// FreeSO's catalog reads each entry's name from the `n` attribute of
         /// `packingslips/catalog.xml`, which the 2002 beta's catalog lacks. The copy takes
         /// the name from the object table entry with the same GUID.
         /// </summary>
@@ -175,7 +175,7 @@ namespace FSO.Oracle
             return stream.ToArray();
         }
 
-        /// <summary>The smallest HIT file the 2017 reader accepts: a header with no entry table.</summary>
+        /// <summary>The smallest HIT file FreeSO's reader accepts: a header with no entry table.</summary>
         private static byte[] EmptyHIT()
         {
             using var stream = new MemoryStream();

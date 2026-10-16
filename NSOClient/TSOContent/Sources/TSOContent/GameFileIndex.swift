@@ -3,7 +3,7 @@ import TSOFiles
 
 /// Every file in an install, found by relative path in any letter case.
 ///
-/// Installs mix letter case (`UIGraphics` beside `uigraphics`), and the 2017 code
+/// Installs mix letter case (`UIGraphics` beside `uigraphics`), and FreeSO's code
 /// joined paths as written, which works on Windows and fails on case-sensitive file
 /// systems. Looking every path up here fixes that. Paths use `/` separators; `\` is
 /// accepted in lookups.

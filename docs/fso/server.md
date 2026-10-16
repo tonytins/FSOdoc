@@ -181,7 +181,7 @@ Rebuild the host on the **.NET Generic Host** (`Host.CreateApplicationBuilder`):
 
 ### Replace removed and Windows-only APIs
 
-| 2017 | Status on .NET 10 | Replacement |
+| FreeSO | Status on .NET 10 | Replacement |
 | --- | --- | --- |
 | `AppDomain.ExecuteAssembly` (watchdog) | Not supported | systemd, Windows service, or container restart policy |
 | `Thread.Abort`, `Thread.Suspend`, `Thread.Resume` (stuck lot detection in `LotHost`; stopping watcher threads in `CityConnections`, `TaskEngine`, and `GluonHostPool`) | Throw `PlatformNotSupportedException` | Run each lot as a task with a `CancellationToken`, check it between ticks, and on a stuck lot mark it failed, stop routing clients to it, and restart the process if needed. Capture stacks with `dotnet-stack` or `dotnet-dump`. |

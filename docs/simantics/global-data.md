@@ -48,7 +48,7 @@ Most of these are unused, especially the UI related ones, probably to avoid risk
 
 Checked against the 2017 FreeSO snapshot (`VM.cs`):
 
-- 2017 keeps 38 globals (0 to 37); reading or writing past them fails.
+- FreeSO keeps 38 globals (0 to 37); reading or writing past them fails.
 - A new lot starts with 17 (runtime code version) at 4, 20 (game edition) at 255, and 25 at 4.
   FreeSO's comments say EA-Land used 4 for both, and that 25 must be 4 for Sims' idle interactions.
 - Every tick, the clock is copied into 0 (hour), 4 (time of day), 5 (minute), and 6 (second).

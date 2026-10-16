@@ -75,7 +75,7 @@ func makeFAR3(_ files: [FAR3Fixture]) -> Data {
     return writer.bytes
 }
 
-/// Wraps a RefPack stream in the Persist header layout the 2017 reader expects.
+/// Wraps a RefPack stream in the Persist header layout FreeSO's reader expects.
 func persistContainer(refPack stream: Data, decompressedSize: UInt32, compressionID: UInt16 = 0xFB10) -> Data {
     var writer = ByteWriter()
     writer.raw(repeatElement(UInt8(0), count: 9))
@@ -168,7 +168,7 @@ func persistContainer(refPack stream: Data, decompressedSize: UInt32, compressio
             FAR3Fixture(name: "c", id: id, stored: stored, decompressedSize: 6, compressionFlag: 1),
         ]))
 
-        // The 2017 reader seeks back to the entry start and returns decompressedSize raw bytes.
+        // FreeSO's reader seeks back to the entry start and returns decompressedSize raw bytes.
         #expect(try archive.data(for: id) == stored.prefix(6))
     }
 
@@ -182,7 +182,7 @@ func persistContainer(refPack stream: Data, decompressedSize: UInt32, compressio
     }
 
     @Test func findsEntriesThatShareAFileIDByTheirFullAssetID() throws {
-        // packingslips.dat repeats file IDs across type IDs; the 2017 reader failed to open it.
+        // packingslips.dat repeats file IDs across type IDs; FreeSO's reader failed to open it.
         let first = AssetID(fileID: 5, typeID: 1)
         let second = AssetID(fileID: 5, typeID: 2)
         let archive = try FAR3Archive(bytes: makeFAR3([

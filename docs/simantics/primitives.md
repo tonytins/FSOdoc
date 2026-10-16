@@ -1050,11 +1050,11 @@ No Operand.
 
 ## Notes for NSOClient
 
-- **Exit codes:** 2017 has 11 (`VMPrimitiveExitCode`): go to true or false, the same on the next tick,
+- **Exit codes:** FreeSO has 11 (`VMPrimitiveExitCode`): go to true or false, the same on the next tick,
   return true or false, error, continue next tick, continue (a subroutine call), interrupt, and
   continue on a future tick (idle primitives).
-- **Expression (2):** in 2017 the signed flag is ignored. Values are read as 32-bit integers and written
+- **Expression (2):** in FreeSO the signed flag is ignored. Values are read as 32-bit integers and written
   back truncated. Arithmetic wraps and shift counts are masked to 5 bits. Dividing by zero sets -1,
   and a remainder by zero leaves the value unchanged. NSOClient's `Primitives.Expression` lists the
-  rest of the quirks and matches 2017 case for case (scorecard FID-9).
+  rest of the quirks and matches FreeSO case for case (scorecard FID-9).
 - Which primitives NSOClient has ported is tracked in [the scorecard](../scorecard.md#simantics).

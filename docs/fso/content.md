@@ -137,7 +137,7 @@ graphics, so the server-safe part must not reference MonoGame.
   Windows-only). On Linux, don't depend on the working directory; use XDG
   paths (`$XDG_DATA_HOME`).
 - **Case-insensitive file index.** Original installs mix case
-  (`UIGraphics` versus `uigraphics`), and the 2017 regexes assume lower
+  (`UIGraphics` versus `uigraphics`), and FreeSO's regexes assume lower
   case. Build `AllFiles` once as a dictionary keyed by normalized
   lower-case relative path with `/` separators, and resolve every lookup
   through it. That one change fixes most Linux and macOS content failures.

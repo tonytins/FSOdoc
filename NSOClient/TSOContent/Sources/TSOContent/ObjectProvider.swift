@@ -18,17 +18,17 @@ public struct GameObject: Sendable {
 /// Each IFF loads on first use with its patches, sprites (if enabled), tuning, and
 /// semi-global, and is shared by every object in it.
 ///
-/// As in 2017, when patches change an archived IFF, its objects are registered
+/// As in FreeSO, when patches change an archived IFF, its objects are registered
 /// again from the patched file, since a patch can add, remove, or change `OBJD`s.
 ///
-/// Differences from 2017, all to keep loading instead of failing:
+/// Differences from FreeSO, all to keep loading instead of failing:
 ///
 /// - A GUID listed twice keeps its first registration; the rest are in ``duplicates``.
-///   2017 fails on the second.
+///   FreeSO fails on the second.
 /// - An entry whose IFF isn't in `objiff.far` throws ``ContentError/missingFile(_:)``
-///   for that object only. 2017 fails with a null reference.
+///   for that object only. FreeSO fails with a null reference.
 /// - A tuning file that fails to load is reported in ``ObjectResource/tuningFailure``.
-///   2017 ignores it silently; both load the object without tuning.
+///   FreeSO ignores it silently; both load the object without tuning.
 public final class ObjectProvider: @unchecked Sendable {
     /// Where an object's IFF comes from.
     public enum Source: Sendable, Equatable {
@@ -127,7 +127,7 @@ public final class ObjectProvider: @unchecked Sendable {
     /// An object by GUID, loading its IFF if needed.
     ///
     /// - Returns: The object, or `nil` if the GUID isn't registered or its IFF has no
-    ///   `OBJD` with that GUID (as 2017 returns null).
+    ///   `OBJD` with that GUID (as FreeSO returns null).
     /// - Throws: An error if the object's files are missing or don't parse, or its semi-global can't load.
     public func object(guid: UInt32) throws(ContentError) -> GameObject? {
         lock.lock()
@@ -151,7 +151,7 @@ public final class ObjectProvider: @unchecked Sendable {
         return stored
     }
 
-    /// Matches 2017's unanchored `.*/objotf.*\.far` and `.*/objspf.*\.far`, ignoring letter case.
+    /// Matches FreeSO's unanchored `.*/objotf.*\.far` and `.*/objspf.*\.far`, ignoring letter case.
     private static func isArchive(_ lowerCasePath: String, prefix: String) -> Bool {
         guard let match = lowerCasePath.range(of: "/\(prefix)") else { return false }
         return lowerCasePath[match.upperBound...].contains(".far")
@@ -210,7 +210,7 @@ public final class ObjectProvider: @unchecked Sendable {
                                 tuningFailure: tuningFailure)
     }
 
-    /// Standalone files are patched by file name too, but their objects aren't registered again (as in 2017).
+    /// Standalone files are patched by file name too, but their objects aren't registered again (as in FreeSO).
     private func loadStandaloneResource(at path: String) throws(ContentError) -> ObjectResource {
         let url = URL(fileURLWithPath: path)
         let outcome = patches.applyingPatches(to: try Self.readIFF(at: url, path: path), fileName: url.lastPathComponent)
@@ -219,7 +219,7 @@ public final class ObjectProvider: @unchecked Sendable {
                                 tuningFailure: nil)
     }
 
-    /// 2017 loads tuning from a patch replacement or `objotf*.far`, and ignores any failure.
+    /// FreeSO loads tuning from a patch replacement or `objotf*.far`, and ignores any failure.
     private func loadTuning(named otfName: String) -> (OTFFile?, String?) {
         do {
             if let replacement = patches.tuningReplacement(for: otfName) {
@@ -232,7 +232,7 @@ public final class ObjectProvider: @unchecked Sendable {
         }
     }
 
-    /// Replaces the registrations for an archived IFF with the `OBJD`s now in it (2017's `ResetFile`).
+    /// Replaces the registrations for an archived IFF with the `OBJD`s now in it (FreeSO's `ResetFile`).
     private func reregisterObjects(in file: IFFFile, fileName: String) throws(ContentError) {
         referencesByGUID = referencesByGUID.filter { $0.value.fileName != fileName }
         for definition in try Self.definitions(in: file, path: fileName) {

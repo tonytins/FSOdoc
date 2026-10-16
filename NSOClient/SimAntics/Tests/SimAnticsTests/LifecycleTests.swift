@@ -69,7 +69,7 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
             try chair.initialize()
             vm.tick()
             #expect(vm.reportedErrors == [.init(objectID: 1, tick: 1, error: .simantics("Unknown expression type"))])
-            // Cleanup ran twice: 2017 resets the callee and then the caller, here the same entity.
+            // Cleanup ran twice: FreeSO resets the callee and then the caller, here the same entity.
             #expect(chair.attribute(at: 2) == 2)
             #expect(chair.thread.stack.map(\.routine.id) == [4096])  // and main was pushed again
             let seed = vm.random.seed
@@ -101,7 +101,7 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
 }
 
 @Suite struct DefinitionVariableTests {
-    @Test func keepsThe2017Quirks() throws {
+    @Test func keepsFreeSOsQuirks() throws {
         try withVM(chairWords: [52: 77]) { _, chair throws in
             let definition = chair.object.definition
             #expect(try DefinitionVariable.value(DefinitionVariable.guid1.rawValue, of: definition) == Int16(0x100 % 0xFFFF))
@@ -267,7 +267,7 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         try withVM(seed: 0x0F50_D0C5_EED0_0001) { vm, chair throws in
             let operand = Primitives.RandomNumber.Operand(destination: Variable(.temps, 0), range: .literal(100))
             #expect(try vm.runPrimitive(opcode: 8, operand: operand.encoded(), caller: chair).0 == .gotoTrue)
-            #expect(chair.thread.tempRegisters[0] == 97) // as 2017 draws from this seed
+            #expect(chair.thread.tempRegisters[0] == 97) // as FreeSO draws from this seed
             var expected = vm.random
             let wide = Primitives.RandomNumber.Operand(destination: Variable(.temps, 1), range: .literal(-1))
             _ = try vm.runPrimitive(opcode: 8, operand: wide.encoded(), caller: chair)

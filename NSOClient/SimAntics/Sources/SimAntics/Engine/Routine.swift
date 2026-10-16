@@ -61,9 +61,9 @@ public enum DecodedOperand: Sendable {
     case subroutine(SubroutineOperand)
     /// A primitive, ready to run.
     case primitive(PrimitiveTable.Prepared)
-    /// A primitive opcode with no implementation in 2017; it takes the true branch.
+    /// A primitive opcode with no implementation in FreeSO; it takes the true branch.
     case missingPrimitive
-    /// A primitive 2017 has that this port doesn't yet; running it throws ``SimAnticsError/unsupported(_:)``.
+    /// A primitive FreeSO has that this port doesn't yet; running it throws ``SimAnticsError/unsupported(_:)``.
     case unportedPrimitive(String)
 }
 

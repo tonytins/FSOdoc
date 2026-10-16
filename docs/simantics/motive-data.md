@@ -27,4 +27,4 @@
 
 ## Notes for NSOClient
 
-The table above matches 2017's `VMMotive` (0 to 15).
+The table above matches FreeSO's `VMMotive` (0 to 15).

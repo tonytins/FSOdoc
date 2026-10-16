@@ -5,7 +5,7 @@ import Foundation
 /// Ports FreeSO's `Tuning`. The file is a Persist container (body type 1 or 3)
 /// holding RefPack-compressed data: a list of named entries, each a list of
 /// key and value strings. Strings are obfuscated by adding 13 to every byte.
-/// Entry names are matched in lower case, as in 2017.
+/// Entry names are matched in lower case, as in FreeSO.
 public struct TuningFile: Sendable, Equatable {
     /// One named group of settings.
     public struct Entry: Sendable, Equatable {
@@ -70,7 +70,7 @@ public struct TuningFile: Sendable, Equatable {
         try self.init(bytes: Data(contentsOf: url))
     }
 
-    /// Reads the Persist header, or returns `nil` if the body type or compression isn't one 2017 accepts.
+    /// Reads the Persist header, or returns `nil` if the body type or compression isn't one FreeSO accepts.
     private static func readContainer(_ bytes: Data) throws(EndOfDataError) -> (data: Data, decompressedSize: Int)? {
         var reader = ByteReader(bytes, byteOrder: .littleEndian)
         let bodyType = try reader.readUInt8()
@@ -79,7 +79,7 @@ public struct TuningFile: Sendable, Equatable {
         let compressedSize = Int(try reader.readUInt32())
         _ = try reader.readUInt32() // stream body size
         guard try reader.readUInt16() == 0xFB10 else { return nil }
-        try reader.skip(3) // the RefPack header's own size; 2017 uses the Persist header's instead
+        try reader.skip(3) // the RefPack header's own size; FreeSO uses the Persist header's instead
         return (reader.readBytes(upTo: compressedSize), decompressedSize)
     }
 
@@ -90,7 +90,7 @@ public struct TuningFile: Sendable, Equatable {
         var seenNames = Set<String>()
         for _ in 0..<count {
             let name = try readString(&reader)
-            // 2017 files entries by lower-case name in a dictionary, which fails on a repeat.
+            // FreeSO files entries by lower-case name in a dictionary, which fails on a repeat.
             guard seenNames.insert(name.lowercased()).inserted else { throw TuningError.repeatedEntry(name) }
             let valueCount = try reader.readUInt32()
             var values: [(key: String, value: String)] = []
@@ -123,7 +123,7 @@ public struct TuningFile: Sendable, Equatable {
 
 /// An error from reading `tuning.dat`.
 public enum TuningError: Error, Equatable, Sendable {
-    /// The Persist body type or compression ID isn't one 2017 accepts.
+    /// The Persist body type or compression ID isn't one FreeSO accepts.
     case notATuningFile
     case truncated(EndOfDataError)
     case decompressionFailed(RefPackError)

@@ -4,7 +4,7 @@ extension Primitives {
     /// Ports FreeSO's `VMRefresh`. The target is the caller (0) or the stack object (1); any
     /// other target is none. A graphic refresh (type 0) only redraws, so headless it does
     /// nothing. Lighting (1) and room score (2) look up the target's room, which fails with no
-    /// target, as in 2017. An object out of the world is in room 0, which has nothing to
+    /// target, as in FreeSO. An object out of the world is in room 0, which has nothing to
     /// refresh. Every entity is out of the world until the lot model is ported, so for now
     /// those refreshes change nothing; with rooms, they'll recompute the room's light and score.
     /// Other types do nothing. Always true.

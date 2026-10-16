@@ -44,7 +44,7 @@ func evaluate(_ operator: Primitives.Expression.Operator, _ lhs: VariableScope, 
         (.minusEquals, 3, 5, -2),
         (.andEquals, 6, 3, 2),
     ])
-    func doesArithmeticLike2017(operator: Primitives.Expression.Operator, left: Int16, right: Int16, result: Int16) throws {
+    func doesArithmeticLikeFreeSO(operator: Primitives.Expression.Operator, left: Int16, right: Int16, result: Int16) throws {
         try evaluate(`operator`, .temps, 0, .literal, right, temps: [left]) { exit, thread throws in
             #expect(exit == .gotoTrue)
             #expect(thread.tempRegisters[0] == result)

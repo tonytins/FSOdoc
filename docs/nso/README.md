@@ -8,7 +8,7 @@ finished and how that's proven, see the [scorecard](../scorecard.md); for what c
 [roadmap](../roadmap.md).
 
 These pages cover the four libraries and the checker tool. The oracle (`fso-oracle`, which runs
-the 2017 code to produce reference answers) and SimsScript (the scripting proof of concept) are
+FreeSO's code to produce reference answers) and SimsScript (the scripting proof of concept) are
 left out.
 
 ## The packages
@@ -34,14 +34,14 @@ TSOFiles  ──▶  TSOContent  ──▶  SimAntics
 
 A few rules hold everywhere. Knowing them makes each package easier to follow.
 
-- **Same results as 2017, not the same code.** Doc comments name the 2017 type each Swift type
+- **Same results as FreeSO, not the same code.** Doc comments name FreeSO's type each Swift type
   corresponds to (for example, `Entity` ports `VMEntity`). Where results deliberately differ,
-  the comment says so, and the scorecard lists the difference under "Known differences from 2017".
+  the comment says so, and the scorecard lists the difference under "Known differences from FreeSO".
 - **Errors are values.** Readers throw typed errors (`FAR1Error`, `IFFChunkError`,
-  `ContentError`, `SimAnticsError`) instead of crashing. Where 2017 would read past the end of an
+  `ContentError`, `SimAnticsError`) instead of crashing. Where FreeSO would read past the end of an
   array, the port throws. Nothing in the libraries uses `try!`, `as!`, or `fatalError`.
 - **Values, not singletons.** Archives and chunks are immutable `Sendable` values, often over
-  memory-mapped bytes. 2017 reaches content through a global `Content.Get()`; here a
+  memory-mapped bytes. FreeSO reaches content through a global `Content.Get()`; here a
   `GameContent` is created and passed in, so tests and tools can load several installs side by side.
 - **Degrade gracefully on the beta.** Where the 2002 beta's files differ from the 2003 production
   files FreeSO expects, the port skips what doesn't fit, reports it, and keeps going. For example,
@@ -59,6 +59,6 @@ Every package builds and tests on its own:
 swift test --package-path NSOClient/SimAntics
 ```
 
-Tests that need the game read `TSO_GAME_DIR` (and `TSO_ORACLE_DIR` for the 2017 comparisons) and
+Tests that need the game read `TSO_GAME_DIR` (and `TSO_ORACLE_DIR` for the comparisons with FreeSO) and
 are skipped without it. The snippets on these pages use the public API. Where a snippet needs an
 install, it assumes `TSO_GAME_DIR` points at one.

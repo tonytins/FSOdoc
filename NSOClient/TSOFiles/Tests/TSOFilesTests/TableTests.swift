@@ -151,14 +151,14 @@ func refPackLiterals(_ bytes: [UInt8]) -> Data {
 
         #expect(ini.sections.map(\.name) == ["Server", "Other"])
         let server = try #require(ini.section(named: "Server"))
-        #expect(server.value(forKey: "host") == "auth.example ", "values keep trailing space, as in 2017")
+        #expect(server.value(forKey: "host") == "auth.example ", "values keep trailing space, as in FreeSO")
         #expect(server.value(forKey: "port") == "443", "a repeated key keeps its last value")
         #expect(server.value(forKey: "empty") == nil)
         #expect(server.values.count == 2)
         #expect(ini.section(named: "Other")?.value(forKey: "k") == "v")
     }
 
-    @Test func rejectsWhatThe2017ReaderRejects() {
+    @Test func rejectsWhatFreeSOsReaderRejects() {
         #expect(throws: INIError.unclosedSection(line: 1)) { try INIFile(bytes: Data("[open".utf8)) }
         #expect(throws: INIError.repeatedSection("a")) { try INIFile(bytes: Data("[a]\n[a]".utf8)) }
     }

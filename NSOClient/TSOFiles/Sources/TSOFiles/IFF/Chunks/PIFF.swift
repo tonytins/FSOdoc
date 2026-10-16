@@ -43,7 +43,7 @@ public struct PIFF: IFFChunk {
         /// Applies the edits to a chunk's original data.
         ///
         /// Matches `PIFFEntry.Apply`: it copies original bytes up to each patch,
-        /// then inserts or skips, then copies the rest. Where the 2017 copy would
+        /// then inserts or skips, then copies the rest. Where FreeSO's copy would
         /// run out of bounds, this throws instead.
         public func apply(to original: Data) throws(PIFFError) -> Data {
             let source = [UInt8](original)
@@ -72,7 +72,7 @@ public struct PIFF: IFFChunk {
             }
             let remainder = Int(newDataSize) - result.count
             guard remainder >= 0 else { throw .patchOutOfBounds(typeCode: typeCode, chunkID: chunkID) }
-            // 2017 copies the remainder only when there is one, so a final removal may
+            // FreeSO copies the remainder only when there is one, so a final removal may
             // skip past the end of the original. Shipped FreeSO patches rely on that.
             guard remainder > 0 else { return Data(result) }
             guard sourceIndex + remainder <= source.count else {
@@ -159,6 +159,6 @@ public enum PIFFError: Error, Equatable, Sendable {
     case invalidSize(typeCode: String, chunkID: UInt16)
     /// A patch reaches outside the original data.
     case patchOutOfBounds(typeCode: String, chunkID: UInt16)
-    /// Moving a chunk would give two chunks the same type and ID (2017's `AddChunk` throws).
+    /// Moving a chunk would give two chunks the same type and ID (FreeSO's `AddChunk` throws).
     case duplicateChunk(typeCode: String, id: UInt16)
 }

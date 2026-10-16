@@ -1,7 +1,7 @@
 /// The lot's game clock.
 ///
 /// Ports FreeSO's `VMClock`. TSO runs 150 ticks per game minute (a minute every five
-/// seconds). Time of day is always 0, as in 2017, where it's fixed to keep windows lit.
+/// seconds). Time of day is always 0, as in FreeSO, where it's fixed to keep windows lit.
 public struct VMClock: Sendable, Equatable {
     public var ticks: Int64 = 0
     public var minuteFractions: Int32 = 0

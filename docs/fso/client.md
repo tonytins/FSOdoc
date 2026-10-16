@@ -217,7 +217,7 @@ One executable, published per runtime identifier (`win-x64`,
   it as a separate executable from the same projects.
 - Parse arguments with `System.CommandLine` or
   `Microsoft.Extensions.Configuration.CommandLine`, and validate them.
-  The 2017 parser throws on input like `-hzabc`.
+  FreeSO's parser throws on input like `-hzabc`.
 - Fail visibly: if the game files or compiled content are missing, show
   an error screen (or log and exit with a message) instead of exiting
   silently.

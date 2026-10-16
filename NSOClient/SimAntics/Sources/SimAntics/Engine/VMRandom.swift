@@ -1,6 +1,6 @@
 /// The lot's deterministic random number generator.
 ///
-/// Ports `VMContext.NextRandom`: xorshift64* with 2017's shifts and multiplier,
+/// Ports `VMContext.NextRandom`: xorshift64* with FreeSO's shifts and multiplier,
 /// reduced with `%`. Every client must draw the same numbers in the same order.
 public struct VMRandom: Sendable, Equatable {
     public var seed: UInt64

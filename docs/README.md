@@ -6,7 +6,7 @@ This folder documents two things: the FreeSO source code as of August 9, 2017 (t
 
 ## Where to start
 
-- **To understand the 2017 code:** [fso/README.md](fso/README.md), then
+- **To understand FreeSO's code:** [fso/README.md](fso/README.md), then
   [fso/architecture.md](fso/architecture.md).
 - **To understand how NSOClient's code behaves:** [nso/README.md](nso/README.md).
 - **To see where NSOClient stands:** the [scorecard](scorecard.md) for what's done and how we know,
@@ -25,8 +25,8 @@ next milestones, the critical path, decisions for the owner, risks, and the revi
 ### [scorecard.md](scorecard.md): NSOClient status with evidence
 
 One row per feature, each `done`, `partial`, or `missing`, with the code or test that proves it:
-file formats, content, SimAntics, fidelity to 2017, determinism, reliability, tests and tooling,
-and platforms. It also lists the known deliberate differences from 2017 and open bugs. When the
+file formats, content, SimAntics, fidelity to FreeSO, determinism, reliability, tests and tooling,
+and platforms. It also lists the known deliberate differences from FreeSO and open bugs. When the
 scorecard and the roadmap disagree, the scorecard wins.
 
 ### [nso/](nso/README.md): how NSOClient works
@@ -51,7 +51,7 @@ installs have been scanned.
 
 ### [fso/](fso/README.md): the 2017 FreeSO snapshot
 
-Written from reading the source. Each page says how the code works in 2017. The "Modern .NET
+Written from reading the source. Each page says how the code works in the 2017 snapshot. The "Modern .NET
 rewrite" sections are from an earlier goal and kept only for reference.
 
 | Page | Covers |
@@ -74,7 +74,7 @@ rewrite" sections are from an earlier goal and kept only for reference.
 ### [simantics/](simantics/README.md): the SimAntics Wiki, in Markdown
 
 A copy of the community wiki at simantics.wikidot.com, under its own license (CC BY-SA 3.0; see
-[its README](simantics/README.md)). Each page ends with notes where the 2017 code differs.
+[its README](simantics/README.md)). Each page ends with notes where FreeSO's code differs.
 
 | Page | Covers |
 | --- | --- |
@@ -87,6 +87,6 @@ A copy of the community wiki at simantics.wikidot.com, under its own license (CC
 
 ## Elsewhere in the repository
 
-- [`NSOClient/Oracle/README.md`](../NSOClient/Oracle/README.md): `fso-oracle`, which runs the 2017
+- [`NSOClient/Oracle/README.md`](../NSOClient/Oracle/README.md): `fso-oracle`, which runs FreeSO's
   SimAntics code to produce reference answers for the Swift tests.
 - [`AGENTS.md`](../AGENTS.md): the workspace map and the rules for working in this repository.

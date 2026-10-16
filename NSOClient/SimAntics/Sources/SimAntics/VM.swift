@@ -21,7 +21,7 @@ public final class VM {
     /// Entities in the order they were added.
     public private(set) var entities: [Entity] = []
 
-    /// Errors 2017 would show in a "SimAntics Exception" dialog, oldest first.
+    /// Errors FreeSO would show in a "SimAntics Exception" dialog, oldest first.
     public private(set) var reportedErrors: [ReportedError] = []
 
     /// An error a thread hit, and which entity and tick it was on.
@@ -40,7 +40,7 @@ public final class VM {
     public var architecture: Architecture
     /// The lot's size in tiles; the tile index numbers tiles by it.
     public var lotSize: (width: Int, height: Int) { (architecture.width, architecture.height) }
-    /// Objects by tile, in object ID order (`VMObjectQueries.TileToObjects`), keyed as 2017 does.
+    /// Objects by tile, in object ID order (`VMObjectQueries.TileToObjects`), keyed as FreeSO does.
     private var tileIndex: [Int: [Entity]] = [:]
     /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
     /// is listed once its category is set through object data, not when it's created.
@@ -99,7 +99,7 @@ public final class VM {
 
     /// Adds an object with a given ID.
     ///
-    /// A first step toward 2017's object creation: the entity is built as the `VMEntity`
+    /// A first step toward FreeSO's object creation: the entity is built as the `VMEntity`
     /// constructor builds it, out of the world, and runs nothing until ``Entity/initialize()``.
     /// Placement, multi-tile groups, and catalog prices come later.
     ///
@@ -271,7 +271,7 @@ public final class VM {
         }
     }
 
-    /// Moves an entity, keeping the tile index and its room (object data 29) current, as 2017's
+    /// Moves an entity, keeping the tile index and its room (object data 29) current, as FreeSO's
     /// position change does. Footprints, portals, lighting, and the placement entry point come
     /// with the rest of the lot model.
     public func move(_ entity: Entity, to position: LotPosition) {
@@ -295,8 +295,8 @@ public final class VM {
         tileIndex[key] = list.isEmpty ? nil : list
     }
 
-    /// 2017's tile offset: out of the world is -1; otherwise tiles are numbered across, down, then
-    /// up, so a position past the lot's edge shares a key with another tile, as in 2017.
+    /// FreeSO's tile offset: out of the world is -1; otherwise tiles are numbered across, down, then
+    /// up, so a position past the lot's edge shares a key with another tile, as in FreeSO.
     private func tileKey(_ position: LotPosition) -> Int {
         guard !position.isOutOfWorld else { return -1 }
         return Int(position.tileX) + Int(position.tileY) * lotSize.width

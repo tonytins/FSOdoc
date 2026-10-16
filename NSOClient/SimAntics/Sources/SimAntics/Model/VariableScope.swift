@@ -1,7 +1,7 @@
 /// Where a SimAntics variable lives: an operand pairs a scope with an index.
 ///
 /// Ports FreeSO's `VMVariableScope`; the raw values match. Operands store scopes as
-/// raw bytes, and a byte with no case here fails when read, as in 2017.
+/// raw bytes, and a byte with no case here fails when read, as in FreeSO.
 public enum VariableScope: UInt8, Sendable, CaseIterable {
     case myObjectAttributes = 0
     case stackObjectAttributes = 1

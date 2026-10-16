@@ -112,4 +112,4 @@
 
 ## Notes for NSOClient
 
-2017's `VMAvatar` stores 101 values (0 to 100), matching the table above.
+FreeSO's `VMAvatar` stores 101 values (0 to 100), matching the table above.

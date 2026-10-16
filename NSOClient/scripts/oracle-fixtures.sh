@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generates the 2017 reference answers the Swift tests compare against, from your install.
+# Generates FreeSO's reference answers the Swift tests compare against, from your install.
 # The answers depend on the install, so they stay out of the repository.
 #
 #   NSOClient/scripts/oracle-fixtures.sh [OUTPUT_DIR]     (default: $TMPDIR/fso-oracle-fixtures)

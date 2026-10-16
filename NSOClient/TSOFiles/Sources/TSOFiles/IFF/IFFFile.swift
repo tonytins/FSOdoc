@@ -17,10 +17,10 @@ public struct IFFChunkRecord: Sendable, Equatable {
 /// A Maxis IFF file: the container for objects, behavior, sprites, and strings.
 ///
 /// Matches the container parsing in FreeSO's `IffFile.Read`. One difference:
-/// the 2017 reader drops chunk types it has no class for, while this keeps every
+/// FreeSO's reader drops chunk types it has no class for, while this keeps every
 /// chunk as an ``IFFChunkRecord``, so nothing is lost before typed parsing.
 public struct IFFFile: Sendable {
-    /// The headers the 2017 reader accepts, after removing NUL characters.
+    /// The headers FreeSO's reader accepts, after removing NUL characters.
     static let acceptedSignatures: Set<String> = [
         "IFF FILE 2.5:TYPE FOLLOWED BY SIZE JAMIE DOORNBOS & MAXIS 1",
         "IFF FILE 2.0:TYPE FOLLOWED BY SIZE JAMIE DOORNBOS & MAXIS 1",
@@ -71,8 +71,8 @@ public struct IFFFile: Sendable {
     /// Matches `IffFile.Patch`: each entry patches or deletes the first chunk
     /// with its type and ID; ID changes are applied afterwards as swaps, which
     /// move both chunks to the end; then the patch file's other chunks are added
-    /// where no chunk with their type and ID exists. Unlike 2017, entries and added
-    /// chunks of types the 2017 reader didn't know are applied too.
+    /// where no chunk with their type and ID exists. Unlike FreeSO, entries and added
+    /// chunks of types FreeSO's reader didn't know are applied too.
     public func applying(_ patchFile: IFFFile) throws(PIFFError) -> IFFFile {
         guard let patchRecord = patchFile.chunk(ofType: PIFF.typeCode) else { throw .missingPatchChunk }
         let piff: PIFF
@@ -114,7 +114,7 @@ public struct IFFFile: Sendable {
         return IFFFile(resourceMapOffset: resourceMapOffset, chunks: patched.records)
     }
 
-    /// The chunk list during patching, with the 2017 "first chunk for each type and ID" index.
+    /// The chunk list during patching, with FreeSO's "first chunk for each type and ID" index.
     private struct PatchedChunks {
         private struct Key: Hashable {
             var typeCode: String
@@ -203,7 +203,7 @@ public struct IFFFile: Sendable {
         chunks.filter { $0.typeCode == typeCode }
     }
 
-    /// The first chunk with the given type and ID, as the 2017 lookup tables keep.
+    /// The first chunk with the given type and ID, as FreeSO's lookup tables keep.
     public func chunk(ofType typeCode: String, id: UInt16) -> IFFChunkRecord? {
         chunks.first { $0.typeCode == typeCode && $0.id == id }
     }
@@ -225,7 +225,7 @@ public struct IFFFile: Sendable {
 
     private static func readChunks(_ reader: inout ByteReader) throws(IFFError) -> [IFFChunkRecord] {
         var chunks: [IFFChunkRecord] = []
-        // The 2017 reader continues while at least two bytes remain.
+        // FreeSO's reader continues while at least two bytes remain.
         while reader.remaining >= 2 {
             let chunkStart = reader.offset
             let header: ChunkHeader

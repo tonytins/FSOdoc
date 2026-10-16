@@ -2,7 +2,7 @@ import Foundation
 
 /// Finds the folder of an installed copy of The Sims Online (the one holding `objectdata`).
 ///
-/// Ports the 2017 client's per-OS locators, checking in order:
+/// Ports FreeSO's client's per-OS locators, checking in order:
 ///
 /// 1. a configured folder;
 /// 2. the `TSO_GAME_DIR` environment variable;
@@ -10,8 +10,8 @@ import Foundation
 ///
 /// A configured folder or `TSO_GAME_DIR` that isn't an install is an error rather
 /// than being skipped, so a typo doesn't silently load a different install.
-/// Differences from 2017: Windows doesn't read the registry, and Linux looks under
-/// `$XDG_DATA_HOME` (or `~/.local/share`) before 2017's `game/TSOClient` next to the
+/// Differences from FreeSO: Windows doesn't read the registry, and Linux looks under
+/// `$XDG_DATA_HOME` (or `~/.local/share`) before FreeSO's `game/TSOClient` next to the
 /// working directory.
 public struct GameLocator: Sendable {
     public static let environmentVariable = "TSO_GAME_DIR"

@@ -19,7 +19,7 @@ let install = try GameLocator().locate()
 
 A configured folder or `TSO_GAME_DIR` that isn't an install throws `ContentError.notAnInstall`
 rather than falling through to a default, so a typo never loads a different install silently.
-Unlike 2017, it doesn't read the Windows registry.
+Unlike FreeSO, it doesn't read the Windows registry.
 
 ## Loading content
 
@@ -41,7 +41,7 @@ beta) can be loaded side by side.
 
 ### Files in any letter case
 
-Installs mix letter case (`UIGraphics` beside `uigraphics`). 2017 joins paths as written, which
+Installs mix letter case (`UIGraphics` beside `uigraphics`). FreeSO joins paths as written, which
 works on Windows and fails on case-sensitive file systems. `GameFileIndex` looks every path up in
 any case:
 
@@ -79,19 +79,19 @@ A `GameObject` pairs the definition (`OBJD`) with its `ObjectResource`:
 | `semiGlobal` | The semi-global the object's `GLOB` names, for shared code and tuning |
 | `treesByName` | Routines by name, for Run Tree by Name: the object's, then its semi-global's |
 | `patches` | Which PIFF patches applied and which were skipped |
-| `tuningFailure` | Why the OTF failed to load, if it exists but did (2017 ignores this silently) |
+| `tuningFailure` | Why the OTF failed to load, if it exists but did (FreeSO ignores this silently) |
 
 `chunk(_:id:)` and `chunks(_:)` read from the main file (and the sprite file for sprite chunks), so
 code asks for chunks without caring which file holds them.
 
-Where 2017 fails, this keeps loading and reports instead:
+Where FreeSO fails, this keeps loading and reports instead:
 
 - A GUID listed twice keeps its first registration; the rest are in `objects.duplicates`.
 - An entry whose IFF isn't in `objiff.far` throws `ContentError.missingFile` for that object only.
-- The beta's object table has no display names, which 2017 can't read; `Reference.name` is then `nil`.
+- The beta's object table has no display names, which FreeSO can't read; `Reference.name` is then `nil`.
 
 When patches change an archived IFF, its objects are registered again from the patched file,
-as in 2017, since a patch can add or remove definitions.
+as in FreeSO, since a patch can add or remove definitions.
 
 ## Globals
 

@@ -3,7 +3,7 @@ import Foundation
 import FoundationXML
 #endif
 
-/// A lot saved as XML (2017's `XmlHouseData`), as FreeSO's `Content/Blueprints` and the
+/// A lot saved as XML (FreeSO's `XmlHouseData`), as FreeSO's `Content/Blueprints` and the
 /// lot server store them.
 ///
 /// Only the size, category, and world (floors, pools, walls) are read so far; objects and
@@ -99,7 +99,7 @@ public struct Blueprint: Sendable, Equatable {
     /// builds them: floors, then pools (on the ground floor), then walls.
     ///
     /// - Throws: ``BlueprintError/offLot(_:)`` if the size is outside 1...255 or a tile is off
-    ///   the lot or above the top level, where 2017 fails with an index out of range.
+    ///   the lot or above the top level, where FreeSO fails with an index out of range.
     public func architecture() throws(BlueprintError) -> Architecture {
         do {
             var architecture = try Architecture(width: size, height: size)

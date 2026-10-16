@@ -3,7 +3,7 @@ import Foundation
 /// SimAntics behavior code: a routine of instructions.
 ///
 /// Ports FreeSO's `BHAV`. Four header versions exist (0x8000 to 0x8003). Like
-/// the 2017 reader, any other version yields a routine with no instructions.
+/// FreeSO's reader, any other version yields a routine with no instructions.
 public struct BHAV: IFFChunk {
     public static let typeCode = "BHAV"
 
@@ -59,7 +59,7 @@ public struct BHAV: IFFChunk {
     /// Reading the result gives back an equal routine. Bytes the reader skips are written as
     /// zeros, so a routine read from a file may not encode to that file's exact bytes. Version
     /// 0x8003 stores the local count in one byte; an unknown version writes only the version,
-    /// which reads back as an empty routine, as 2017 does.
+    /// which reads back as an empty routine, as FreeSO does.
     public func encoded() -> Data {
         var bytes = Data()
         func append<Value: FixedWidthInteger>(_ value: Value) {
@@ -127,7 +127,7 @@ public struct BHAV: IFFChunk {
                 flags = try reader.readUInt16()
                 count = Int(try reader.readUInt32())
             default:
-                break // the 2017 reader leaves the routine empty
+                break // FreeSO's reader leaves the routine empty
             }
 
             var instructions: [Instruction] = []

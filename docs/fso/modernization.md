@@ -65,7 +65,7 @@ In the new layout the server references nothing graphical.
 
 ### Project mapping
 
-| 2017 project | New home |
+| FreeSO project | New home |
 | --- | --- |
 | `tso.common` (FSO.Common) | Split into `FSO.Common`, `FSO.Common.Serialization`, and `FSO.Rendering` |
 | `tso.files` (FSO.Files) | `FSO.Files` |
@@ -109,7 +109,7 @@ every remaining trimming problem at build time.
 
 ## Dependency replacements
 
-| 2017 dependency | Used for | Replacement |
+| FreeSO dependency | Used for | Replacement |
 | --- | --- | --- |
 | FSOMonoGame (fork, submodule) | Graphics, input, audio | MonoGame 3.8 DesktopGL from NuGet (see [rendering.md](./rendering.md#engine-choice)) |
 | OpenTK, Tao.Sdl, checked-in `sdl2.dll`, `soft_oal.dll` | MonoGame backends | Included in MonoGame's NuGet packages per runtime |
@@ -190,7 +190,7 @@ something real to test against.
 
 - Port FSO.SimAntics behind presentation interfaces, and FSO.HIT behind
   `ISoundOutput`.
-- Replay tests: record save state plus commands from the 2017 build,
+- Replay tests: record save state plus commands from FreeSO's build,
   replay on the new VM, and compare state and random seed.
 - A headless runner that loads a lot and ticks it, used by tests and by
   the lot server.
@@ -235,15 +235,15 @@ These change compatibility or scope. Each one needs an explicit choice
 before the phase that depends on it.
 
 1. **Wire compatibility.** Keep the Aries, Voltron, and Electron packet
-   layouts byte-for-byte, so 2017 clients and new servers can mix? Or
+   layouts byte-for-byte, so FreeSO clients and new servers can mix? Or
    allow breaking changes (TLS required, new framing)? Recommended: keep
    the layouts, require TLS, and version the protocol so mixing is
    detected instead of silently failing.
 2. **Save compatibility.** Keep loading `VMMarshal` saves (version 19)
-   from 2017 servers? Recommended: yes. It costs little and protects
+   from FreeSO servers? Recommended: yes. It costs little and protects
    existing lots.
 3. **Simulation compatibility.** Any change to primitives, random
-   numbers, or tick rate breaks lockstep with 2017 clients and can change
+   numbers, or tick rate breaks lockstep with FreeSO clients and can change
    how saved lots behave. Recommended: none during the port; fix bugs
    afterwards behind a version flag.
 4. **Database schema.** Keep the MySQL schema and scripts as they are?
@@ -257,13 +257,13 @@ before the phase that depends on it.
 7. **TS1 hybrid mode.** Keep it in the port? It doubles the content and
    audio paths. Recommended: keep the code, test TSO mode first.
 8. **Identity.** The project's former FAQ mentioned a possible separate server
-   and name. That affects default URLs, certificate names (the 2017 code
+   and name. That affects default URLs, certificate names (FreeSO's code
    uses `auth.east.ea.com`), and branding, so decide it before phase 4.
 
 ## Risks found in the snapshot
 
-These are risks in the 2017 code. The rewrite should fix them, and
-anyone running the 2017 code should know about them.
+These are risks in FreeSO's code. The rewrite should fix them, and
+anyone running FreeSO's code should know about them.
 
 | Risk | Where | Page |
 | --- | --- | --- |

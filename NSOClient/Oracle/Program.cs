@@ -16,7 +16,7 @@ using FSO.SimAntics.NetPlay.Model.Commands;
 namespace FSO.Oracle
 {
     /// <summary>
-    /// Runs the 2017 SimAntics VM headless and prints reference results for the Swift port.
+    /// Runs FreeSO's SimAntics VM headless and prints reference results for the Swift port.
     /// </summary>
     public static class Program
     {
@@ -26,11 +26,11 @@ namespace FSO.Oracle
        fso-oracle run-objects [options] [--ticks N] [--every N]
        fso-oracle room-maps [options]
 
-run-lot loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot
+run-lot loads a lot from blueprint XML into a headless FreeSO VM, as FreeSO's lot
 server does, ticks it, and prints a state digest.
 
 run-primitive loads the same lot, then reads JSON requests from standard input, one
-per line, runs each 2017 primitive on a fresh copy of the lot, and writes one JSON
+per line, runs each FreeSO primitive on a fresh copy of the lot, and writes one JSON
 response per line (see README.md).
 
 run-objects reads object GUIDs (hexadecimal) from standard input, one per line. For each,
@@ -40,10 +40,10 @@ after creation and as it ticks (see README.md).
 room-maps reads blueprint XML paths from standard input, one per line, loads each lot,
 and prints its room map and rooms as one JSON line (see README.md).
 
-list-objects loads every registered object through the 2017 content system and prints
+list-objects loads every registered object through FreeSO's content system and prints
 one tab-separated line per object (see README.md).
 
-Standard output carries only results; the 2017 code's own messages go to standard error.
+Standard output carries only results; FreeSO's own messages go to standard error.
 
 options:
   --game DIR        the TSO install (default: $TSO_GAME_DIR)
@@ -73,7 +73,7 @@ options:
                 return 2;
             }
 
-            // The 2017 code writes diagnostics to standard output; keep that for results only.
+            // FreeSO's code writes diagnostics to standard output; keep that for results only.
             var results = Console.Out;
             Console.SetOut(Console.Error);
 
@@ -118,7 +118,7 @@ options:
             // The VM, built the way LotContainer.ResetVM builds it on the lot server.
             VM.UseWorld = false;
             var driver = new VMServerDriver(new VMTSOGlobalLinkStub());
-            // 2017 seeds the VM from an unseeded Random. A fixed seed makes runs repeatable;
+            // FreeSO seeds the VM from an unseeded Random. A fixed seed makes runs repeatable;
             // in multiplayer the server's seed is authoritative in the same way.
             var context = new VMContext(null) { RandomSeed = seed };
             var vm = new VM(context, driver, new VMNullHeadlineProvider());
@@ -250,7 +250,7 @@ options:
         }
 
         /// <summary>
-        /// Prints what the 2017 content system loads for every registered object, for the
+        /// Prints what FreeSO's content system loads for every registered object, for the
         /// Swift content tests to compare against.
         /// </summary>
         /// <remarks>
@@ -301,7 +301,7 @@ options:
         }
 
         /// <summary>
-        /// The entry point table a 2017 entity builds for an object: each entry as
+        /// The entry point table a FreeSO entity builds for an object: each entry as
         /// <c>condition:action</c>, comma-separated, or <c>none</c> without a table, or
         /// <c>error</c> and the exception type if building the entity fails.
         /// </summary>
@@ -324,7 +324,7 @@ options:
         /// </summary>
         /// <remarks>
         /// FreeSO's blueprints assume TSO's 2003 production files. On an older install
-        /// (such as the 2002 beta) some objects don't exist, and the 2017 activator fails
+        /// (such as the 2002 beta) some objects don't exist, and FreeSO's activator fails
         /// on a missing object, so they're left out and reported. The Swift side must load
         /// the same adapted lot.
         /// </remarks>
@@ -436,7 +436,7 @@ options:
                 if (!Directory.Exists(options.ContentDirectory))
                     throw new ArgumentException($"{options.ContentDirectory} does not exist");
 
-                // 2017 joins content paths by string concatenation, so these need a trailing slash.
+                // FreeSO joins content paths by string concatenation, so these need a trailing slash.
                 options.GameDirectory = WithTrailingSlash(options.GameDirectory);
                 options.ContentDirectory = WithTrailingSlash(options.ContentDirectory);
                 options.BlueprintPath ??= Path.Combine(options.ContentDirectory, "Blueprints/empty_lot_fso.xml");

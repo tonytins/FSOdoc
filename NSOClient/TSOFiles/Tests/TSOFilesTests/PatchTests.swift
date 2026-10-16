@@ -79,7 +79,7 @@ func chunkSummary(_ iff: IFFFile) -> [String] {
     }
 
     @Test func allowsAFinalRemovalPastTheEndWhenNothingRemains() throws {
-        // "222" -> keep "2", add "Z", then remove 5 bytes, more than remain. 2017 allows this.
+        // "222" -> keep "2", add "Z", then remove 5 bytes, more than remain. FreeSO allows this.
         let patch = try patchFile(source: "x.iff", [
             PatchEntryFixture(type: "BHAV", id: 2, newSize: 2, patches: [(1, 1, Array("Z".utf8)), (1, 5, nil)]),
         ])

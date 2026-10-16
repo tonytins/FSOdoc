@@ -97,7 +97,7 @@ public struct DataDefinition: Sendable, Equatable {
         }
 
         let structs = (raw.list1 + raw.list2).map { Struct(id: $0.nameID, name: name($0.nameID), fields: fields(of: $0)) }
-        // 2017 indexes structs by name in a dictionary, which fails on a missing or repeated name.
+        // FreeSO indexes structs by name in a dictionary, which fails on a missing or repeated name.
         var names = Set<String>()
         for item in structs {
             guard let structName = item.name else { throw .unnamedStruct(id: item.id) }
