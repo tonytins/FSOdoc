@@ -5,6 +5,14 @@
   </a>
 </p>
 
+<h1 align="center">SimsCraft</h1>
+
+<p align="center">
+  <b>an open-source Swift reimplementation of FreeSO's engine-agnostic libraries.</b><br>
+  File I/O, content loading, and SimAntics<br>
+  Backwards compatible with 1.0 and Beta
+</p>
+
 ## Background
 
 This started as FSOdoc, an ill-fated attempt to document FreeSO's sparsely commented code using just ChatGPT. This was before stuff like Claude Code or Copilot even existed. Naturally, it didn't go exactly as planned. Probably would have taken hundreds of hours to even get remotely close.
@@ -28,3 +36,9 @@ FSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating 
 ## Licensing
 
 SimsCraft, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.
+
+---
+
+<p align="center">
+  <i>It's all coming back to you! 🪃</i>
+</p>
