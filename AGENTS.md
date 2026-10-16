@@ -44,6 +44,8 @@ docs/                        the Markdown documentation
     common.md, files.md, content.md, simantics.md, rendering.md,
     audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
   simantics/                 SimAntics Wiki pages in Markdown, with notes against 2017 (CC BY-SA 3.0, see its README)
+  nso/                       how NSOClient's code behaves, with examples (keep it current when behavior changes)
+  install-differences.md     how the TSO_GAME_DIR and TSO_BETA_DIR installs differ (written once by tsofiles-check)
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions, for the oracle
   swift-guidelines/          Swift conventions for the NSOClient packages

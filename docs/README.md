@@ -8,6 +8,7 @@ This folder documents two things: the FreeSO source code as of August 9, 2017 (t
 
 - **To understand the 2017 code:** [fso/README.md](fso/README.md), then
   [fso/architecture.md](fso/architecture.md).
+- **To understand how NSOClient's code behaves:** [nso/README.md](nso/README.md).
 - **To see where NSOClient stands:** the [scorecard](scorecard.md) for what's done and how we know,
   and the [roadmap](roadmap.md) for what comes next.
 - **To look up what a SimAntics primitive, scope, or data field means:**
@@ -27,6 +28,19 @@ One row per feature, each `done`, `partial`, or `missing`, with the code or test
 file formats, content, SimAntics, fidelity to 2017, determinism, reliability, tests and tooling,
 and platforms. It also lists the known deliberate differences from 2017 and open bugs. When the
 scorecard and the roadmap disagree, the scorecard wins.
+
+### [nso/](nso/README.md): how NSOClient works
+
+How the Swift libraries behave today, with code examples (the oracle and SimsScript aren't covered).
+
+| Page | Covers |
+| --- | --- |
+| [README.md](nso/README.md) | The packages, how they depend on each other, and the rules every package follows |
+| [files.md](nso/files.md) | TSOFiles: containers, IFF chunks, patches, tables, scanning and comparing installs |
+| [content.md](nso/content.md) | TSOContent: finding an install, loading objects, globals, and patches |
+| [simantics.md](nso/simantics.md) | SimAntics: the VM, entities, threads, variables, primitives, scheduling |
+| [lot.md](nso/lot.md) | The lot model: positions, the tile index, walls, floors, rooms, blueprints |
+| [tools.md](nso/tools.md) | `tsofiles-check` and the install differences report |
 
 ### install-differences.md: how the owner's two installs differ
 
