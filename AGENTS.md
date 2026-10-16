@@ -46,6 +46,8 @@ TSOClient/                   the 2017 FreeSO snapshot (all paths below are relat
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift rewrite of the engine-free libraries (independent SwiftPM packages)
+  Oracle/                    .NET tool that runs the 2017 SimAntics sources headless, for reference results
+  NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
   TSOContent/                content system; depends on ../TSOFiles
   SimAntics/                 the VM; depends on ../TSOContent and ../TSOFiles
@@ -287,6 +289,17 @@ snapshot doesn't build as-is on Linux, so findings come from reading code,
 project files, and `packages.config`. Use `grep`, `find`, `git`, and
 ordinary shell tools. Never present rewrite code as compiled or tested.
 
+**One exception: the SimAntics oracle.** `NSOClient/Oracle/` is a small
+.NET console tool that compiles the 2017 SimAntics, Files, and Content
+sources (linked read-only, never copied or edited) on modern .NET, with
+stubs for the rendering and audio types they touch. It exists only to
+produce reference results for the Swift port (roadmap decision 2). `dotnet`
+may be run for that project and nothing else, either directly or through
+`NSOClient/NSOClient.slnx`, which contains only the oracle. Don't add other
+projects to that solution. The exception doesn't cover
+building or running the 2017 solution itself, and the oracle must never
+change a file under `TSOClient/`.
+
 ## 3. Code style
 
 This covers the docs and any C# shown in them.
@@ -333,6 +346,8 @@ for package in TSOFiles TSOContent SimAntics; do  # every package, even ones you
 done
 grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources  # must print nothing
 swift run --package-path NSOClient/TSOFiles -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
+dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
+git status --short -- TSOClient                                        # must print nothing
 ```
 
 - Every package must build with no new warnings and pass all tests.

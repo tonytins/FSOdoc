@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The SimAntics oracle: the 2017 SimAntics, Files, and Content sources, compiled
+    unchanged on modern .NET to produce reference results for the Swift port.
+    The sources are linked read-only from TSOClient/ (see SnapshotSources.props);
+    Stubs/ supplies the few types they need from libraries left out here.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>fso-oracle</AssemblyName>
+    <RootNamespace>FSO.Oracle</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>14</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Match the 2017 Release builds: no DEBUG, IDE_COMPAT, or VM_DESYNC_DEBUG. -->
+    <DefineConstants>TRACE</DefineConstants>
+    <!-- 2017 code predates nullable annotations and many analyzers; its warnings aren't ours to fix. -->
+    <WarningLevel>0</WarningLevel>
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0162;CS0168;CS0169;CS0219;CS0414;CS0618;CS0649;CS0659;CS0661;CS0672;CS1998;SYSLIB0011;SYSLIB0014</NoWarn>
+    <SnapshotRoot>$(MSBuildThisFileDirectory)../../</SnapshotRoot>
+  </PropertyGroup>
+
+  <Import Project="SnapshotSources.props" />
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="GameOverlay.cs" />
+    <Compile Include="Stubs/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Stock MonoGame supplies the XNA types the 2017 code uses; no window or device is created. -->
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.2.1105" />
+    <!-- FSO.Common's Log writes to the Windows event log; the package compiles everywhere. -->
+    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.0" />
+  </ItemGroup>
+</Project>
