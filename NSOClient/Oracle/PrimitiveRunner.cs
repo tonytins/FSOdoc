@@ -135,6 +135,9 @@ namespace FSO.Oracle
                 if (state.List != null) entity.MyList = new LinkedList<short>(state.List);
             }
             var thread = caller.Thread;
+            if (request.CurrentTick is uint currentTick) vm.Scheduler.CurrentTickID = currentTick;
+            if (request.IdleStart is uint idleStart) thread.ScheduleIdleStart = idleStart;
+            if (request.Interrupt is bool interrupt) thread.Interrupt = interrupt;
             Array.Clear(thread.TempRegisters);
             request.Temps.CopyTo(thread.TempRegisters, 0);
             Array.Clear(thread.TempXL);
@@ -171,6 +174,7 @@ namespace FSO.Oracle
             thread.Stack.Add(frame);
 
             var before = Snapshot.Take(vm);
+            var (idleStartBefore, interruptBefore, scheduledBefore) = (thread.ScheduleIdleStart, thread.Interrupt, thread.ScheduleIdleEnd);
             var response = Response(id, null, null);
             if (primitive == null)
             {
@@ -201,6 +205,11 @@ namespace FSO.Oracle
             var requestedStackObject = vm.GetObjectById(request.StackObject);
             if (requestedStackObject != null) response["stackObjectGUID"] = requestedStackObject.Object.OBJ.GUID.ToString("x8");
             response["seed"] = vm.Context.RandomSeed.ToString("x16");
+            var threadChanges = new JsonObject();
+            if (thread.ScheduleIdleStart != idleStartBefore) threadChanges["idleStart"] = thread.ScheduleIdleStart;
+            if (thread.Interrupt != interruptBefore) threadChanges["interrupt"] = thread.Interrupt;
+            if (thread.ScheduleIdleEnd != scheduledBefore) threadChanges["scheduledTick"] = thread.ScheduleIdleEnd;
+            response["thread"] = threadChanges;
             response["frames"] = thread.Stack.Count - thread.Stack.IndexOf(frame); // more than 1: the primitive pushed frames
             Snapshot.Take(vm).Describe(before, response);
             return response;
@@ -239,6 +248,9 @@ namespace FSO.Oracle
             public List<(int Index, short Value)> Globals;
             public List<(short ObjectID, ObjectState State)> Objects;
             public (int Hours, int Minutes, int MinuteFractions)? Clock;
+            public uint? CurrentTick;
+            public uint? IdleStart;
+            public bool? Interrupt;
 
             public sealed class ObjectState
             {
@@ -252,7 +264,7 @@ namespace FSO.Oracle
 
             public static Request Parse(JsonObject json, ulong defaultSeed)
             {
-                var known = new HashSet<string> { "id", "opcode", "operand", "caller", "stackObject", "seed", "temps", "tempXL", "locals", "args", "globals", "objects", "clock" };
+                var known = new HashSet<string> { "id", "opcode", "operand", "caller", "stackObject", "seed", "temps", "tempXL", "locals", "args", "globals", "objects", "clock", "currentTick", "idleStart", "interrupt" };
                 foreach (var (key, _) in json)
                 {
                     if (!known.Contains(key)) throw new RequestException($"unknown field \"{key}\"");
@@ -273,6 +285,10 @@ namespace FSO.Oracle
                     Globals = Sparse(json["globals"], "globals"),
                     Objects = ObjectStates(json["objects"]),
                     Clock = ClockState(json["clock"]),
+                    CurrentTick = json["currentTick"] is JsonNode tick ? (uint)Integer(tick, "currentTick", 0, uint.MaxValue) : null,
+                    IdleStart = json["idleStart"] is JsonNode start ? (uint)Integer(start, "idleStart", 0, uint.MaxValue) : null,
+                    Interrupt = json["interrupt"] is JsonValue flag && flag.TryGetValue(out bool value) ? value
+                        : json["interrupt"] == null ? null : throw new RequestException("\"interrupt\" must be true or false"),
                 };
             }
 

@@ -39,8 +39,10 @@ public final class VMThread {
     public private(set) var lastExitCode: ExitCode = .gotoFalse
     /// The error that ended the last tick, if one did.
     public private(set) var lastError: SimAnticsError?
-    /// The tick a wait for the next tick started on (`ScheduleIdleStart`).
-    public private(set) var idleStartTick: UInt32 = 0
+    /// The tick the current wait started on, or 0 (`ScheduleIdleStart`). Sleep counts from it.
+    public internal(set) var idleStartTick: UInt32 = 0
+    /// Set when something wakes the thread early (`Interrupt`); Sleep then ends at once.
+    public var isInterrupted = false
     /// The tick the entity is scheduled to run next, or 0 (`ScheduleIdleEnd`).
     public internal(set) var scheduledTick: UInt32 = 0
     /// Ticks until another error may be reported (`DialogCooldown`).

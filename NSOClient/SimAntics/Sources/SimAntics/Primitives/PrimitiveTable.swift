@@ -46,6 +46,7 @@ public struct PrimitiveTable: Sendable {
     /// The primitives this port supports.
     public static let standard: PrimitiveTable = {
         var table = PrimitiveTable()
+        table.register(Primitives.Sleep.self)
         table.register(Primitives.Expression.self)
         return table
     }()

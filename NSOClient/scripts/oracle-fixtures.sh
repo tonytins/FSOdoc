@@ -8,8 +8,8 @@
 # Needs TSO_GAME_DIR, the .NET SDK, and python3. Writes:
 #   objects.tsv                   fso-oracle list-objects (TSOContent and SimAntics tests)
 #   objects.digests               fso-oracle run-objects: each object alone for 30 ticks (SimAntics tests)
-#   expression.requests.jsonl     generated Expression cases
-#   expression.responses.jsonl    fso-oracle run-primitive answers (SimAntics tests)
+#   PRIMITIVE.requests.jsonl      generated cases for each ported primitive (expression, sleep)
+#   PRIMITIVE.responses.jsonl     fso-oracle run-primitive answers (SimAntics tests)
 set -euo pipefail
 
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -30,8 +30,10 @@ oracle list-objects >"$output/objects.tsv" 2>"$output/objects.log"
 echo "Running each object alone (a few minutes)..."
 cut -f1 "$output/objects.tsv" | oracle run-objects --ticks 30 --every 10 >"$output/objects.digests" 2>"$output/objects.digests.log"
 
-echo "Running Expression cases..."
-python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_expression_cases.py" "$output/expression.requests.jsonl"
-oracle run-primitive <"$output/expression.requests.jsonl" >"$output/expression.responses.jsonl" 2>"$output/expression.log"
+for primitive in expression sleep; do
+    echo "Running $primitive cases..."
+    python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_${primitive}_cases.py" "$output/$primitive.requests.jsonl"
+    oracle run-primitive <"$output/$primitive.requests.jsonl" >"$output/$primitive.responses.jsonl" 2>"$output/$primitive.log"
+done
 
 echo "Done. Run the tests with: TSO_ORACLE_DIR=$output"

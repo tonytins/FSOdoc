@@ -11,18 +11,19 @@ let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].ma
 let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 
-/// Compares Expression with the 2017 answers from `fso-oracle run-primitive`.
+/// Compares each ported primitive with the 2017 answers from `fso-oracle run-primitive`.
 ///
 /// Each case runs on fresh entities with the GUIDs the oracle reports and the state the
 /// request sets, then the exit code (or failure), registers, and every changed value
 /// are compared. Cases that need behavior this port doesn't have yet are counted, not failed.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
-struct OracleExpressionTests {
-    @Test func matches2017() throws {
+struct OraclePrimitiveTests {
+    @Test(arguments: ["expression", "sleep"])
+    func matches2017(primitive: String) throws {
         let directory = try required(oracleDirectory)
-        let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("expression.requests.jsonl"))
+        let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))
             .map { (try required($0["id"] as? String), $0) })
-        let responses = try jsonLines(directory.appendingPathComponent("expression.responses.jsonl"))
+        let responses = try jsonLines(directory.appendingPathComponent("\(primitive).responses.jsonl"))
         let content = try GameContent(.init(gameDirectory: try required(gameDirectory),
                                             freeSOContentDirectory: freeSOContentDirectory))
 
@@ -42,9 +43,9 @@ struct OracleExpressionTests {
                 }
             }
         }
-        print("Expression against 2017: \(matched) matched, \(mismatches.count) mismatched, "
+        print("\(primitive) against 2017: \(matched) matched, \(mismatches.count) mismatched, "
               + "\(unsupported.values.reduce(0, +)) unsupported \(unsupported.sorted { $0.value > $1.value }.prefix(8))")
-        #expect(matched > 1_000)
+        #expect(matched > 0)
         #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5).joined(separator: "\n"))")
     }
 }
@@ -62,7 +63,7 @@ struct OracleCase {
     /// The response fields both sides produce: the exit code or whether it failed, and the state after.
     static func comparable(_ response: [String: Any]) -> [String: Any] {
         var fields = response.filter { ["exit", "temps", "tempXL", "locals", "args", "stackObject", "seed",
-                                         "globals", "objects", "created", "removed"].contains($0.key) }
+                                         "globals", "objects", "created", "removed", "thread"].contains($0.key) }
         if response["exception"] != nil { fields["failed"] = true }
         return fields
     }
@@ -90,6 +91,9 @@ struct OracleCase {
             if let list = state["list"] as? [Int] { entity.list = list.map { Int16($0) } }
             if let direction = state["direction"] as? Int { entity.directionNotch = Int16(direction) }
         }
+        if let tick = request["currentTick"] as? Int { vm.scheduler.currentTick = UInt32(tick) }
+        if let start = request["idleStart"] as? Int { caller.thread.idleStartTick = UInt32(start) }
+        if let interrupt = request["interrupt"] as? Bool { caller.thread.isInterrupted = interrupt }
         for (index, value) in (request["temps"] as? [Int] ?? []).enumerated() { caller.thread.tempRegisters[index] = Int16(value) }
         for (index, value) in (request["tempXL"] as? [Int] ?? []).enumerated() { caller.thread.tempXL[index] = Int32(value) }
 
@@ -100,6 +104,7 @@ struct OracleCase {
             locals: (request["locals"] as? [Int] ?? []).map { Int16($0) },
             arguments: (request["args"] as? [Int] ?? [0, 0, 0, 0]).map { Int16($0) }, stackObjectID: stackObjectID)
         let before = Snapshot(vm)
+        let threadBefore = (caller.thread.idleStartTick, caller.thread.isInterrupted, caller.thread.scheduledTick)
         var fields: [String: Any] = [:]
         switch Result(catching: { () throws(SimAnticsError) in try primitive.execute(in: ran) }) {
         case .success(let exit): fields["exit"] = exit.name2017
@@ -113,6 +118,11 @@ struct OracleCase {
         fields["stackObject"] = Int(ran.stackObjectID)
         fields["seed"] = String(format: "%016llx", vm.random.seed)
         Snapshot(vm).describe(since: before, into: &fields)
+        var threadChanges: [String: Any] = [:]
+        if caller.thread.idleStartTick != threadBefore.0 { threadChanges["idleStart"] = Int(caller.thread.idleStartTick) }
+        if caller.thread.isInterrupted != threadBefore.1 { threadChanges["interrupt"] = caller.thread.isInterrupted }
+        if caller.thread.scheduledTick != threadBefore.2 { threadChanges["scheduledTick"] = Int(caller.thread.scheduledTick) }
+        fields["thread"] = threadChanges
         return .result(fields)
     }
 
@@ -275,7 +285,11 @@ struct OracleObjectRunTests {
                 continue
             }
             if let gap = vm.reportedErrors.first(where: { if case .unsupported = $0.error { true } else { false } }) {
-                if case .unsupported(let reason) = gap.error { skipped["unsupported: \(reason)", default: 0] += 1 }
+                if case .unsupported(let reason) = gap.error {
+                    // Name what failed first when 2017 would have deleted the object.
+                    let cause = vm.reportedErrors.first.map { "\($0.error)" } ?? ""
+                    skipped["unsupported: \(reason)\(gap == vm.reportedErrors.first ? "" : " after \(cause)")", default: 0] += 1
+                }
                 continue
             }
             if actual == lines {

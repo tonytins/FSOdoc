@@ -73,6 +73,8 @@ Request fields (only `opcode` is required; unknown fields are rejected):
 | `temps`, `tempXL` | up to 20 temps and 2 extended temps; the rest are 0 | all 0 |
 | `locals`, `args` | the frame's locals and arguments | none, and four 0 arguments |
 | `globals` | `{"index": value}` to set before running | |
+| `currentTick` | the scheduler's current tick | the loaded lot's |
+| `idleStart`, `interrupt` | the caller thread's idle start tick (`ScheduleIdleStart`) and interrupt flag | the loaded lot's |
 | `clock` | `{"hours": h, "minutes": m, "minuteFractions": f}` (0 to 149 fractions a minute) to set the game clock | the loaded lot's clock |
 | `objects` | `{"objectID": {"data": {"index": value}, "attributes": {"index": value}, "list": [values], "direction": d}}` to set before running; `list` replaces the whole list, and `direction` (0 north to 7, clockwise) sets the facing without snapping it to the rotation step | |
 
@@ -86,6 +88,7 @@ Response fields:
 | `exception` | instead of `exit`, if the handler threw: `Type: message` (2017 resets the thread when this happens) |
 | `noPrimitive` | `true` if 2017 has no primitive for the opcode; it then counts as `GOTO_TRUE` |
 | `temps`, `tempXL`, `locals`, `args`, `stackObject`, `seed` | the values after running |
+| `thread` | what the primitive changed on the caller's thread: `idleStart`, `interrupt`, and `scheduledTick` (the tick it's scheduled to run next, `ScheduleIdleEnd`) |
 | `callerGUID`, `stackObjectGUID` | the GUIDs (8 hex digits) of the caller and the requested stack object, so a test can build the same objects |
 | `frames` | stack frames from the request's frame up; more than 1 means the primitive pushed one |
 | `globals` | `{"index": value}` for each global the primitive changed |
@@ -146,9 +149,9 @@ The TSOContent real-install tests compare each line with the Swift content syste
 
 `NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every 2017 answer the
 Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
-`objects.tsv` from `list-objects`, and the Expression cases from
-`NSOClient/SimAntics/OracleCases/make_expression_cases.py` with their `run-primitive`
-answers. Point the tests at it:
+`objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, and for each ported
+primitive its cases from `NSOClient/SimAntics/OracleCases/make_PRIMITIVE_cases.py` with their
+`run-primitive` answers. Point the tests at it:
 
 ```sh
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle

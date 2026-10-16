@@ -138,3 +138,40 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         }
     }
 }
+
+@Suite struct SleepTests {
+    /// main: parameter 0 := 2, sleep on it, then attribute 0 += 1.
+    let main = bhavChunk(id: 4096, [
+        InstructionFixture(opcode: 2, truePointer: 1, operand: expression(.assign, .parameters, 0, .literal, 2)),
+        InstructionFixture(opcode: 0, truePointer: 2, falsePointer: 255, operand: [0, 0]),
+        addToAttribute(0, 1),
+    ])
+
+    @Test func wakesWhenTheCountReachesMinusOne() throws {
+        try withVM(chair: [main], chairWords: [mainWord: 4096]) { vm, chair throws in
+            try chair.initialize()
+            vm.tick() // sets 2, sleeps: 2 - 1 = 1, so it runs again on tick 1 + 1 + 1
+            #expect(vm.scheduler.scheduledObjectIDs(on: 3) == [1])
+            #expect(chair.thread.stack.last?.arguments.first == 1)
+            vm.tick()
+            #expect(chair.attribute(at: 0) == 0)
+            let seed = vm.random.seed
+            vm.tick() // 1 - (3 - 1) = -1: awake
+            #expect(chair.attribute(at: 0) == 1)
+            #expect(vm.random.seed != seed) // the wake draws a random number
+            #expect(vm.reportedErrors.isEmpty)
+        }
+    }
+
+    @Test func endsAtOnceWhenInterrupted() throws {
+        try withVM(chair: [main], chairWords: [mainWord: 4096]) { vm, chair throws in
+            try chair.initialize()
+            vm.tick()
+            chair.thread.isInterrupted = true
+            vm.scheduler.scheduleTick(for: chair, in: 1)
+            vm.tick()
+            #expect(chair.attribute(at: 0) == 1)
+            #expect(!chair.thread.isInterrupted && chair.thread.idleStartTick == 0)
+        }
+    }
+}
