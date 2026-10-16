@@ -1,4 +1,4 @@
-# FSOdoc (Working Title)
+# SimsCraft
 
 ## Background
 
@@ -22,4 +22,4 @@ FSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating 
 
 ## Licensing
 
-FSOdoc, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.
+SimsCraft, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.

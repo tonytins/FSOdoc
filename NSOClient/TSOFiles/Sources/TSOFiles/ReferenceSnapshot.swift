@@ -1,6 +1,6 @@
 /// The FreeSO source snapshot that TSOFiles, TSOContent, and SimAntics match.
 ///
-/// The FSOdoc documentation describes this snapshot, and behavior is checked
+/// The SimsCraft documentation describes this snapshot, and behavior is checked
 /// against it.
 public enum ReferenceSnapshot {
     /// A readable name for the snapshot.

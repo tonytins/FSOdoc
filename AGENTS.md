@@ -1,13 +1,13 @@
 # AGENTS.md: guide for AI agents and contributors
 
-FSOdoc is a documentation fork of [FreeSO](https://github.com/riperiperi/FreeSO),
-a reimplementation of The Sims Online in **C#** on a forked MonoGame. It
-freezes FreeSO's source at a single snapshot (August 9, 2017), written for
-classic **.NET Framework** (mostly 4.5) and Visual Studio 2017 on Windows.
-Write the name as **FSOdoc** in prose. The upstream game is **FreeSO**, and
-the original game is **The Sims Online** (TSO).
+SimsCraft started as a documentation fork of [FreeSO](https://github.com/riperiperi/FreeSO),
+a reimplementation of The Sims Online in **C#** on a forked MonoGame. It keeps
+FreeSO's source frozen at a single snapshot (August 9, 2017), written for
+classic **.NET Framework** (mostly 4.5) and Visual Studio 2017 on Windows, and
+builds on it. Write the name as **SimsCraft** in prose. The upstream game is
+**FreeSO**, and the original game is **The Sims Online** (TSO).
 
-The project has two goals:
+The project's goals:
 
 1. Explain the 2017 codebase: what each project does, how the pieces fit,
    and how data flows through the client, the simulation, and the servers.
@@ -16,11 +16,14 @@ The project has two goals:
    Linux, and macOS.
 3. Rewrite FreeSO's engine-free libraries in **Swift** as independent
    packages under [NSOClient/](./NSOClient/): TSOFiles (file formats),
-   TSOContent (the content system), and SimAntics (the VM), matching the
-   2017 behavior.
+   TSOContent (the content system), and SimAntics (the VM), compatible with
+   FreeSO and the TSO beta (see Library rules, rule 2).
+4. Go past that baseline: extend SimAntics (such as the
+   [scripting proof of concept](./NSOClient/SimAnticsScript/README.md)) and,
+   later, support older games' data, such as The Sims 1.
 
-The first two goals produce Markdown under [docs/fso/](./docs/fso/). The third
-produces Swift packages, planned in [docs/roadmap.md](./docs/roadmap.md) and
+The first two goals produce Markdown under [docs/fso/](./docs/fso/). The
+others produce Swift packages, planned in [docs/roadmap.md](./docs/roadmap.md) and
 tracked in [docs/scorecard.md](./docs/scorecard.md). This is solo work held to
 production standards. Read this file first, then
 [README.md](./README.md) and [docs/fso/README.md](./docs/fso/README.md).
@@ -191,12 +194,24 @@ These apply to everything under [NSOClient/](./NSOClient/).
    logging, or printing in library targets. Decode to plain values (RGBA
    pixels, PCM samples, typed chunks) and report through errors and
    results. Command-line executables such as `tsofiles-check` may print.
-2. **The 2017 snapshot is the specification.** Read the C# before writing
-   the Swift, match its behavior on valid input (quirks included), and name
-   the C# type a Swift type ports in its doc comment. Differ only to avoid a
-   crash, to reject hostile input, or to fix a clear bug, and record each
-   difference in the doc comment and in the scorecard's "Known differences
-   from 2017".
+2. **Compatibility is the baseline, not the ceiling.** Every change keeps
+   two baselines:
+   - **FreeSO.** The 2017 snapshot is the specification for the behavior it
+     has. Read the C# before writing the Swift, match it on valid input
+     (quirks included) and on TSO's 2003 production files, which FreeSO
+     targets, and name the C# type a Swift type ports in its doc comment.
+     Differ only to avoid a crash, to reject hostile input, or to fix a
+     clear bug, and record each difference in the doc comment and in the
+     scorecard's "Known differences from 2017". Check against `fso-oracle`
+     where 2017 has an answer.
+   - **The TSO beta.** The owner's 2002 beta install must keep working.
+     Where its files differ from production, degrade gracefully: skip what
+     doesn't fit, report it, and keep going, never fail outright.
+
+   Past the baseline, new behavior is welcome: SimAntics extensions,
+   scripting, and support for older games' data. An addition must not
+   change behavior on FreeSO's or the beta's data, must be opt-in or
+   clearly separate from the ported code, and needs its own tests.
 3. **Deterministic.** SimAntics must give the same results on every
    machine for lockstep play: wrap 16-bit arithmetic (`&+`, `&-`, `&*`),
    never iterate a `Dictionary` or `Set` in VM logic (Swift randomizes hash
@@ -209,7 +224,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
    pass the dependency in.
 5. **Independent packages.** Each package builds and tests on its own.
    Dependencies point one way through local paths (TSOFiles, then
-   TSOContent, then SimAntics). Foundation is allowed; don't declare
+   TSOContent, then SimAntics, then SimAnticsScript). Foundation is allowed; don't declare
    `platforms:`. Any other new dependency needs the owner's approval.
 6. **No EA data in the repository.** Tests build synthetic files in code
    (see `Tests/TSOFilesTests/Support/ByteWriter.swift`). Checks against real
@@ -417,9 +432,9 @@ The owner often reviews changes alone, so make review easy:
   original TSO files.
 - State new dependencies and framework choices, with the alternative you
   weighed, as judgment calls for the owner to decide.
-- For NSOClient, list every deliberate difference from the 2017 behavior,
-  and say which checks ran: the tests, and whether the real-install scan
-  did.
+- For NSOClient, list every deliberate difference from the 2017 behavior
+  and every addition past the compatibility baseline, and say which checks
+  ran: the tests, the real-install scan, and the `fso-oracle` comparisons.
 - If you notice a risk in the snapshot, such as a security issue, a
   committed secret, or a licensing question for a third-party library,
   report it. Don't fix it in the source as part of a docs change.

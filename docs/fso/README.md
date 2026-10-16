@@ -1,4 +1,4 @@
-# FSOdoc documentation
+# SimsCraft: the 2017 FreeSO snapshot
 
 These pages explain the FreeSO source code as of August 9, 2017 (the
 snapshot in [`TSOClient/`](../../TSOClient/)), and how to rewrite it on
