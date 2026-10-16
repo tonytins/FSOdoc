@@ -7,6 +7,7 @@ public enum IFFChunkTypes {
         BHAV.self, BCON.self, TRCN.self, TPRP.self,
         STR.self, CTSS.self, TTAs.self,
         OBJD.self, OBJf.self, TTAB.self, SLOT.self, GLOB.self, FWAV.self,
+        PIFF.self,
     ]
 
     /// The parser for a type code, or `nil` if the type isn't supported yet.

@@ -58,6 +58,144 @@ public struct IFFFile: Sendable {
         try self.init(bytes: Data(contentsOf: url))
     }
 
+    /// Builds a file from chunk records, as a patch result does.
+    init(resourceMapOffset: UInt32, chunks: [IFFChunkRecord]) {
+        self.resourceMapOffset = resourceMapOffset
+        self.chunks = chunks
+    }
+
+    // MARK: Patching
+
+    /// Returns this file with a PIFF patch applied.
+    ///
+    /// Matches `IffFile.Patch`: each entry patches or deletes the first chunk
+    /// with its type and ID; ID changes are applied afterwards as swaps, which
+    /// move both chunks to the end; then the patch file's other chunks are added
+    /// where no chunk with their type and ID exists. Unlike 2017, entries and added
+    /// chunks of types the 2017 reader didn't know are applied too.
+    public func applying(_ patchFile: IFFFile) throws(PIFFError) -> IFFFile {
+        guard let patchRecord = patchFile.chunk(ofType: PIFF.typeCode) else { throw .missingPatchChunk }
+        let piff: PIFF
+        do {
+            piff = try PIFF(record: patchRecord)
+        } catch {
+            throw .invalidPatchChunk(error)
+        }
+
+        var patched = PatchedChunks(chunks)
+        var moves: [(identity: Int, newID: UInt16)] = []
+        for entry in piff.entries {
+            guard let identity = patched.identity(typeCode: entry.typeCode, id: entry.chunkID) else { continue }
+            if entry.isDeletion {
+                patched.remove(identity)
+                continue
+            }
+            try patched.update(identity) { record throws(PIFFError) in
+                record.data = try entry.apply(to: record.data)
+                if !entry.label.isEmpty { record.label = entry.label }
+            }
+            if entry.chunkID != entry.newChunkID { moves.append((identity, entry.newChunkID)) }
+        }
+        for move in moves {
+            try patched.moveAndSwap(move.identity, to: move.newID)
+        }
+
+        // Added chunks go in groups by type, in the order each type first appears in the patch file.
+        var typeOrder: [String] = []
+        for record in patchFile.chunks where record.typeCode != PIFF.typeCode && !typeOrder.contains(record.typeCode) {
+            typeOrder.append(record.typeCode)
+        }
+        for typeCode in typeOrder {
+            for record in patchFile.chunks(ofType: typeCode)
+            where patched.identity(typeCode: record.typeCode, id: record.id) == nil {
+                patched.append(record)
+            }
+        }
+        return IFFFile(resourceMapOffset: resourceMapOffset, chunks: patched.records)
+    }
+
+    /// The chunk list during patching, with the 2017 "first chunk for each type and ID" index.
+    private struct PatchedChunks {
+        private struct Key: Hashable {
+            var typeCode: String
+            var id: UInt16
+        }
+
+        private var items: [(identity: Int, record: IFFChunkRecord)] = []
+        private var index: [Key: Int] = [:]
+        private var nextIdentity = 0
+
+        init(_ records: [IFFChunkRecord]) {
+            for record in records {
+                let identity = nextIdentity
+                nextIdentity += 1
+                items.append((identity, record))
+                let key = Key(typeCode: record.typeCode, id: record.id)
+                if index[key] == nil { index[key] = identity }
+            }
+        }
+
+        var records: [IFFChunkRecord] { items.map(\.record) }
+
+        func identity(typeCode: String, id: UInt16) -> Int? {
+            index[Key(typeCode: typeCode, id: id)]
+        }
+
+        mutating func update(_ identity: Int, _ change: (inout IFFChunkRecord) throws(PIFFError) -> Void) throws(PIFFError) {
+            guard let position = items.firstIndex(where: { $0.identity == identity }) else { return }
+            try change(&items[position].record)
+        }
+
+        /// Removes a chunk and its index entry, like `IffFile.RemoveChunk`.
+        @discardableResult
+        mutating func remove(_ identity: Int) -> IFFChunkRecord? {
+            guard let position = items.firstIndex(where: { $0.identity == identity }) else { return nil }
+            let record = items.remove(at: position).record
+            index[Key(typeCode: record.typeCode, id: record.id)] = nil
+            return record
+        }
+
+        /// Adds a chunk at the end, like `IffFile.AddChunk`.
+        mutating func append(_ record: IFFChunkRecord) {
+            append(record, identity: nil)
+        }
+
+        /// Gives a chunk a new ID, swapping IDs with any chunk already there. Matches `MoveAndSwap`.
+        mutating func moveAndSwap(_ identity: Int, to newID: UInt16) throws(PIFFError) {
+            guard let position = items.firstIndex(where: { $0.identity == identity }) else { return }
+            let current = items[position].record
+            guard current.id != newID else { return }
+
+            let targetIdentity = self.identity(typeCode: current.typeCode, id: newID)
+            let target = targetIdentity.flatMap { remove($0) }
+            guard var moved = remove(identity) else { return }
+            let oldID = moved.id
+            moved.id = newID
+            try appendChecked(moved, identity: identity)
+            if var target, let targetIdentity {
+                target.id = oldID
+                try appendChecked(target, identity: targetIdentity)
+            }
+        }
+
+        /// `IffFile.AddChunk` throws when the type and ID are already indexed.
+        private mutating func appendChecked(_ record: IFFChunkRecord, identity: Int) throws(PIFFError) {
+            guard self.identity(typeCode: record.typeCode, id: record.id) == nil else {
+                throw .duplicateChunk(typeCode: record.typeCode, id: record.id)
+            }
+            append(record, identity: identity)
+        }
+
+        private mutating func append(_ record: IFFChunkRecord, identity: Int?) {
+            let identity = identity ?? {
+                defer { nextIdentity += 1 }
+                return nextIdentity
+            }()
+            items.append((identity, record))
+            index[Key(typeCode: record.typeCode, id: record.id)] = identity
+        }
+    }
+
     // MARK: Lookup
 
     /// Every chunk of one type, in file order.
@@ -68,6 +206,11 @@ public struct IFFFile: Sendable {
     /// The first chunk with the given type and ID, as the 2017 lookup tables keep.
     public func chunk(ofType typeCode: String, id: UInt16) -> IFFChunkRecord? {
         chunks.first { $0.typeCode == typeCode && $0.id == id }
+    }
+
+    /// The first chunk of a type, whatever its ID.
+    public func chunk(ofType typeCode: String) -> IFFChunkRecord? {
+        chunks.first { $0.typeCode == typeCode }
     }
 
     // MARK: Private

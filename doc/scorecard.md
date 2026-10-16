@@ -5,8 +5,10 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 100 passed (98 without
-`TSO_GAME_DIR`, which skips the 2 real-install tests), TSOContent 1 passed, SimAntics 1 passed.
+**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
+`TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 1 passed, SimAntics 1 passed. The
+owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
+expected and handled for backwards compatibility.
 
 Status values: `done` (works and is tested), `partial` (works with gaps, named in the note),
 `missing` (not started).
@@ -15,7 +17,7 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Formats](#formats) | 9 | 1 | 11 | 100 test cases; real install: 94 containers, 82,131 entries, 51,620 typed chunks, 0 failures |
+| [Formats](#formats) | 13 | 0 | 8 | 128 test cases; real install (2002 beta): 94 containers, 82,131 entries, 51,620 typed chunks, tuning, data definition, and OTFs, 0 failures |
 | [Content](#content) | 0 | 0 | 9 | |
 | [SimAntics](#simantics) | 1 | 0 | 14 | 0 of about 70 primitives |
 | [Fidelity](#fidelity) | 2 | 1 | 3 | install scan and real-data invariants clean; no replay oracle |
@@ -23,7 +25,7 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
 | [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
 | [Platforms](#platforms) | 3 | 0 | 1 | |
-| [Known differences from 2017](#known-differences-from-2017) | | | | 8 deliberate |
+| [Known differences from 2017](#known-differences-from-2017) | | | | 11 deliberate |
 | [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
 
 ## Formats
@@ -42,13 +44,13 @@ Package: [TSOFiles](../NSOClient/TSOFiles/). Ports `TSOClient/tso.files` (see
 | FMT-7 | DBPF archives | done | `Archives/DBPFArchive.swift`; `DBPFArchiveTests` (versions 1.0 and 2.0, lookup ID packing, first-wins IDs, missing types, truncation, out-of-bounds entries) |
 | FMT-8 | Behavior chunks: `BHAV`, `BCON`, `TRCN`, `TPRP` | done | `IFF/Chunks/BHAV.swift`, `BCON.swift`, `TRCN.swift`, `TPRP.swift`; `BHAVTests` (all four header versions, unknown versions left empty as in 2017, truncation), `ConstantChunkTests` (TRCN versions 0 and 2, Latin-1 and .NET strings, negative counts; TPRP both name layouts). Real install: 15,732 BHAVs, 1,476 BCONs, 1,856 TRCNs, 15,577 TPRPs; every branch target is an instruction or an exit code (`RealInstallTests`) |
 | FMT-9 | String chunks: `STR#`, `CTSS`, `TTAs` with language sets | done | `IFF/Chunks/StringTable.swift`; `StringTableTests` (formats 0, -1, -2, -3, -4, language fallback, default language, empty and unknown formats) and `ByteReaderStringTests`. Text decoding matches each 2017 reader: Latin-1 C strings, ASCII Pascal strings, UTF-8, and .NET length-prefixed strings. Real install: 3,401 STR#, 905 CTSS, 910 TTAs |
-| FMT-10 | Object chunks: `OBJD`, `OBJf`, `OBJT`, `OBJM`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | partial | Done: `OBJD` (word layout per version, 90 named fields generated from the C# field list, type attribute fallback), `OBJf`, `GLOB`, `SLOT` (per-version defaults and scaling), `TTAB` (plain and field-encoded, via `IFF/FieldEncodedReader.swift`), `FWAV`; `ObjectChunkTests`, `FieldEncodedReaderTests`. Real install: 2,706 OBJD, 1,755 OBJf, 206 GLOB, 790 SLOT, 898 TTAB, 5,408 FWAV; every loaded interaction fits its pie menu strings where the IFF has them. Missing: `OBJT`, `OBJM` |
-| FMT-11 | Lot and TS1 chunks: `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT` | missing | Pixie Point |
+| FMT-10 | Object chunks: `OBJD`, `OBJf`, `GLOB`, `SLOT`, `TTAB`, `FWAV` | done | Done: `OBJD` (word layout per version, 90 named fields generated from the C# field list, type attribute fallback), `OBJf`, `GLOB`, `SLOT` (per-version defaults and scaling), `TTAB` (plain and field-encoded, via `IFF/FieldEncodedReader.swift`), `FWAV`; `ObjectChunkTests`, `FieldEncodedReaderTests`. Real install: 2,706 OBJD, 1,755 OBJf, 206 GLOB, 790 SLOT, 898 TTAB, 5,408 FWAV; every loaded interaction fits its pie menu strings where the IFF has them. |
+| FMT-11 | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT` | missing | Charvatia milestone, deferred by the owner. Only TS1 hybrid mode reads them; a TSO install contains none (checked 2026-10-15) |
 | FMT-12 | Sprite chunks decoded to RGBA plus depth: `SPR#`, `SPR2`, `PALT`, `DGRP` | missing | Hyde Park |
 | FMT-13 | Images: `BMP_`, `THMB`, BMP, TGA, PNG with magenta masking | missing | Hyde Park |
-| FMT-14 | PIFF: apply patches to an IFF, `User/` precedence | missing | King Canyons |
-| FMT-15 | OTF tuning tables and `tuning.dat` | missing | King Canyons |
-| FMT-16 | `datadefinition.dat` and INI files | missing | King Canyons |
+| FMT-14 | PIFF: apply patches to an IFF, `User/` precedence | done | PIFF is FreeSO's own format (fixes for objects its engine mishandled), written against the 2003 production files. `IFF/Chunks/PIFF.swift` (the chunk and `Entry.apply(to:)`, including 2017's rule that a final removal may run past the end when nothing remains), `IFFFile.applying(_:)` (deletions, deferred ID swaps, added chunks grouped by type, with the 2017 "first chunk per type and ID" index), `Patching/PatchRegistry.swift` (discovery, `User/` precedence, patches applied only where they fit). `PIFFTests`, `PatchRegistryTests`. Real install: FreeSO's 36 shipped patches from the snapshot (35 load; one is empty). Of the 27 that target objects in `objiff.far`, 17 apply to the beta and 10 don't fit and are skipped (a C#-faithful simulation confirms 2017 would fail on 7 of them too), and no patch leaves a chunk unparsable. The snapshot's `skillobjects_10xmultiplier.piff` is empty. Encoding PIFFs is not ported (roadmap decision 4) |
+| FMT-15 | OTF tuning tables and `tuning.dat` | done | `Tables/OTFFile.swift` (`T` elements anywhere, comments skipped, .NET-style integer parsing), `Tables/TuningFile.swift` (Persist header, RefPack, strings offset by 13, lower-case names). `OTFFileTests`, `TuningFileTests`. Real install: `tuning.dat` and all 12 OTFs read |
+| FMT-16 | `datadefinition.dat` and INI files | done | `Tables/DataDefinition.swift` (three lists and the string table; the file is named `TSOData_datadefinition.dat`), `Tables/INIFile.swift`. `DataDefinitionTests`, `INIFileTests`. Real install: the data definition reads, every derived struct masks a known struct, and the two INI files the client loads read. `sys/nametohostmap.ini` repeats the section `kevins-town`, which the 2017 reader also rejects; no 2017 code loads that file |
 | FMT-17 | UTK and XA decoding to PCM | missing | Landry Lakes |
 | FMT-18 | HIT family: `HITFile`, HOT, EVT, HSM, FSC, TLO, hitlists | missing | Landry Lakes |
 | FMT-19 | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand group | missing | Nichol's Notch |
@@ -170,6 +172,9 @@ Deliberate, documented in the code. Each keeps valid-file behavior the same.
 | DIFF-6 | `TTAB` rejects a motive count larger than the bits left in the chunk | `TTAB` | Field-encoded reads past the end return zeros, so a corrupt count would loop billions of times; plain counts that large fail in 2017 too |
 | DIFF-7 | A string table with an unknown format code fails to parse | `StringTable` | 2017 accepts it with null language sets and crashes on the first lookup |
 | DIFF-8 | A format -4 string lookup for a language past the stored sets falls back to English | `StringTable.strings(for:defaultLanguage:)` | 2017 indexes past its array and crashes |
+| DIFF-9 | PIFF entries and added chunks of any type apply | `IFFFile.applying(_:)` | 2017 throws on a patch entry whose type it has no class for, and skips such added chunks |
+| DIFF-10 | Patch files load in sorted order, `User/` is matched in the path relative to the patch folder, and files that fail to load are reported | `PatchRegistry` | 2017's file order is undefined, it matches `User/` anywhere in the full path, and it skips bad files silently |
+| DIFF-11 | The patch registry applies each PIFF as a whole only if it fits, and skips and reports the rest | `PatchRegistry.applyingPatches(to:fileName:)` | FreeSO's patches target the 2003 production files. On other versions (such as the 2002 beta) 2017 fails to load the object; this keeps the object unpatched instead. On production files every patch fits and results are identical |
 
 ## Open bugs
 

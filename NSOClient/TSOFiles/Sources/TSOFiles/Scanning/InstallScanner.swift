@@ -84,8 +84,8 @@ public struct InstallScanner: Sendable {
     ///   individual files are collected in the report.
     public func scan(directory root: URL) throws -> ScanReport {
         var report = ScanReport()
-        for url in try regularFiles(under: root) {
-            let path = relativePath(of: url, under: root)
+        for url in try DirectoryListing.regularFiles(under: root) {
+            let path = DirectoryListing.relativePath(of: url, under: root)
             guard let kind = try? Self.containerKind(of: url) else {
                 report.otherFileCount += 1
                 continue
@@ -196,29 +196,5 @@ public struct InstallScanner: Sendable {
             report.failures.append(ScanFailure(path: path, entry: entry, message: String(describing: error)))
             return nil
         }
-    }
-
-    private func regularFiles(under root: URL) throws -> [URL] {
-        // On Linux the enumerator silently yields nothing for a missing directory, so check first.
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: root.path])
-        }
-        let keys: [URLResourceKey] = [.isRegularFileKey]
-        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: keys) else {
-            throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: root.path])
-        }
-        var files: [URL] = []
-        for case let url as URL in enumerator where (try? url.resourceValues(forKeys: Set(keys)))?.isRegularFile == true {
-            files.append(url)
-        }
-        return files.sorted { $0.path < $1.path }
-    }
-
-    private func relativePath(of url: URL, under root: URL) -> String {
-        let rootPath = root.standardizedFileURL.path
-        let filePath = url.standardizedFileURL.path
-        guard filePath.hasPrefix(rootPath) else { return filePath }
-        return String(filePath.dropFirst(rootPath.count).drop { $0 == "/" })
     }
 }

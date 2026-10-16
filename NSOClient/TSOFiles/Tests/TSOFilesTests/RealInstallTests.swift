@@ -67,4 +67,73 @@ struct RealInstallTests {
         #expect(tablesWithoutStrings < checked)
         #expect(problems.isEmpty, "\(problems.count) interactions without strings, first: \(problems.prefix(5))")
     }
+
+    @Test func readsTheGlobalTuning() throws {
+        let directory = try #require(gameDirectory)
+        let tuning = try TuningFile(contentsOf: directory.appendingPathComponent("tuning.dat"))
+        #expect(!tuning.entries.isEmpty)
+        #expect(tuning.entries.allSatisfy { !$0.name.isEmpty && !$0.name.contains("?") }, "names decode to plain ASCII")
+    }
+
+    @Test func readsTheDataDefinition() throws {
+        let directory = try #require(gameDirectory)
+        let definition = try DataDefinition(contentsOf: directory.appendingPathComponent("TSOData_datadefinition.dat"))
+        #expect(definition.structs.count > 10)
+        let structIDs = Set(definition.structs.map(\.id))
+        let orphans = definition.derivedStructs.filter { !structIDs.contains($0.parentID) }
+        #expect(orphans.isEmpty, "every derived struct masks a known struct: \(orphans.map(\.id))")
+        #expect(definition.structure(named: "Avatar") != nil)
+    }
+
+    @Test func readsEveryTuningTable() throws {
+        let directory = try #require(gameDirectory)
+        var tables = 0
+        for url in try DirectoryListing.regularFiles(under: directory) where url.pathExtension.lowercased() == "otf" {
+            tables += try OTFFile(contentsOf: url).tables.count
+        }
+        #expect(tables > 0)
+    }
+
+    /// The INI files the 2017 client reads. Others may be malformed: `sys/nametohostmap.ini`
+    /// repeats a section, which the 2017 reader rejects too, but no code loads that file.
+    @Test(arguments: ["sys/gameentry.ini", "sys/cityselector.ini"])
+    func readsTheINIFilesTheClientUses(path: String) throws {
+        let directory = try #require(gameDirectory)
+        let ini = try INIFile(contentsOf: directory.appendingPathComponent(path))
+        #expect(!ini.sections.isEmpty)
+    }
+
+    /// FreeSO's own patches, which ship in the snapshot (PIFF is FreeSO's format, not TSO's).
+    /// They were written against TSO's 2003 production files, so on another version of
+    /// the game (such as the owner's 2002 beta) some don't fit and are skipped. Every
+    /// patched file must still parse, and most patches must apply.
+    @Test func appliesFreeSOsShippedPatchesThatFitTheInstall() throws {
+        let directory = try #require(gameDirectory)
+        let repository = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let registry = try PatchRegistry(directory: repository.appendingPathComponent("TSOClient/tso.content/Content/Patch"))
+        // The snapshot ships one empty patch file; 2017 skipped it silently.
+        #expect(registry.failures.map(\.path) == ["skillobjects_10xmultiplier.piff"])
+
+        let archive = try FAR1Archive(contentsOf: directory.appendingPathComponent("objectdata/objects/objiff.far"),
+                                      variant: .b)
+        var applied: [String] = []
+        var skipped: [String] = []
+        var unparsable: [String] = []
+        for entry in archive.entries where !registry.patches(for: entry.fileName).isEmpty {
+            let original = try IFFFile(bytes: try archive.data(for: entry))
+            let outcome = registry.applyingPatches(to: original, fileName: entry.fileName)
+            applied += outcome.applied
+            skipped += outcome.skipped.map { "\($0.name): \($0.reason)" }
+            for record in outcome.file.chunks where (try? IFFChunkTypes.type(forCode: record.typeCode)?.init(record: record)) == nil
+            && IFFChunkTypes.type(forCode: record.typeCode) != nil
+            && (try? original.chunk(ofType: record.typeCode, id: record.id).map { try IFFChunkTypes.type(forCode: $0.typeCode)?.init(record: $0) }) != nil {
+                unparsable.append("\(entry.fileName): \(record.typeCode) #\(record.id)")
+            }
+        }
+        print("Applied \(applied.count) shipped patches; skipped \(skipped.count): \(skipped)")
+        #expect(applied.count >= 15)
+        #expect(unparsable.isEmpty, "patching made chunks unparsable: \(unparsable)")
+    }
 }
