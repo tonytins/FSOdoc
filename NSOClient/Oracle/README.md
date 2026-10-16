@@ -130,6 +130,27 @@ lot with every object taken out, creates the object out of the world as
 The SimAntics tests run each object the same way and compare every line. Objects that reach
 behavior the port doesn't have yet are counted by what stopped them, which ranks what to port next.
 
+## Rooms: `room-maps`
+
+```sh
+cat blueprints.txt | dotnet run --project NSOClient/Oracle -c Release -- room-maps > rooms.jsonl
+```
+
+Reads blueprint XML paths from standard input, one per line. For each, it loads the lot as
+`run-lot` does and prints one JSON line:
+
+| Field | Value |
+| --- | --- |
+| `file` | the blueprint's file name |
+| `size` | the lot's width and height in tiles |
+| `maps` | each level's room map (`VMRoomMap.Map`), ground floor first: one number per tile, across then down |
+| `rooms` | every room after 2017's unused room 0, each `[id, lightBaseRoom, floor, isOutside, area, isPool, adjacentRooms, [x, y, width, height], supportRooms]`; `floor` is 0 for the ground floor, and `adjacentRooms` is in 2017's iteration order |
+
+If loading throws, the line is `{"file":…,"error":Type}` and the full exception goes to standard
+error. FreeSO's blueprints have floors but no walls, so `NSOClient/SimAntics/OracleCases/make_blueprints.py`
+writes synthetic ones (no game data) with walls, fences, diagonals, pools, and upper floors. The
+SimAntics tests read each blueprint with the Swift `Blueprint` and compare every field.
+
 ## Content: `list-objects`
 
 ```sh
@@ -151,9 +172,10 @@ The TSOContent real-install tests compare each line with the Swift content syste
 
 `NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every 2017 answer the
 Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
-`objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, and for each ported
+`objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, for each ported
 primitive its cases from `NSOClient/SimAntics/OracleCases/make_cases.py` with their
-`run-primitive` answers. Point the tests at it:
+`run-primitive` answers, and the synthetic blueprints in `blueprints/` with `rooms.jsonl` from
+`room-maps`. Point the tests at it:
 
 ```sh
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle

@@ -112,6 +112,11 @@ public final class Entity {
         return table
     }
 
+    /// Records the room the entity is in (`SetRoom`), as object data 29.
+    func setRoom(_ room: UInt16) {
+        objectData[Int(ObjectVariable.room.rawValue)] = Int16(truncatingIfNeeded: room)
+    }
+
     // MARK: Attributes
 
     public func attribute(at index: UInt16) -> Int16 {

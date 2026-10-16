@@ -4,8 +4,8 @@ import TSOFiles
 /// One running lot.
 ///
 /// Ports the core of FreeSO's `VM` and `VMContext`: entities, the global state, the
-/// random generator, the primitive table, and routine assembly. Ticking the lot, the
-/// architecture, and networking come in later passes.
+/// random generator, the primitive table, routine assembly, and the lot's architecture and
+/// rooms. Networking comes in a later pass.
 public final class VM {
     /// Global state values, the `Global` scope.
     public var globalState: [Int16]
@@ -32,8 +32,12 @@ public final class VM {
     }
 
     private var entitiesByID: [Int16: Entity] = [:]
+    /// The lot's walls, floors, and rooms. Changes take effect on the next tick, when rooms are
+    /// regenerated and every entity's room is updated. Replacing the architecture doesn't
+    /// re-index entities already on the lot.
+    public var architecture: Architecture
     /// The lot's size in tiles; the tile index numbers tiles by it.
-    public var lotSize: (width: Int, height: Int) = (64, 64)
+    public var lotSize: (width: Int, height: Int) { (architecture.width, architecture.height) }
     /// Objects by tile, in object ID order (`VMObjectQueries.TileToObjects`), keyed as 2017 does.
     private var tileIndex: [Int: [Entity]] = [:]
     /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
@@ -59,10 +63,24 @@ public final class VM {
         } catch {
             throw .content(error)
         }
+        architecture = try Architecture(width: 64, height: 64)
         globalState = [Int16](repeating: 0, count: 38)
         globalState[20] = 255 // game edition: every expansion
         globalState[25] = 4   // needed for Sims' idle interactions, as in EA-Land's globals
         globalState[17] = 4   // runtime code version
+    }
+
+    /// Loads a lot's walls and floors and puts every entity in its room, as
+    /// `VMWorldActivator.LoadFromXML` does before it creates the lot's objects.
+    ///
+    /// - Throws: ``SimAnticsError/simantics(_:)`` if the blueprint is off the lot.
+    public func load(_ blueprint: Blueprint) throws(SimAnticsError) {
+        do {
+            architecture = try blueprint.architecture()
+        } catch {
+            throw .simantics("can't load the blueprint: \(error)")
+        }
+        updateRooms()
     }
 
     deinit {
@@ -111,6 +129,11 @@ public final class VM {
         globalState[5] = Int16(truncatingIfNeeded: clock.minutes)
         globalState[0] = Int16(truncatingIfNeeded: clock.hours)
         globalState[4] = Int16(truncatingIfNeeded: clock.timeOfDay)
+        if architecture.isDirty {
+            // Architecture.Tick, then WallsChanged's RegeneratePortalInfo.
+            architecture.regenerateRooms()
+            updateRooms()
+        }
         scheduler.runTick(self)
     }
 
@@ -137,15 +160,21 @@ public final class VM {
         tileIndex[tileKey(position)]
     }
 
-    /// Moves an entity and keeps the tile index current, as 2017's position change does for
-    /// queries. Rooms, footprints, portals, lighting, and the placement entry point come with
-    /// the lot model.
+    /// Moves an entity, keeping the tile index and its room (object data 29) current, as 2017's
+    /// position change does. Footprints, portals, lighting, and the placement entry point come
+    /// with the rest of the lot model.
     public func move(_ entity: Entity, to position: LotPosition) {
         removeFromTileIndex(entity)
         entity.position = position
+        entity.setRoom(architecture.room(at: position))
         var list = tileIndex[tileKey(position)] ?? []
         if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
         tileIndex[tileKey(position)] = list
+    }
+
+    /// Puts every entity in the room at its position, in object ID order (`RegeneratePortalInfo`).
+    private func updateRooms() {
+        for entity in entities { entity.setRoom(architecture.room(at: entity.position)) }
     }
 
     private func removeFromTileIndex(_ entity: Entity) {

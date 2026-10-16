@@ -105,6 +105,10 @@ def expression_cases():
                 yield f"clock-{scope}-{data}-{clock['hours']}-{clock['minuteFractions']}", {
                     "operand": expression_operand(ASSIGN, TEMPS, 0, scope, data), "clock": clock}
 
+    for room in (-5, 0, 1, 3, 5, 6, 100):  # room data: temp 0 picks the room, clamped to the lot's rooms
+        for data in range(-1, 6):
+            yield f"room-{room}-{data}", {"operand": expression_operand(ASSIGN, TEMPS, 1, 23, data), "temps": [room]}
+
     for step in (0, 1, 2, 4):  # direction writes snap to the rotation step (object data 23)
         for value in (-9, -1, 0, 3, 7, 9, 13):
             yield f"direction-{step}-{value}", {

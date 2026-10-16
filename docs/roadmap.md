@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase A: positions and the tile index) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase B: architecture and rooms) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -35,7 +35,7 @@ is `partial, not blocking`.
 | Open every FAR1, FAR3, DBPF, and IFF file in a TSO install | yes | `tsofiles-check` on a real install: 94 containers, 82,131 entries, 0 failures (scorecard FID-1). The first run found `packingslips.dat` repeating file IDs across types; FAR3 now looks entries up by full asset ID (scorecard DIFF-5) | 0 |
 | Load one object with its behavior, strings, tuning, and sprites | partial, not blocking | `GameContent` loads every object on the beta with its patches, tuning, semi-global, and routines by name, matching 2017 on all 2,649 objects 2017 loads (scorecard FID-8). Sprite IFFs load but sprites don't decode yet | 25–40 (Hyde Park) |
 | Load one avatar: mesh, skeleton, animation, outfit, appearance | no | Not started | 50–75 (Nichol's Notch, Ocean's Edge in part) |
-| Run a lot headless for one in-game day without a SimAntics error | no | Objects initialize and run `main` tick by tick, and the 6 that need no unported primitive match 2017's digests over 30 ticks (scorecard FID-10). No lot model or loading, 48 of 49 primitives missing | 255–420 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
+| Run a lot headless for one in-game day without a SimAntics error | no | Objects initialize and run `main` tick by tick, and the 1,988 that need no unported primitive match 2017's digests over 30 ticks (scorecard FID-10). Rooms are ported; no multi-tile groups, placement, or lot loading yet, and 42 of 49 primitives missing | 255–420 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
 | Save and reload a lot (VMMarshal version 19) | no | Not started | 20–30 (Terra Tablante) |
 | Replay a recorded 2017 session to an identical state hash | no | No recording harness (decision 2) | 15–30 (West Darrington) plus everything above |
 
@@ -47,7 +47,7 @@ In order:
 
 1. **Queen Margaret's, third pass,** in phases, each checked against the oracle:
    - [x] A. Positions, facings, and the tile index.
-   - [ ] B. Architecture and rooms: walls, floors, room detection, room info; walls and floors read
+   - [x] B. Architecture and rooms: walls, floors, room detection, room info; walls and floors read
      from blueprint XML; a new oracle command to compare room maps.
    - [ ] C. Multi-tile groups and object creation as `CreateObjectInstance` does it (C1), placement in
      the world (C2), and slots and containment (C3).
@@ -77,7 +77,7 @@ criteria met, not lines written.
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: 2017 SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single 2017 primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
-| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 38% | 102–167 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index) is done. |
+| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 43% | 94–154 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index) and B (architecture and rooms) are done. |
 | Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 14% | 73–116 | Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, and Test Object Type done. `run-objects` ranks the rest by how many objects each blocks; the biggest blockers now come with the lot model. |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
 | Terra Tablante | Saves: marshals, version 19 read and write, hollow saves | 1,572 | 20–30 | 0% | 20–30 | Must read saves written by 2017 servers. |
@@ -152,6 +152,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Queen Margaret's third pass, phase B: walls and floors (`Architecture`), 2017's room flood fill, rooms by position, entities' rooms, room data (scope 23), and walls and floors from blueprint XML. `fso-oracle room-maps` dumps 2017's room maps; all 61 lots compared (FreeSO's empty lot and 60 synthetic ones with walls, fences, diagonals, pools, and upper floors) match. Expression matches on 3,785 cases, and objects running alone and matching 2017 went from 1,932 to 1,988. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase A: `LotPosition`, `Direction`, entity positions, and the tile index keyed as 2017 does. Set To Next's same-tile and adjacent searches and Expression's upstairs test now work, matching 2017 on all 212 and 3,734 cases; objects running alone and matching 2017 went from 1,914 to 1,932. `run-primitive` reports lot objects' positions, facings, and the lot size. |
 | 2026-10-16 | minor | Play Sound ported and matching 2017 on all 160 oracle cases (headless, it changes nothing); objects running alone and matching 2017 went from 1,886 to 1,914. The primitive-first part of Rancho Rizzo is done: the biggest blockers left (slots, rooms, multi-tile groups) come with the lot model, which is next. Refactored along the way: operand coding in its own file, operand flags as an option set, and one case generator for every primitive. |
 | 2026-10-16 | minor | Random Number ported and matching 2017 on all 71 oracle cases; objects running alone and matching 2017 went from 1,842 to 1,886. Under the revised goals, variables became a `Variable` value read and written through `StackFrame` (scopes kept in 16 bits, as some operands store them), and lead-tile attributes now work for lone objects, so Expression matches on 3,733 cases. |

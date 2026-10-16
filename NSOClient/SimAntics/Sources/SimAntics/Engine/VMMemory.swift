@@ -7,7 +7,7 @@ import TSOFiles
 /// does in 2017. Each scope either behaves as
 /// in 2017, fails as 2017 does (``SimAnticsError/simantics(_:)`` and the other
 /// 2017 failures), or throws ``SimAnticsError/unsupported(_:)`` because what it
-/// reads (Sims, slots, rooms, the clock, object definitions) isn't ported yet.
+/// reads (Sims, slots, object definitions) isn't ported yet.
 enum VMMemory {
     // MARK: 16-bit variables
 
@@ -57,10 +57,15 @@ enum VMMemory {
         case .myPersonDataByTemp:
             try simOnly(frame.caller) { () throws(SimAnticsError) in try element(thread.tempRegisters, data, "temp") }
         case .roomByTemp0:
+            // Temp 0 picks the room, clamped to the rooms there are.
+            let rooms = frame.vm.architecture.rooms
+            let room = rooms[max(0, min(rooms.count - 1, Int(thread.tempRegisters[0])))]
             switch data {
-            case 0: return 100 // ambient light
-            case 2: return 0   // level
-            case 1, 3, 4: throw .unsupported("room data \(data) needs rooms")
+            case 0: return 100 // ambient light; 2017 doesn't compute it
+            case 1: return room.isOutside ? 1 : 0
+            case 2: return 0   // level; 2017 doesn't fill it in
+            case 3: return Int16(truncatingIfNeeded: room.area)
+            case 4: return room.isPool ? 1 : 0
             default: throw .simantics("Invalid room data!")
             }
         case .dynamicSpriteFlagForTempOfStackObject:

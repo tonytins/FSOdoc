@@ -10,6 +10,8 @@
 #   objects.digests               fso-oracle run-objects: each object alone for 30 ticks (SimAntics tests)
 #   PRIMITIVE.requests.jsonl      generated cases for each ported primitive (see OracleCases/make_cases.py)
 #   PRIMITIVE.responses.jsonl     fso-oracle run-primitive answers (SimAntics tests)
+#   blueprints/                   synthetic lots (see OracleCases/make_blueprints.py)
+#   rooms.jsonl                   fso-oracle room-maps for them and FreeSO's empty lot (SimAntics tests)
 set -euo pipefail
 
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -40,5 +42,11 @@ for primitive in expression sleep test_object_type refresh set_to_next random_nu
     python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_cases.py" "$primitive" "$output/$primitive.requests.jsonl"
     oracle run-primitive <"$output/$primitive.requests.jsonl" >"$output/$primitive.responses.jsonl" 2>"$output/$primitive.log"
 done
+
+echo "Generating rooms..."
+python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_blueprints.py" "$output/blueprints"
+# FreeSO's empty_lot.xml has a DTD, which .NET refuses to read, so only empty_lot_fso.xml joins them.
+{ cat "$output/blueprints/blueprints.txt"; echo "$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"; } |
+    oracle room-maps >"$output/rooms.jsonl" 2>"$output/rooms.log"
 
 echo "Done. Run the tests with: TSO_ORACLE_DIR=$output"

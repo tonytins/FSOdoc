@@ -226,7 +226,7 @@ struct RealOperandEncodingTests {
 
     @Test func sharesKeysPastTheLotEdgeAs2017Does() throws {
         try withVM { vm, chair throws in
-            vm.lotSize = (10, 10)
+            vm.architecture = try Architecture(width: 10, height: 10)
             vm.move(chair, to: LotPosition.center(ofTileX: 10, y: 0, level: 1)) // one past the edge
             #expect(vm.objects(at: LotPosition.center(ofTileX: 0, y: 1, level: 1))?.first === chair)
         }

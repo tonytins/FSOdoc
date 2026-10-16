@@ -24,6 +24,7 @@ namespace FSO.Oracle
        fso-oracle run-primitive [options]
        fso-oracle list-objects [options]
        fso-oracle run-objects [options] [--ticks N] [--every N]
+       fso-oracle room-maps [options]
 
 run-lot loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot
 server does, ticks it, and prints a state digest.
@@ -35,6 +36,9 @@ response per line (see README.md).
 run-objects reads object GUIDs (hexadecimal) from standard input, one per line. For each,
 it loads an empty lot, creates the object out of the world, and prints a state digest
 after creation and as it ticks (see README.md).
+
+room-maps reads blueprint XML paths from standard input, one per line, loads each lot,
+and prints its room map and rooms as one JSON line (see README.md).
 
 list-objects loads every registered object through the 2017 content system and prints
 one tab-separated line per object (see README.md).
@@ -52,7 +56,7 @@ options:
 
         public static int Main(string[] args)
         {
-            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive" && args[0] != "list-objects" && args[0] != "run-objects"))
+            if (args.Length == 0 || !new[] { "run-lot", "run-primitive", "list-objects", "run-objects", "room-maps" }.Contains(args[0]))
             {
                 Console.Error.WriteLine(Usage);
                 return 2;
@@ -84,6 +88,11 @@ options:
             if (args[0] == "list-objects")
             {
                 ListObjects(results);
+                return 0;
+            }
+            if (args[0] == "room-maps")
+            {
+                RoomMaps(options, results);
                 return 0;
             }
             var blueprint = BlueprintForInstall(options.BlueprintPath);
@@ -181,6 +190,51 @@ options:
                 }
                 results.Flush();
             }
+        }
+
+        /// <summary>
+        /// For each blueprint path on standard input: the lot loaded as <see cref="LoadLot"/> loads
+        /// it, then one JSON line with its room map and rooms (see README.md), or
+        /// <c>{"file":…,"error":Type}</c> if loading throws.
+        /// </summary>
+        private static void RoomMaps(Options options, TextWriter results)
+        {
+            string line;
+            while ((line = Console.In.ReadLine()) != null)
+            {
+                line = line.Trim();
+                if (line.Length == 0) continue;
+                var output = new System.Text.Json.Nodes.JsonObject { ["file"] = Path.GetFileName(line) };
+                try
+                {
+                    var architecture = LoadLot(BlueprintForInstall(line), options.Seed).Context.Architecture;
+                    output["size"] = new System.Text.Json.Nodes.JsonArray(architecture.Width, architecture.Height);
+                    var maps = new System.Text.Json.Nodes.JsonArray();
+                    foreach (var level in architecture.Rooms)
+                        maps.Add(new System.Text.Json.Nodes.JsonArray(level.Map.Select(entry => (System.Text.Json.Nodes.JsonNode)entry).ToArray()));
+                    output["maps"] = maps;
+                    var rooms = new System.Text.Json.Nodes.JsonArray();
+                    foreach (var room in architecture.RoomData.Skip(1))
+                    {
+                        rooms.Add(new System.Text.Json.Nodes.JsonArray(
+                            room.RoomID, room.LightBaseRoom, room.Floor, room.IsOutside, room.Area, room.IsPool,
+                            Numbers(room.AdjRooms),
+                            new System.Text.Json.Nodes.JsonArray(room.Bounds.X, room.Bounds.Y, room.Bounds.Width, room.Bounds.Height),
+                            Numbers(room.SupportRooms)));
+                    }
+                    output["rooms"] = rooms;
+                }
+                catch (Exception error)
+                {
+                    output["error"] = error.GetType().Name;
+                    Console.Error.WriteLine($"fso-oracle: blueprint {line}: {error}");
+                }
+                results.WriteLine(output.ToJsonString());
+                results.Flush();
+            }
+
+            static System.Text.Json.Nodes.JsonArray Numbers(IEnumerable<ushort> values) =>
+                new System.Text.Json.Nodes.JsonArray(values.Select(value => (System.Text.Json.Nodes.JsonNode)value).ToArray());
         }
 
         private static void RunLot(VM vm, Options options, TextWriter results)

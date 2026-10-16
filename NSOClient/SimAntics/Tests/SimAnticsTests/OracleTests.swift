@@ -74,7 +74,11 @@ struct OracleCase {
         let callerID = Int16(request["caller"] as? Int ?? 1)
         let stackObjectID = Int16(request["stackObject"] as? Int ?? 0)
         // Rebuild every object on the oracle's lot: categories, positions, and facings.
-        if let size = response["lotSize"] as? [Int], size.count == 2 { vm.lotSize = (size[0], size[1]) }
+        // The oracle's lot: FreeSO's empty lot, whose rooms the room data scope reads.
+        vm.architecture = try emptyLotArchitecture()
+        if let size = response["lotSize"] as? [Int], size != [vm.lotSize.width, vm.lotSize.height] {
+            throw MissingFixtureValue(description: "the oracle's lot is \(size), not FreeSO's empty lot")
+        }
         for entry in response["lot"] as? [[Any]] ?? [] {
             let id = Int16(try required(entry[0] as? Int)), category = Int16(try required(entry[2] as? Int))
             let entity = try vm.addObject(guid: try required(UInt32(try required(entry[1] as? String), radix: 16)), id: id)
@@ -193,6 +197,20 @@ struct Snapshot {
     }
 }
 
+/// The walls and floors of FreeSO's empty lot, the oracle's default blueprint, read once.
+func emptyLotArchitecture() throws -> Architecture {
+    try emptyLot.get()
+}
+
+private let emptyLot = Result<Architecture, MissingFixtureValue> { () throws(MissingFixtureValue) in
+    do {
+        return try Blueprint(xml: try Data(contentsOf: freeSOContentDirectory.appendingPathComponent("Blueprints/empty_lot_fso.xml")))
+            .architecture()
+    } catch {
+        throw MissingFixtureValue(description: "FreeSO's empty lot doesn't load: \(error)")
+    }
+}
+
 func jsonLines(_ url: URL) throws -> [[String: Any]] {
     try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map {
         try required(try JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any])
@@ -293,6 +311,7 @@ struct OracleObjectRunTests {
             }
             do {
                 // As CreateObjectInstance does: initialize, then place out of the world facing north.
+                vm.architecture = try emptyLotArchitecture()
                 let entity = try vm.addObject(guid: guid, id: 1)
                 try entity.initialize()
                 vm.move(entity, to: .outOfWorld)
