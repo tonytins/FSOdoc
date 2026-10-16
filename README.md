@@ -1,6 +1,5 @@
 <p align="center">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-white.svg">
       <img alt="SimsCraft" src="docs/assets/logo.svg" width="200">
     </picture>
   </a>
