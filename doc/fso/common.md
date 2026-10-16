@@ -138,7 +138,7 @@ Replacements:
 - **Caching.** Replace the timed reference ring with
   `Microsoft.Extensions.Caching.Memory` using sizes and sliding
   expiration, owned by the content layer. That makes memory use bounded
-  and predictable. The FAQ notes memory use as a known problem.
+  and predictable. The project's former FAQ noted memory use as a known problem.
 - **Bindings.** The reflection-based dotted-path bindings break under
   trimming. Use source-generated property change notifications (for
   example CommunityToolkit.Mvvm) or explicit subscriptions.

@@ -23,14 +23,13 @@ The first two goals produce Markdown under [doc/fso/](./doc/fso/). The third
 produces Swift packages, planned in [doc/roadmap.md](./doc/roadmap.md) and
 tracked in [doc/scorecard.md](./doc/scorecard.md). This is solo work held to
 production standards. Read this file first, then
-[README.md](./README.md), [FAQ.md](./FAQ.md), and [doc/fso/README.md](./doc/fso/README.md).
+[README.md](./README.md) and [doc/fso/README.md](./doc/fso/README.md).
 
 ## 1. Workspace map
 
 ```text
 AGENTS.md                    this file
-README.md, FAQ.md            project purpose and long-term plans
-CONTRIBUTING.md              how to contribute AI-assisted source comments
+README.md                    project purpose
 doc/                         the Markdown documentation
   roadmap.md                 NSOClient milestones, alpha gate, estimates, owner decisions
   scorecard.md               NSOClient status per feature, with evidence (wins over the roadmap)
@@ -121,6 +120,25 @@ helps, but treat it as drafts rather than decisions, and don't depend on it
 from docs.
 
 ## 2. Golden rules
+
+### REA-assisted inspection
+
+For tasks that inspect a shipped application, executable, or other runtime
+artifact, check that the global REA CLI is available and working before
+starting manual reverse engineering:
+
+```sh
+command -v rea
+rea --help
+```
+
+If both checks succeed, use REA's relevant command to help inspect the target.
+For an application overview, start with `rea analyze <path>` and consult
+`rea analyze --help` for its options. Treat its output as inspection evidence
+to cross-check against the artifact and source, not as a replacement for
+verification. If `rea` is missing or cannot run, continue with the available
+local tools and state that REA was unavailable; do not install it as part of
+the inspection. Skip REA for ordinary source-repository architecture analysis.
 
 ### Never crash (outranks feature work)
 
@@ -359,7 +377,7 @@ git status --short -- TSOClient Charvatia FSOInstaller Other
 ### Always
 
 - Update this file if the workspace layout or these rules change.
-- Leave `README.md`, `FAQ.md`, and `CONTRIBUTING.md` alone unless asked.
+- Leave `README.md` alone unless asked.
 
 Describe only what works today. Sessions can end abruptly, so keep every
 package building and its tests green at every step; the roadmap's revision
