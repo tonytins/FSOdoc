@@ -39,6 +39,7 @@ doc/                         the Markdown documentation
     modernization.md         C# rewrite plan: layout, replacements, phases, decisions, risks
     common.md, files.md, content.md, simantics.md, rendering.md,
     audio.md, protocol.md, client.md, server.md, tools.md   one page per subsystem
+  simantics/                 SimAntics Wiki pages in Markdown, with notes against 2017 (CC BY-SA 3.0, see its README)
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions for the rewrite guidance
   swift-guidelines/          Swift conventions for the NSOClient packages

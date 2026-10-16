@@ -7,6 +7,9 @@ chunks in the IFF files). FreeSO supplies the interpreter, the primitives,
 the lot model, and a lockstep multiplayer layer. Both the client and the
 lot server run this same library.
 
+For what each primitive, scope, and data field means in the game, see the
+[SimAntics Wiki copy](../simantics/README.md).
+
 It depends on [FSO.Files](./files.md), [FSO.Content](./content.md),
 [FSO.LotView](./rendering.md) (the VM drives world rendering objects
 directly), FSO.Vitaboy, [FSO.HIT](./audio.md), and Mina.NET.
