@@ -21,58 +21,52 @@ extension Primitives {
             case greaterThanOrEqualTo, lessThanOrEqualTo, notEqualTo, decrementAndGreaterThan, push, pop
         }
 
+        /// The two sides and the operator. Expression stores each scope in one byte.
         public struct Operand: PrimitiveOperand, Equatable {
-            public var lhsData: Int16
-            public var rhsData: Int16
-            public var isSigned: UInt8
+            public var lhs: Variable
+            public var rhs: Variable
             /// The raw operator byte; one with no ``Operator`` fails when run.
             public var rawOperator: UInt8
-            public var lhsScope: UInt8
-            public var rhsScope: UInt8
+            /// Stored but ignored, as in 2017.
+            public var isSigned: UInt8
 
-            public init(lhsScope: UInt8, lhsData: Int16, rawOperator: UInt8, rhsScope: UInt8, rhsData: Int16,
-                        isSigned: UInt8 = 0) {
-                self.lhsData = lhsData
-                self.rhsData = rhsData
-                self.isSigned = isSigned
+            public init(_ lhs: Variable, _ rawOperator: UInt8, _ rhs: Variable, isSigned: UInt8 = 0) {
+                self.lhs = lhs
+                self.rhs = rhs
                 self.rawOperator = rawOperator
-                self.lhsScope = lhsScope
-                self.rhsScope = rhsScope
+                self.isSigned = isSigned
             }
 
-            public func encoded() -> [UInt8] {
-                OperandWriter.bytes { writer in
-                    writer.int16(lhsData)
-                    writer.int16(rhsData)
-                    writer.uint8(isSigned)
-                    writer.uint8(rawOperator)
-                    writer.uint8(lhsScope)
-                    writer.uint8(rhsScope)
-                }
+            public init(_ lhs: Variable, _ operator: Operator, _ rhs: Variable) {
+                self.init(lhs, `operator`.rawValue, rhs)
             }
 
             public init(bytes: [UInt8]) {
                 var reader = OperandReader(bytes)
-                lhsData = reader.int16()
-                rhsData = reader.int16()
+                let lhsData = reader.int16(), rhsData = reader.int16()
                 isSigned = reader.uint8()
                 rawOperator = reader.uint8()
-                lhsScope = reader.uint8()
-                rhsScope = reader.uint8()
+                lhs = Variable(rawScope: UInt16(reader.uint8()), data: lhsData)
+                rhs = Variable(rawScope: UInt16(reader.uint8()), data: rhsData)
+            }
+
+            public func encoded() -> [UInt8] {
+                OperandWriter.bytes { writer in
+                    writer.int16(lhs.data)
+                    writer.int16(rhs.data)
+                    writer.uint8(isSigned)
+                    writer.uint8(rawOperator)
+                    writer.uint8(UInt8(truncatingIfNeeded: lhs.rawScope))
+                    writer.uint8(UInt8(truncatingIfNeeded: rhs.rawScope))
+                }
             }
         }
 
         public static func execute(_ operand: Operand, in frame: StackFrame) throws(SimAnticsError) -> ExitCode {
-            func lhs() throws(SimAnticsError) -> Int32 {
-                try VMMemory.bigValue(scope: operand.lhsScope, data: operand.lhsData, in: frame)
-            }
-            func rhs() throws(SimAnticsError) -> Int32 {
-                try VMMemory.bigValue(scope: operand.rhsScope, data: operand.rhsData, in: frame)
-            }
+            func lhs() throws(SimAnticsError) -> Int32 { try frame.bigValue(of: operand.lhs) }
+            func rhs() throws(SimAnticsError) -> Int32 { try frame.bigValue(of: operand.rhs) }
             @discardableResult
-            func setLHS(_ value: Int32) throws(SimAnticsError) -> Bool {
-                try VMMemory.setBigValue(value, scope: operand.lhsScope, data: operand.lhsData, in: frame)
-            }
+            func setLHS(_ value: Int32) throws(SimAnticsError) -> Bool { try frame.setBigValue(value, of: operand.lhs) }
             func branch(_ condition: Bool) -> ExitCode { condition ? .gotoTrue : .gotoFalse }
 
             guard let `operator` = Operator(rawValue: operand.rawOperator) else {
@@ -108,8 +102,7 @@ extension Primitives {
                 return branch(try lhs() > (try rhs()))
             case .greaterThanOrEqualTo:
                 let left = try lhs(), right = try rhs()
-                if right == 1024, operand.lhsData == ObjectVariable.room.rawValue,
-                   operand.lhsScope == VariableScope.myObject.rawValue {
+                if right == 1024, operand.lhs == Variable(.myObject, ObjectVariable.room.rawValue) {
                     throw .unsupported("the upstairs room test needs positions")
                 }
                 return branch(left >= right)
@@ -121,9 +114,9 @@ extension Primitives {
                 let value = try lhs()
                 return branch(value & bit(try rhs()) > 0)
             case .push:
-                let owner = try VMMemory.listOwner(scope: operand.lhsScope, in: frame)
+                let owner = try VMMemory.listOwner(of: operand.lhs, in: frame)
                 let value = Int16(truncatingIfNeeded: try rhs())
-                switch operand.lhsData {
+                switch operand.lhs.data {
                 case 0: owner.list.insert(value, at: 0)
                 case 1: owner.list.append(value)
                 case 2: throw .simantics("Unknown list push destination: 2")
@@ -131,13 +124,13 @@ extension Primitives {
                 }
                 return .gotoTrue
             case .pop:
-                let owner = try VMMemory.listOwner(scope: operand.rhsScope, in: frame)
+                let owner = try VMMemory.listOwner(of: operand.rhs, in: frame)
                 guard !owner.list.isEmpty else { return .gotoFalse }
                 var value: Int32 = 0
-                switch operand.rhsData {
+                switch operand.rhs.data {
                 case 0: value = Int32(owner.list.removeFirst())
                 case 1: value = Int32(owner.list.removeLast())
-                case 2: throw .simantics("Unknown list pop source: \(operand.lhsData)")
+                case 2: throw .simantics("Unknown list pop source: \(operand.lhs.data)")
                 default: break
                 }
                 try setLHS(value)

@@ -10,35 +10,32 @@ extension Primitives {
 
         public struct Operand: PrimitiveOperand, Equatable {
             public var guid: UInt32
-            /// The variable holding the object ID.
-            public var idData: Int16
-            public var idScope: UInt8
+            /// The variable holding the object ID; its scope is stored in one byte.
+            public var objectID: Variable
 
-            public init(guid: UInt32, idScope: UInt8, idData: Int16) {
+            public init(guid: UInt32, objectID: Variable) {
                 self.guid = guid
-                self.idScope = idScope
-                self.idData = idData
+                self.objectID = objectID
             }
 
             public init(bytes: [UInt8]) {
                 var reader = OperandReader(bytes)
                 guid = reader.uint32()
-                idData = reader.int16()
-                idScope = reader.uint8()
+                let data = reader.int16()
+                objectID = Variable(rawScope: UInt16(reader.uint8()), data: data)
             }
 
             public func encoded() -> [UInt8] {
                 OperandWriter.bytes { writer in
                     writer.uint32(guid)
-                    writer.int16(idData)
-                    writer.uint8(idScope)
+                    writer.int16(objectID.data)
+                    writer.uint8(UInt8(truncatingIfNeeded: objectID.rawScope))
                 }
             }
         }
 
         public static func execute(_ operand: Operand, in frame: StackFrame) throws(SimAnticsError) -> ExitCode {
-            let objectID = try VMMemory.value(scope: operand.idScope, data: operand.idData, in: frame)
-            guard let entity = frame.vm.entity(id: objectID) else { return .error }
+            guard let entity = frame.vm.entity(id: try frame.value(of: operand.objectID)) else { return .error }
             if entity.object.guid == operand.guid || entity.masterDefinition?.guid == operand.guid {
                 return .gotoTrue
             }

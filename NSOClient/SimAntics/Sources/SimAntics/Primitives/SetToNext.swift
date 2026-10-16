@@ -63,18 +63,15 @@ extension Primitives {
             }
 
             public var rawSearch: UInt8 { flags & 0x7F }
-            /// Without the top flag bit, the target is the stack object ID.
-            public var targetScope: UInt8 { flags & 0x80 == 0 ? VariableScope.stackObjectID.rawValue : storedTargetScope }
-            public var targetData: Int16 { flags & 0x80 == 0 ? 0 : Int16(storedTargetData) }
+            /// The variable searched from and written; without the top flag bit, the stack object ID.
+            public var target: Variable {
+                flags & 0x80 == 0 ? Variable(.stackObjectID, 0) : Variable(rawScope: UInt16(storedTargetScope), data: Int16(storedTargetData))
+            }
         }
 
         public static func execute(_ operand: Operand, in frame: StackFrame) throws(SimAnticsError) -> ExitCode {
             let vm = frame.vm
-            let target = try VMMemory.value(scope: operand.targetScope, data: operand.targetData, in: frame)
-            func found(_ id: Int16) throws(SimAnticsError) -> ExitCode {
-                try VMMemory.setValue(id, scope: operand.targetScope, data: operand.targetData, in: frame)
-                return .gotoTrue
-            }
+            let target = try frame.value(of: operand.target)
 
             let candidates: [Entity]?
             switch Search(rawValue: operand.rawSearch) {
@@ -105,7 +102,8 @@ extension Primitives {
             }
             guard let candidates else { return .gotoFalse }
             guard let next = candidates.first(where: { $0.objectID > target }) else { return .gotoFalse }
-            return try found(next.objectID)
+            try frame.setValue(next.objectID, of: operand.target)
+            return .gotoTrue
         }
     }
 }

@@ -180,7 +180,7 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
     func test(guid: UInt32, id: Int16) throws -> ExitCode {
         var exit = ExitCode.error
         try withVM { vm, chair throws in
-            let operand = Primitives.TestObjectType.Operand(guid: guid, idScope: VariableScope.literal.rawValue, idData: id)
+            let operand = Primitives.TestObjectType.Operand(guid: guid, objectID: .literal(id))
             exit = try vm.runPrimitive(opcode: 32, operand: operand.encoded(), caller: chair).0
         }
         return exit
@@ -193,7 +193,7 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
     }
 
     @Test func encodesItsOperand() {
-        let operand = Primitives.TestObjectType.Operand(guid: 0x6271_EFF3, idScope: 8, idData: 3)
+        let operand = Primitives.TestObjectType.Operand(guid: 0x6271_EFF3, objectID: Variable(.temps, 3))
         #expect(operand.encoded() == [0xF3, 0xEF, 0x71, 0x62, 3, 0, 8, 0])
         #expect(Primitives.TestObjectType.Operand(bytes: operand.encoded()) == operand)
     }
@@ -252,7 +252,28 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         var bytes = Primitives.SetToNext.Operand(search: 0, targetScope: 8, targetData: 3).encoded()
         bytes[4] = 0 // clear the flag bit
         let operand = Primitives.SetToNext.Operand(bytes: bytes)
-        #expect(operand.targetScope == VariableScope.stackObjectID.rawValue && operand.targetData == 0)
+        #expect(operand.target == Variable(.stackObjectID, 0))
         #expect(operand.encoded() == bytes) // the stored bytes are kept
+    }
+}
+
+@Suite struct RandomNumberTests {
+    @Test func drawsBelowTheRangeReadAsUnsigned() throws {
+        try withVM(seed: 0x0F50_D0C5_EED0_0001) { vm, chair throws in
+            let operand = Primitives.RandomNumber.Operand(destination: Variable(.temps, 0), range: .literal(100))
+            #expect(try vm.runPrimitive(opcode: 8, operand: operand.encoded(), caller: chair).0 == .gotoTrue)
+            #expect(chair.thread.tempRegisters[0] == 97) // as 2017 draws from this seed
+            var expected = vm.random
+            let wide = Primitives.RandomNumber.Operand(destination: Variable(.temps, 1), range: .literal(-1))
+            _ = try vm.runPrimitive(opcode: 8, operand: wide.encoded(), caller: chair)
+            #expect(chair.thread.tempRegisters[1] == Int16(truncatingIfNeeded: expected.next(below: 65_535)))
+        }
+    }
+
+    @Test func keepsSixteenBitScopes() {
+        let operand = Primitives.RandomNumber.Operand(destination: Variable(rawScope: 0x0108, data: 2), range: .literal(5))
+        #expect(operand.encoded() == [2, 0, 8, 1, 5, 0, 7, 0])
+        #expect(Primitives.RandomNumber.Operand(bytes: operand.encoded()) == operand)
+        #expect(operand.destination.scope == nil) // no such scope: it fails when used
     }
 }

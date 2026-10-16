@@ -115,14 +115,6 @@ extension Entity.EntryPointIndex {
     }()
 }
 
-/// A variable's place: a SimAntics scope and index.
-private struct Operand: Equatable {
-    var scope: VariableScope
-    var data: Int16
-
-    static func literal(_ value: Int16) -> Operand { Operand(scope: .literal, data: value) }
-}
-
 /// A branch of an emitted instruction: its index, and whether it's the true branch.
 private struct Edge {
     var instruction: Int
@@ -212,9 +204,8 @@ private struct RoutineGenerator {
         fallThrough = [onTrue, onFalse]
     }
 
-    private mutating func expression(_ target: Operand, _ operatorValue: UInt8, _ source: Operand) -> [UInt8] {
-        Primitives.Expression.Operand(lhsScope: target.scope.rawValue, lhsData: target.data, rawOperator: operatorValue,
-                                      rhsScope: source.scope.rawValue, rhsData: source.data).encoded()
+    private mutating func expression(_ target: Variable, _ operatorValue: UInt8, _ source: Variable) -> [UInt8] {
+        Primitives.Expression.Operand(target, operatorValue, source).encoded()
     }
 
     /// Points branches at an instruction index or a return (254, 255). Routines over 253
@@ -273,7 +264,7 @@ private struct RoutineGenerator {
         defer { hiddenInUse = 0 }
         switch statement {
         case .declaration(let name, let value, _):
-            if let value { try assign(Operand(scope: .local, data: locals[name] ?? 0), value) }
+            if let value { try assign(Variable(.local, locals[name] ?? 0), value) }
         case .assignment(let name, let operatorText, let value, let position):
             let target = try variable(name, position)
             if operatorText == "=" {
@@ -319,15 +310,15 @@ private struct RoutineGenerator {
 
     // MARK: Values
 
-    private func variable(_ name: String, _ position: SourcePosition) throws(ScriptError) -> Operand {
-        if let index = locals[name] { return Operand(scope: .local, data: index) }
-        if let index = function.parameters.firstIndex(of: name) { return Operand(scope: .parameters, data: Int16(index)) }
-        if let index = attributes[name] { return Operand(scope: .myObjectAttributes, data: index) }
+    private func variable(_ name: String, _ position: SourcePosition) throws(ScriptError) -> Variable {
+        if let index = locals[name] { return Variable(.local, index) }
+        if let index = function.parameters.firstIndex(of: name) { return Variable(.parameters, Int16(index)) }
+        if let index = attributes[name] { return Variable(.myObjectAttributes, index) }
         throw ScriptCompiler.error("\(name) isn't declared", position)
     }
 
     /// A plain number or variable, if the expression is one.
-    private func leaf(_ value: ScriptExpression) throws(ScriptError) -> Operand? {
+    private func leaf(_ value: ScriptExpression) throws(ScriptError) -> Variable? {
         switch value {
         case .integer(let number, let position):
             guard number <= 32_767 else { throw ScriptCompiler.error("\(number) is out of range", position) }
@@ -341,22 +332,22 @@ private struct RoutineGenerator {
         }
     }
 
-    private mutating func hidden() -> Operand {
-        let operand = Operand(scope: .local, data: hiddenBase + hiddenInUse)
+    private mutating func hidden() -> Variable {
+        let operand = Variable(.local, hiddenBase + hiddenInUse)
         hiddenInUse += 1
         hiddenMaximum = max(hiddenMaximum, hiddenInUse)
         return operand
     }
 
     /// The expression's value as an operand, computed into an extra local if needed.
-    private mutating func operand(_ value: ScriptExpression) throws(ScriptError) -> Operand {
+    private mutating func operand(_ value: ScriptExpression) throws(ScriptError) -> Variable {
         if let leaf = try leaf(value) { return leaf }
         let place = hidden()
         try assign(place, value)
         return place
     }
 
-    private mutating func assign(_ target: Operand, _ value: ScriptExpression) throws(ScriptError) {
+    private mutating func assign(_ target: Variable, _ value: ScriptExpression) throws(ScriptError) {
         if let leaf = try leaf(value) {
             emitStep(2, expression(target, 5, leaf))
             return
@@ -387,7 +378,7 @@ private struct RoutineGenerator {
         }
     }
 
-    private func references(_ value: ScriptExpression, _ target: Operand) -> Bool {
+    private func references(_ value: ScriptExpression, _ target: Variable) -> Bool {
         switch value {
         case .variable(let name, let position): (try? variable(name, position)) == target
         case .unary(_, let inner, _): references(inner, target)
@@ -456,7 +447,7 @@ private struct RoutineGenerator {
         }
         let values = try arguments.map { (argument) throws(ScriptError) in try operand(argument) }
         for (index, value) in values.enumerated() {
-            emitStep(2, expression(Operand(scope: .temps, data: Int16(index)), 5, value))
+            emitStep(2, expression(Variable(.temps, Int16(index)), 5, value))
         }
         return emit(UInt16(routine.id), SubroutineOperand(arguments: [-1, -1, -1, -1]).encoded())
     }

@@ -127,14 +127,7 @@ func otf(_ tables: [(id: Int, keys: [(id: Int, value: Int)])]) -> Data {
 /// An Expression operand.
 func expression(_ operator: Primitives.Expression.Operator, _ lhs: VariableScope, _ lhsData: Int16,
                 _ rhs: VariableScope, _ rhsData: Int16) -> [UInt8] {
-    var writer = ByteWriter()
-    writer.int16(lhsData)
-    writer.int16(rhsData)
-    writer.uint8(0)
-    writer.uint8(`operator`.rawValue)
-    writer.uint8(lhs.rawValue)
-    writer.uint8(rhs.rawValue)
-    return [UInt8](writer.bytes)
+    Primitives.Expression.Operand(Variable(lhs, lhsData), `operator`, Variable(rhs, rhsData)).encoded()
 }
 
 /// A subroutine call operand.

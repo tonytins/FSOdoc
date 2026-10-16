@@ -41,8 +41,7 @@ public enum Assembly {
             let operand = Primitives.Expression.Operand(bytes: bytes)
             // Only a form that encodes back to the same bytes may be written as an expression.
             if operand.encoded() == bytes {
-                var text = "expression \(scopeName(operand.lhsScope)) \(operand.lhsData) \(operatorName(operand.rawOperator)) "
-                    + "\(scopeName(operand.rhsScope)) \(operand.rhsData)"
+                var text = "expression \(operand.lhs) \(operatorName(operand.rawOperator)) \(operand.rhs)"
                 if operand.isSigned != 0 { text += " signed \(operand.isSigned)" }
                 return text
             }
@@ -102,8 +101,8 @@ public enum Assembly {
                 isSigned = try line.integer(UInt8.self)
             }
             opcode = UInt16(Primitives.Expression.opcode)
-            operand = Primitives.Expression.Operand(lhsScope: lhsScope, lhsData: lhsData, rawOperator: rawOperator,
-                                                    rhsScope: rhsScope, rhsData: rhsData, isSigned: isSigned).encoded()
+            operand = Primitives.Expression.Operand(Variable(rawScope: UInt16(lhsScope), data: lhsData), rawOperator,
+                                                    Variable(rawScope: UInt16(rhsScope), data: rhsData), isSigned: isSigned).encoded()
         case "call":
             opcode = try line.integer(UInt16.self)
             guard opcode >= 256 else { throw line.error("a call's opcode is 256 or more") }
@@ -135,10 +134,6 @@ public enum Assembly {
     ]
 
     static func operatorName(_ raw: UInt8) -> String { operatorNames[raw] ?? "op\(raw)" }
-
-    static func scopeName(_ raw: UInt8) -> String {
-        VariableScope(rawValue: raw).map { "\($0)" } ?? "scope\(raw)"
-    }
 
     private static func operatorValue(_ token: String, _ line: LineReader) throws(ScriptError) -> UInt8 {
         if let match = operatorNames.first(where: { $0.value == token }) { return match.key }

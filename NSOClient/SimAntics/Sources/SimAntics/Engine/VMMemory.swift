@@ -1,19 +1,20 @@
 import TSOContent
 import TSOFiles
 
-/// Reads and writes SimAntics variables by scope and index.
+/// Reads and writes SimAntics variables; ``StackFrame/value(of:)`` and its siblings call it.
 ///
-/// Ports FreeSO's `VMMemory`. Scopes take a raw byte, as operands store them; a byte
-/// with no ``VariableScope`` fails as it does in 2017. Each scope either behaves as
+/// Corresponds to FreeSO's `VMMemory`. A raw scope with no ``VariableScope`` fails as it
+/// does in 2017. Each scope either behaves as
 /// in 2017, fails as 2017 does (``SimAnticsError/simantics(_:)`` and the other
 /// 2017 failures), or throws ``SimAnticsError/unsupported(_:)`` because what it
 /// reads (Sims, slots, rooms, the clock, object definitions) isn't ported yet.
-public enum VMMemory {
+enum VMMemory {
     // MARK: 16-bit variables
 
     /// A variable's value, as `VMMemory.GetVariable` reads it.
-    public static func value(scope rawScope: UInt8, data: Int16, in frame: StackFrame) throws(SimAnticsError) -> Int16 {
-        guard let scope = VariableScope(rawValue: rawScope) else { throw .simantics("Unknown get variable") }
+    static func value(of variable: Variable, in frame: StackFrame) throws(SimAnticsError) -> Int16 {
+        guard let scope = variable.scope else { throw .simantics("Unknown get variable") }
+        let data = variable.data
         let thread = frame.thread
         switch scope {
         case .myObjectAttributes:
@@ -85,9 +86,13 @@ public enum VMMemory {
             guard let entryPoints = try stackObject(of: frame).entryPoints else { throw .nullReference("no entry point table") }
             guard data >= 0, Int(data) < entryPoints.count else { throw .indexOutOfRange("entry point \(data)") }
             return Int16(bitPattern: entryPoints[Int(data)].actionFunction)
-        case .stackObjectSlot, .stackObjectLeadTileAttribute:
+        case .myLeadTileAttribute:
+            return try caller(of: frame).leadObject.attribute(at: UInt16(bitPattern: data))
+        case .stackObjectLeadTileAttribute:
+            return try stackObject(of: frame).leadObject.attribute(at: UInt16(bitPattern: data))
+        case .stackObjectSlot:
             _ = try stackObject(of: frame)
-            throw .unsupported("reading scope \(scope) needs slots or multi-tile groups")
+            throw .unsupported("reading scope \(scope) needs slots")
         case .stackObjectAttributeByParameter:
             let index = try element(frame.arguments, data, "parameter")
             return try stackObject(of: frame).attribute(at: UInt16(bitPattern: index))
@@ -114,9 +119,9 @@ public enum VMMemory {
 
     /// Sets a variable, as `VMMemory.SetVariable` does. Returns `false` for scopes that can't be set.
     @discardableResult
-    public static func setValue(_ value: Int16, scope rawScope: UInt8, data: Int16,
-                                in frame: StackFrame) throws(SimAnticsError) -> Bool {
-        guard let scope = VariableScope(rawValue: rawScope) else { throw .simantics("Unknown scope for set variable!") }
+    static func setValue(_ value: Int16, of variable: Variable, in frame: StackFrame) throws(SimAnticsError) -> Bool {
+        guard let scope = variable.scope else { throw .simantics("Unknown scope for set variable!") }
+        let data = variable.data
         let thread = frame.thread
         switch scope {
         case .myObjectAttributes:
@@ -168,9 +173,12 @@ public enum VMMemory {
             guard let target else { throw .nullReference("no stack object") }
             target.setDynamicSpriteFlag(UInt16(bitPattern: index), to: value > 0)
             return true
+        case .myLeadTileAttribute:
+            try caller(of: frame).leadObject.setAttribute(value, at: UInt16(bitPattern: data))
+            return true
         case .stackObjectLeadTileAttribute:
-            _ = try stackObject(of: frame)
-            throw .unsupported("writing scope \(scope) needs multi-tile groups")
+            try stackObject(of: frame).leadObject.setAttribute(value, at: UInt16(bitPattern: data))
+            return true
         case .stackObjectAttributeByParameter:
             let attribute = try element(frame.arguments, data, "parameter")
             try stackObject(of: frame).setAttribute(value, at: UInt16(bitPattern: attribute))
@@ -188,43 +196,40 @@ public enum VMMemory {
             let attribute = try element(thread.tempRegisters, data, "temp")
             try stackObject(of: frame).setAttribute(value, at: UInt16(bitPattern: attribute))
             return true
-        default:
-            throw .unsupported("writing scope \(scope)")
         }
     }
 
     // MARK: 32-bit variables
 
     /// A variable as a 32-bit value; only `TempXL` holds more than 16 bits (`GetBigVariable`).
-    public static func bigValue(scope rawScope: UInt8, data: Int16, in frame: StackFrame) throws(SimAnticsError) -> Int32 {
-        if rawScope == VariableScope.tempXL.rawValue {
-            return try element(frame.thread.tempXL, data, "TempXL")
+    static func bigValue(of variable: Variable, in frame: StackFrame) throws(SimAnticsError) -> Int32 {
+        if variable.scope == .tempXL {
+            return try element(frame.thread.tempXL, variable.data, "TempXL")
         }
-        return Int32(try value(scope: rawScope, data: data, in: frame))
+        return Int32(try value(of: variable, in: frame))
     }
 
     /// Sets a variable from a 32-bit value, truncating it for 16-bit scopes (`SetBigVariable`).
     @discardableResult
-    public static func setBigValue(_ value: Int32, scope rawScope: UInt8, data: Int16,
-                                   in frame: StackFrame) throws(SimAnticsError) -> Bool {
-        switch VariableScope(rawValue: rawScope) {
+    static func setBigValue(_ value: Int32, of variable: Variable, in frame: StackFrame) throws(SimAnticsError) -> Bool {
+        switch variable.scope {
         case .tempXL:
-            frame.thread.tempXL[try index(data, in: frame.thread.tempXL, "TempXL")] = value
+            frame.thread.tempXL[try index(variable.data, in: frame.thread.tempXL, "TempXL")] = value
             return true
         case .moneyOverHead32Bit:
             // 2017 casts the caller to a Sim to show the headline; no Sims are ported yet.
             _ = try caller(of: frame)
             throw .invalidCast("the caller isn't a Sim")
         default:
-            return try setValue(Int16(truncatingIfNeeded: value), scope: rawScope, data: data, in: frame)
+            return try setValue(Int16(truncatingIfNeeded: value), of: variable, in: frame)
         }
     }
 
     // MARK: Lists
 
     /// The entity whose list a scope names (`GetList`).
-    public static func listOwner(scope rawScope: UInt8, in frame: StackFrame) throws(SimAnticsError) -> Entity {
-        switch VariableScope(rawValue: rawScope) {
+    static func listOwner(of variable: Variable, in frame: StackFrame) throws(SimAnticsError) -> Entity {
+        switch variable.scope {
         case .myList: return try caller(of: frame)
         case .stackObjectList: return try stackObject(of: frame)
         default: throw .simantics("Cannot get specified variable scope as a list.")
@@ -254,7 +259,7 @@ public enum VMMemory {
     /// (ID + 4096), 64 to 127 its semi-global's (ID + 8192, looked up in the owner's file
     /// first), and 128 to 191 the global's (ID + 256); 192 and up are read like the
     /// owner's, unchanged. Each looks for a BCON, then an OTF table. Nothing found is 0.
-    public static func tuningValue(_ data: UInt16, in frame: StackFrame) throws(SimAnticsError) -> Int16 {
+    static func tuningValue(_ data: UInt16, in frame: StackFrame) throws(SimAnticsError) -> Int16 {
         var tableID = data >> 7
         let keyID = data & 0x7F
         let owner = frame.codeOwner.resource

@@ -23,6 +23,11 @@ public final class Entity {
     /// The facing, as an index into the eight compass directions from north, clockwise.
     public var directionNotch: Int16 = 0
 
+    /// The lead object of the entity's multi-tile group (`MultitileGroup.BaseObject`). Groups
+    /// aren't ported yet, so every entity is a group of one and leads itself, as a lone object
+    /// does in 2017.
+    public var leadObject: Entity { self }
+
     /// For a part of a multi-tile object, the lead object's definition. Multi-tile
     /// groups aren't ported yet, so this is always `nil`.
     public internal(set) var masterDefinition: OBJD?
