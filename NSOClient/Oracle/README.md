@@ -151,7 +151,7 @@ The TSOContent real-install tests compare each line with the Swift content syste
 `NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every 2017 answer the
 Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
 `objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, and for each ported
-primitive its cases from `NSOClient/SimAntics/OracleCases/make_PRIMITIVE_cases.py` with their
+primitive its cases from `NSOClient/SimAntics/OracleCases/make_cases.py` with their
 `run-primitive` answers. Point the tests at it:
 
 ```sh

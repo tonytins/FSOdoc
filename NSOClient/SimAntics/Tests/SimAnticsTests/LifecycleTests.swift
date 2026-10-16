@@ -277,3 +277,22 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         #expect(operand.destination.scope == nil) // no such scope: it fails when used
     }
 }
+
+@Suite struct PlaySoundTests {
+    @Test func readsItsOptionsAndKeepsEveryByte() {
+        let bytes: [UInt8] = [0x2C, 0x01, 0xAB, 0xCD, 0b1011, 50, 0, 0]
+        let operand = Primitives.PlaySound.Operand(bytes: bytes)
+        #expect(operand.event == 300 && operand.volume == 50 && operand.padding == 0xCDAB)
+        #expect(operand.options == [.loops, .fromStackObject, .ignoresPan])
+        #expect(operand.encoded() == bytes)
+    }
+
+    @Test func leavesTheSimulationAlone() throws {
+        try withVM { vm, chair throws in
+            let seed = vm.random.seed
+            let operand = Primitives.PlaySound.Operand(event: 300, options: [.loops, .fromStackObject])
+            #expect(try vm.runPrimitive(opcode: 23, operand: operand.encoded(), caller: chair).0 == .gotoTrue)
+            #expect(vm.random.seed == seed && !chair.runsEveryTick)
+        }
+    }
+}
