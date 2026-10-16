@@ -348,6 +348,7 @@ grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sou
 swift run --package-path NSOClient/TSOFiles -c release tsofiles-check  # if you touched a reader; needs TSO_GAME_DIR
 dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
 python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
+TSO_ORACLE_OBJECTS=/tmp/objects.tsv swift test --package-path NSOClient/TSOContent  # if you touched content; generate the file with fso-oracle list-objects
 git status --short -- TSOClient                                        # must print nothing
 ```
 

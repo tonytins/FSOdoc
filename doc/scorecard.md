@@ -6,7 +6,8 @@ page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets 
 `done` row names the code or test that proves it.
 
 **As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
-`TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 1 passed, SimAntics 1 passed. The
+`TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of
+those also `TSO_ORACLE_OBJECTS`), SimAntics 1 passed. The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
 expected and handled for backwards compatibility.
 
@@ -18,14 +19,14 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
 | [Formats](#formats) | 13 | 0 | 8 | 128 test cases; real install (2002 beta): 94 containers, 82,131 entries, 51,620 typed chunks, tuning, data definition, and OTFs, 0 failures |
-| [Content](#content) | 0 | 0 | 9 | |
+| [Content](#content) | 3 | 2 | 4 | real install: 2,694 objects registered, 2,693 load (the beta lacks one IFF), 19 semi-globals; matches 2017 on all 2,649 objects 2017 loads, and loads 44 more it can't |
 | [SimAntics](#simantics) | 1 | 0 | 14 | 0 of about 70 primitives |
-| [Fidelity](#fidelity) | 3 | 2 | 2 | install scan and real-data invariants clean; the 2017 VM runs headless as an oracle, for whole lots and single primitives; no Swift comparison yet |
+| [Fidelity](#fidelity) | 4 | 2 | 2 | install scan and real-data invariants clean; the 2017 VM runs headless as an oracle, for whole lots and single primitives; content matches 2017 object for object |
 | [Determinism](#determinism) | 0 | 0 | 5 | |
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
 | [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
 | [Platforms](#platforms) | 3 | 0 | 1 | |
-| [Known differences from 2017](#known-differences-from-2017) | | | | 11 deliberate |
+| [Known differences from 2017](#known-differences-from-2017) | | | | 16 deliberate |
 | [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
 
 ## Formats
@@ -64,14 +65,14 @@ Package: [TSOContent](../NSOClient/TSOContent/). Ports `TSOClient/tso.content` (
 
 | Id | Target | Status | Note |
 |---|---|---|---|
-| CNT-1 | Game locator: configured path, `TSO_GAME_DIR`, per-OS defaults | missing | Ocean's Edge |
-| CNT-2 | Case-insensitive file index over the install | missing | Ocean's Edge; fixes the 2017 Linux path failures |
+| CNT-1 | Game locator: configured path, `TSO_GAME_DIR`, per-OS defaults | done | `GameLocator`: configured folder, then `TSO_GAME_DIR` (either one an error if not an install), then OS defaults (Linux: `$XDG_DATA_HOME` or `~/.local/share`, then 2017's `game/TSOClient`). No Windows registry lookup (DIFF-16) |
+| CNT-2 | Case-insensitive file index over the install | done | `GameFileIndex`: every lookup in any letter case and with either separator; case collisions reported (none in the beta). Indexes the 1,743-file beta in about 0.03 s |
 | CNT-3 | FAR3 providers keyed by `AssetID`, with a bounded cache | missing | Ocean's Edge |
-| CNT-4 | Object provider: `objecttable.xml`, `objiff.far`, sprites, tuning, standalone objects | missing | Ocean's Edge |
-| CNT-5 | Semi-global and global IFFs | missing | Ocean's Edge |
+| CNT-4 | Object provider: `objecttable.xml`, `objiff.far`, sprites, tuning, standalone objects | partial | `ObjectProvider`: object table, `objiff.far`, `objotf*.far` and OTF patches, sprite IFFs from `objspf*.far` on request, standalone IFFs, PIFF patches with objects registered again from patched files, routines by name. Missing: sprite decoding (Hyde Park) and the buy and build catalog |
+| CNT-5 | Semi-global and global IFFs | done | `GlobalProvider`: `objectdata/globals/<name>.iff` by lower-case name, patched, with tuning from patches or beside the IFF; named by an object's first `GLOB` |
 | CNT-6 | Avatar providers: meshes, skeletons, animations, outfits, appearances, bindings, hand groups, thumbnails | missing | Ocean's Edge |
 | CNT-7 | Walls, floors, roofs, city maps, UI graphics, audio resource groups | missing | Ocean's Edge |
-| CNT-8 | Async initialization with progress, no singleton | missing | Ocean's Edge |
+| CNT-8 | Async initialization with progress, no singleton | partial | No singleton: `GameContent` is an ordinary value made per install. Initialization is synchronous (about 0.2 s on the beta; objects load on first use) with no progress reporting |
 | CNT-9 | TS1 hybrid providers | missing | Ocean's Edge, after TSO mode works |
 
 ## SimAntics
@@ -110,6 +111,7 @@ How we know the Swift code behaves like the 2017 code.
 | FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | partial | `NSOClient/Oracle/` (`fso-oracle run-lot`) compiles the 2017 SimAntics, Files, Content, LotView, HIT, and Vitaboy sources unchanged on .NET 10, loads a lot headless against the install, and prints a version 0 state digest; three runs of 1,800 ticks give identical digests. Older installs go through a temporary overlay with reported placeholders. Missing: lot recordings and replays (West Darrington phase 3, after Terra Tablante) |
 | FID-5 | Swift VM matches recorded state hashes for a basic lot over an in-game day | missing | Queen Margaret's to Shannopolis |
 | FID-7 | Single 2017 primitives can be run on request with given state, for differential tests | done | `fso-oracle run-primitive` (protocol version 1, see `NSOClient/Oracle/README.md`): one JSON request per line, each on a fresh lot; reports the exit code, registers, changed globals and object values, created and removed objects, exceptions, and request errors. `check_protocol.py` checks 14 example requests. Avatars not covered yet |
+| FID-8 | Content loads every object the way 2017 does on a real install | done | `RealInstallTests.matchesThe2017ContentSystem` against `fso-oracle list-objects` (2026-10-16, 2002 beta with FreeSO's shipped patches and objects): all 2,649 objects 2017 loads have the same label, resource, semi-global, routine names, BHAV count, and tuning table count. 2017 fails on 45 more: 44 because production patches don't fit the beta (loaded here with those patches skipped, DIFF-11) and 1 whose IFF is missing (DIFF-14) |
 
 ## Determinism
 
@@ -134,18 +136,18 @@ or a lint when it does.
 | REL-4 | Swift 6 language mode (strict concurrency) in every package | done | `swiftLanguageModes: [.v6]` in all three manifests |
 | REL-5 | Size limits on allocations driven by file data | partial | Reads are bounded by the data length; RefPack output growth and declared decompressed sizes have no cap yet |
 | REL-6 | Fuzzing of every reader with malformed input | missing | |
-| REL-7 | Bounded caches for decoded content | missing | Ocean's Edge |
+| REL-7 | Bounded caches for decoded content | missing | Object and global resources are kept for the life of `GameContent` (2017 used weak-reference caches); fine for objects, needed before FAR3 assets (CNT-3) |
 
 ## Tests and tooling
 
 | Id | Target | Status | Note |
 |---|---|---|---|
 | TST-1 | Swift Testing in every package | done | `import Testing` in all test targets |
-| TST-2 | Synthetic fixtures only, no EA data in the repository | done | `Tests/TSOFilesTests/Support/ByteWriter.swift` builds archives, RefPack streams, and IFFs in code |
+| TST-2 | Synthetic fixtures only, no EA data in the repository | done | `Support/ByteWriter.swift` in TSOFiles and TSOContent builds archives, RefPack streams, IFFs, and fake installs in code |
 | TST-3 | Each package builds and tests on its own | done | `swift build` and `swift test` per package; path dependencies resolve |
 | TST-4 | CI runs all three packages on every push | done | `.github/workflows/swift.yml`: builds and tests each package on Linux x86_64 and ARM64 (`swift:6.3` container) and on macOS, for pushes and pull requests that touch `NSOClient/`. Run 38812498011 (commit `9fe95212`) passed all three jobs |
 | TST-5 | Lint for REL-2 and DET-2 (SwiftLint custom rules or a script) | partial | The CI workflow fails on `try!`, `as!`, `fatalError`, or `precondition` in library sources. Not covered: force unwraps (`!`), and DET-2 (no SimAntics code yet) |
-| TST-6 | Real-file tests gated on `TSO_GAME_DIR` | done | `RealInstallTests` runs when `TSO_GAME_DIR` is set and is skipped otherwise; no game data in the repository |
+| TST-6 | Real-file tests gated on `TSO_GAME_DIR` | done | `RealInstallTests` in TSOFiles and TSOContent run when `TSO_GAME_DIR` is set and are skipped otherwise; the 2017 comparison also needs `TSO_ORACLE_OBJECTS`. No game data in the repository |
 | TST-7 | Script that extracts the TSO installer's cabinets into a game folder | partial | `NSOClient/scripts/extract.sh`: detects Microsoft (cabextract) or InstallShield (unshield) cabinets, accepts a folder, a cabinet, or a .zip, tests integrity first, finds the folder holding `tuning.dat`, optional `--lowercase` and `--check`. Tested on hand-built Microsoft cabinets (extraction, lower-casing, .zip input, damaged and foreign files, usage errors). Not yet tested: spanned cabinet sets, InstallShield (unshield isn't installed here), the real installer |
 
 ## Platforms
@@ -176,6 +178,11 @@ Deliberate, documented in the code. Each keeps valid-file behavior the same.
 | DIFF-9 | PIFF entries and added chunks of any type apply | `IFFFile.applying(_:)` | 2017 throws on a patch entry whose type it has no class for, and skips such added chunks |
 | DIFF-10 | Patch files load in sorted order, `User/` is matched in the path relative to the patch folder, and files that fail to load are reported | `PatchRegistry` | 2017's file order is undefined, it matches `User/` anywhere in the full path, and it skips bad files silently |
 | DIFF-11 | The patch registry applies each PIFF as a whole only if it fits, and skips and reports the rest | `PatchRegistry.applyingPatches(to:fileName:)` | FreeSO's patches target the 2003 production files. On other versions (such as the 2002 beta) 2017 fails to load the object; this keeps the object unpatched instead. On production files every patch fits and results are identical |
+| DIFF-12 | An object table entry without a display name (`o`) loads with no name | `ObjectTable` | The 2002 beta's table has no `o`; 2017 fails on the missing attribute |
+| DIFF-13 | A GUID registered twice keeps its first registration and reports the rest | `ObjectProvider.duplicates` | 2017 throws on the second, stopping content loading (none in the beta) |
+| DIFF-14 | An object whose IFF isn't in `objiff.far` throws `ContentError.missingFile` for that object only | `ObjectProvider.object(guid:)` | 2017 fails with a null reference; the beta lists `skillcheater` without shipping it |
+| DIFF-15 | Tuning that exists but fails to load is reported in `tuningFailure`; the object loads without it, as in 2017 | `ObjectResource` | 2017 ignores the failure silently (none in the beta) |
+| DIFF-16 | Paths resolve in any letter case; the locator skips the Windows registry and looks under the XDG data folder on Linux | `GameFileIndex`, `GameLocator` | 2017 joins paths as written, which fails on case-sensitive file systems; the registry needs Windows-only APIs |
 
 ## Open bugs
 

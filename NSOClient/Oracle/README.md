@@ -107,6 +107,26 @@ Not covered yet: avatars (the default lot has none, so person data, motives, and
 relationships can't be tested), and state outside the fields above, such as
 contained objects and object lists.
 
+## Content: `list-objects`
+
+```sh
+dotnet run --project NSOClient/Oracle -c Release -- list-objects > objects-2017.tsv
+TSO_ORACLE_OBJECTS=$PWD/objects-2017.tsv swift test --package-path NSOClient/TSOContent
+```
+
+Loads every object registered at startup through the 2017 content system and prints one
+tab-separated line per GUID, sorted by GUID:
+
+| Result | Fields after the GUID (8 hex digits) |
+| --- | --- |
+| loaded | the `OBJD` label, the resource name, the semi-global (lower-case file name without extension, or `-`), the number of routines by name, the number of BHAVs, and the number of tuning tables |
+| no `OBJD` with the GUID | `missing` |
+| loading threw | `error` and the exception type; the full exception goes to standard error |
+
+The TSOContent real-install tests compare each line with the Swift content system when
+`TSO_ORACLE_OBJECTS` names the file. The output depends on the install, so don't
+commit it.
+
 ## How it stands in for the 2017 build
 
 Four kinds of help, each kept as small as possible:

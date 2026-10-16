@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (West Darrington phase 2 done: the oracle runs single 2017 primitives on request over a JSON-lines protocol) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Ocean's Edge object path done: every object loads through TSOContent and matches 2017 on a real install) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -33,22 +33,22 @@ is `partial, not blocking`.
 | Core job | Works end to end? | Evidence | Hours to pass |
 |---|---|---|---|
 | Open every FAR1, FAR3, DBPF, and IFF file in a TSO install | yes | `tsofiles-check` on a real install: 94 containers, 82,131 entries, 0 failures (scorecard FID-1). The first run found `packingslips.dat` repeating file IDs across types; FAR3 now looks entries up by full asset ID (scorecard DIFF-5) | 0 |
-| Load one object with its behavior, strings, tuning, and sprites | no | Behavior, string, and object chunks parse, and patching and tuning work (scorecard FMT-8 to FMT-16); no sprites or content provider yet | 55–80 (Hyde Park, Ocean's Edge in part) |
+| Load one object with its behavior, strings, tuning, and sprites | partial, not blocking | `GameContent` loads every object on the beta with its patches, tuning, semi-global, and routines by name, matching 2017 on all 2,649 objects 2017 loads (scorecard FID-8). Sprite IFFs load but sprites don't decode yet | 25–40 (Hyde Park) |
 | Load one avatar: mesh, skeleton, animation, outfit, appearance | no | Not started | 50–75 (Nichol's Notch, Ocean's Edge in part) |
 | Run a lot headless for one in-game day without a SimAntics error | no | `TickRate` only | 300–480 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
 | Save and reload a lot (VMMarshal version 19) | no | Not started | 20–30 (Terra Tablante) |
 | Replay a recorded 2017 session to an identical state hash | no | No recording harness (decision 2) | 15–30 (West Darrington) plus everything above |
 
-**Result: pre-alpha.** Ready for real work: ≈ 6%.
+**Result: pre-alpha.** Ready for real work: ≈ 8%.
 
 ## Current focus
 
 In order:
 
-1. **The object path of Ocean's Edge:** `WorldObjectProvider` and semi-globals, so one object loads end
-   to end.
-2. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
-   with `VMExpression` as the first primitive, checked against `fso-oracle run-primitive`.
+1. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
+   with `VMExpression` as the first primitive, checked against `fso-oracle run-primitive`. Objects come from
+   `GameContent`.
+2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
 
 ## Milestones
 
@@ -71,7 +71,7 @@ criteria met, not lines written.
 | King Canyons | Patching and tables: PIFF apply, OTF, `tuning.dat`, `datadefinition.dat`, INI | 802 | 5–8 | 100% | 0 | Done: PIFF chunk and patch application with the 2017 index rules, `PatchRegistry`, `OTFFile`, `TuningFile`, `DataDefinition`, `INIFile`; 125 tests, 6 against the real install. PIFF encoding (237 C# lines) isn't ported; decision 4 is still open. |
 | Landry Lakes | Audio formats: UTK, XA, HIT, HOT, EVT, HSM, FSC, TLO, hitlists | 1,651 | 11–17 | 0% | 11–17 | Decoding only; playback is a client concern. |
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
-| Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 0% | 39–58 | Async initialization with progress; no singleton. |
+| Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: 2017 SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single 2017 primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
 | Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 0% | 165–270 | Wrapping 16-bit arithmetic and ordered iteration are rules from the first line. |
 | Rancho Rizzo | Primitives (about 70) | 6,665 | 85–135 | 0% | 85–135 | `VMExpression` first. Each primitive lands with a replay or unit test. |
@@ -81,16 +81,15 @@ criteria met, not lines written.
 | Upper Shankelston | EOD plugin handlers | 5,217 | 65–105 | 0% | 65–105 | Server-side logic only; panels belong to a client. |
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
 | Charvatia | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT`, and field-encoded strings | 764 | 5–8 | 0% | 5–8 | Only TS1 hybrid mode reads these; a TSO install contains none (checked 2026-10-15). Deferred by the owner; port it when TS1 hybrid is needed, ideally checked against a TS1 install. `OBJM` is decoded by heuristic search in 2017. |
-| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 6% ready** | **≈ 536–852** | |
+| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 8% ready** | **≈ 520–829** | |
 
 ## Upcoming milestones, ranked
 
 | Rank | Next milestone | Closes | Estimate (h) |
 |---|---|---|---|
-| 1 | One object end to end: object path of Ocean's Edge | alpha row 2 | 30–45 |
-| 2 | VM core with `VMExpression` | Queen Margaret's (first pass) | 60–100 |
-| 3 | Sprites and images | Hyde Park | 24–35 |
-| 4 | Avatars: Vitaboy formats and providers | Nichol's Notch, Ocean's Edge avatar path | 30–45 |
+| 1 | VM core with `VMExpression` | Queen Margaret's (first pass) | 60–100 |
+| 2 | Sprites and images | Hyde Park | 24–35 |
+| 3 | Avatars: Vitaboy formats and providers | Nichol's Notch, Ocean's Edge avatar path | 30–45 |
 
 ## Critical path
 
@@ -123,7 +122,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 - **SimAntics fidelity:** about 70 primitives whose exact behavior, including bugs the game's code
   relies on, must match FreeSO.
-- **No replay oracle yet:** without West Darrington, VM correctness can only be judged by reading C#.
+- **No whole-lot replays yet:** `fso-oracle` checks single primitives and content, but lot recordings wait for Terra Tablante (West Darrington phase 3), so multi-tick VM behavior is checked only by state digests from `run-lot`.
 - **Determinism in Swift:** randomized hash seeds and trapping integer overflow are easy to trip
   over; one slip causes desyncs or a crashed lot.
 - **Real files:** synthetic tests pass, but the original install may hold variants the 2017 code
@@ -141,6 +140,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Ocean's Edge object path done: `GameContent` indexes the install case-insensitively, applies FreeSO's patches, and loads objects, globals, and semi-globals. Against `fso-oracle list-objects` on the 2002 beta, all 2,649 objects 2017 loads match; 2017 fails on 45 more (44 production patches that don't fit, 1 missing IFF) and Swift loads 44 of them. Found and fixed a Linux slowdown in TSOFiles' directory listing (`resourceValues` cost 2 ms a file; indexing went from 3.7 s to 0.03 s). Alpha row 2 is now partial: only sprites are left. |
 | 2026-10-16 | minor | West Darrington phase 2 done: `fso-oracle run-primitive` reads JSON requests (opcode, operand, registers, globals, object data and attributes), runs the 2017 handler on a freshly loaded lot each time (about a quarter second per request), and reports the exit code, the registers, and every changed value. Exceptions and bad requests come back as responses. Early finding: 2017's Expression divides by zero without failing and gives -1. The 2017 code's console messages now go to standard error, so standard output carries only results. Avatars aren't covered yet; the default lot has none. |
 | 2026-10-15 | minor | West Darrington phase 1 done: the oracle compiles the unchanged 2017 SimAntics stack on .NET 10 with four small stubs and runs it headless on Linux. The 2002 beta needed placeholders (three sound groups, six expansion archives), adapted object and catalog tables, and six production-only objects left out of the default lot, all reported. The VM reseeds when a lot loads, so the oracle seeds it again afterwards; three 1,800-tick runs give identical digests. |
 | 2026-10-15 | minor | Decision 2 settled: an oracle harness that compiles the 2017 SimAntics sources on modern .NET serves per-primitive differential tests first and whole-lot replays later. West Darrington re-planned in three phases and re-estimated from 15–30 to 20–40 hours (stubs for LotView and HIT). AGENTS.md allows `dotnet` for the oracle only. |

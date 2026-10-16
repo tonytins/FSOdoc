@@ -22,6 +22,7 @@ namespace FSO.Oracle
     {
         private const string Usage = @"usage: fso-oracle run-lot [options] [--ticks N] [--every N]
        fso-oracle run-primitive [options]
+       fso-oracle list-objects [options]
 
 run-lot loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot
 server does, ticks it, and prints a state digest.
@@ -29,6 +30,9 @@ server does, ticks it, and prints a state digest.
 run-primitive loads the same lot, then reads JSON requests from standard input, one
 per line, runs each 2017 primitive on a fresh copy of the lot, and writes one JSON
 response per line (see README.md).
+
+list-objects loads every registered object through the 2017 content system and prints
+one tab-separated line per object (see README.md).
 
 Standard output carries only results; the 2017 code's own messages go to standard error.
 
@@ -43,7 +47,7 @@ options:
 
         public static int Main(string[] args)
         {
-            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive"))
+            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive" && args[0] != "list-objects"))
             {
                 Console.Error.WriteLine(Usage);
                 return 2;
@@ -72,6 +76,11 @@ options:
             FSOEnvironment.ContentDir = options.ContentDirectory;
             FSOEnvironment.UserDir = overlay.UserPath;
             Content.Content.Init(overlay.Path, Content.ContentMode.SERVER);
+            if (args[0] == "list-objects")
+            {
+                ListObjects(results);
+                return 0;
+            }
             var blueprint = BlueprintForInstall(options.BlueprintPath);
 
             if (args[0] == "run-lot")
@@ -119,6 +128,55 @@ options:
                 if (options.Every > 0 && tick % options.Every == 0 && tick != options.Ticks) PrintDigest(vm, tick, results);
             }
             if (options.Ticks > 0) PrintDigest(vm, options.Ticks, results);
+        }
+
+        /// <summary>
+        /// Prints what the 2017 content system loads for every registered object, for the
+        /// Swift content tests to compare against.
+        /// </summary>
+        /// <remarks>
+        /// One line per GUID registered at startup, sorted by GUID, tab-separated: the GUID
+        /// (8 hex digits), then either the OBJD label, the resource name, the semi-global
+        /// (lower-case file name without extension, or <c>-</c>), the number of routines by
+        /// name, the number of BHAVs, and the number of tuning tables; or <c>missing</c> if no
+        /// OBJD has the GUID; or <c>error</c> and the exception type if loading fails.
+        /// Loading can register objects again (patched files), so the GUIDs are taken first.
+        /// </remarks>
+        private static void ListObjects(TextWriter results)
+        {
+            var provider = Content.Content.Get().WorldObjects;
+            List<ulong> guids;
+            lock (provider.Entries) guids = provider.Entries.Keys.OrderBy(guid => guid).ToList();
+            foreach (var guid in guids)
+            {
+                string line;
+                try
+                {
+                    var item = provider.Get(guid);
+                    if (item == null)
+                    {
+                        line = "missing";
+                    }
+                    else
+                    {
+                        var resource = item.Resource;
+                        var semiGlobal = resource.SemiGlobal?.Iff?.Filename;
+                        line = string.Join("\t",
+                            item.OBJ.ChunkLabel,
+                            resource.Name,
+                            semiGlobal == null ? "-" : Path.GetFileNameWithoutExtension(semiGlobal).ToLowerInvariant(),
+                            resource.TreeByName.Count,
+                            resource.MainIff.List<Files.Formats.IFF.Chunks.BHAV>()?.Count ?? 0,
+                            resource.Tuning?.Tables?.Length ?? 0);
+                    }
+                }
+                catch (Exception error)
+                {
+                    line = "error\t" + error.GetType().Name;
+                    Console.Error.WriteLine($"fso-oracle: object {guid:x8}: {error}");
+                }
+                results.WriteLine($"{guid:x8}\t{line}");
+            }
         }
 
         /// <summary>
