@@ -13,6 +13,8 @@ public final class VMScheduler {
     public private(set) var currentObjectID = Int16.max
 
     private var schedule: [UInt32: [Entity]] = [:]
+    /// Entities deleted while entities were running, deleted once the tick ends (`PendingDeletion`).
+    private var pendingDeletion: [Entity] = []
 
     public init() {}
 
@@ -62,6 +64,14 @@ public final class VMScheduler {
         vm.random.seed &+= UInt64(vm.entities.count)
         currentObjectID = .max
         isRunning = false
+        let deletions = pendingDeletion
+        pendingDeletion.removeAll()
+        for entity in deletions { vm.delete(entity) }
+    }
+
+    /// Queues an entity to be deleted when the tick ends (`Delete`).
+    func deleteAtEndOfTick(_ entity: Entity) {
+        pendingDeletion.append(entity)
     }
 
     /// 2017's `VM.AddToObjList`: a binary search for the insertion point by object ID. It keeps

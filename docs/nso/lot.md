@@ -2,8 +2,9 @@
 
 The lot model is where things are on a lot: positions and facings, which objects share a tile,
 and the walls, floors, and rooms that SimAntics code asks about. It's part of the SimAntics
-package. Positions, the tile index, and rooms are done; multi-tile objects, placement, slots, and
-loading a lot's objects come next.
+package. Positions, the tile index, rooms, and multi-tile groups are done; placing objects in the
+world, slots, and loading a lot's objects come next. How objects are created and grouped is in
+[simantics.md](simantics.md#creating-and-deleting-objects).
 
 ## Positions and facings
 

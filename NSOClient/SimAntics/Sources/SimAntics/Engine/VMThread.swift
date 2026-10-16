@@ -127,8 +127,8 @@ public final class VMThread {
         frame.callee?.reset()
         frame.caller?.reset()
         if recentlyFailed {
-            // 2017 deletes an object that fails again within 10 ticks; deletion isn't ported yet.
-            vm.report(.unsupported("deleting an object that keeps failing"), by: entity)
+            // An object that fails again within 10 ticks is deleted, with every part of it.
+            vm.delete(entity, wholeGroup: true)
         }
     }
 

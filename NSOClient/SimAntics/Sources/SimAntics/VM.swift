@@ -32,6 +32,8 @@ public final class VM {
     }
 
     private var entitiesByID: [Int16: Entity] = [:]
+    /// Where the search for a free object ID starts (`VM.ObjectId`).
+    private var lowestFreeObjectID: Int16 = 1
     /// The lot's walls, floors, and rooms. Changes take effect on the next tick, when rooms are
     /// regenerated and every entity's room is updated. Replacing the architecture doesn't
     /// re-index entities already on the lot.
@@ -85,7 +87,10 @@ public final class VM {
 
     deinit {
         // Frames hold entities and entities hold their threads; break the cycles.
-        for entity in entities { entity.thread.stack.removeAll() }
+        for entity in entities {
+            entity.thread.stack.removeAll()
+            entity.group.removeAll()
+        }
     }
 
     public func entity(id: Int16) -> Entity? {
@@ -103,17 +108,114 @@ public final class VM {
     @discardableResult
     public func addObject(guid: UInt32, id: Int16) throws(SimAnticsError) -> Entity {
         guard id != 0, entitiesByID[id] == nil else { throw .simantics("object ID \(id) is not free") }
-        let object: GameObject?
+        guard let object = try gameObject(guid: guid) else {
+            throw .nullReference("no object with GUID \(String(guid, radix: 16))")
+        }
+        let entity = try Entity(objectID: id, object: object, vm: self)
+        register(entity)
+        return entity
+    }
+
+    /// Creates an object, as `VMContext.CreateObjectInstance` does, and returns its group, or `nil`
+    /// if the content has no object with the GUID.
+    ///
+    /// A multi-tile master definition creates one entity per part (each definition in the
+    /// master's file with the same master ID and a sub-index), in file order; anything else creates
+    /// one entity. Every entity gets the lowest free object ID, then each is initialized in turn
+    /// (``Entity/initialize()``, with the main parameter and stack object given), then the group
+    /// is placed.
+    ///
+    /// - Throws: ``SimAnticsError/unsupported(_:)`` for a Sim, or a position in the world, which
+    ///   needs placement (not ported yet); any error an entity's init entry point throws.
+    @discardableResult
+    public func createObject(guid: UInt32, at position: LotPosition = .outOfWorld, facing direction: Direction = .north,
+                             mainStackObjectID: Int16 = 0, mainParameter: Int16 = 0) throws(SimAnticsError) -> MultitileGroup? {
+        guard let object = try gameObject(guid: guid) else { return nil }
+        let definition = object.definition
+        guard definition.knownObjectType != .person else { throw .unsupported("creating a Sim needs Sims") }
+        guard position.isOutOfWorld else { throw .unsupported("placing an object in the world needs placement") }
+
+        let group: MultitileGroup
+        if definition.masterID != 0 && definition.subIndex == -1 {
+            group = MultitileGroup(isMultiTile: true)
+            let parts: [OBJD]
+            do {
+                parts = try object.resource.chunks(OBJD.self)
+            } catch {
+                throw .simantics("the object's definitions don't parse: \(error)")
+            }
+            for part in parts where part.masterID == definition.masterID && part.subIndex != -1 {
+                guard let partObject = try gameObject(guid: part.guid) else { continue }
+                let entity = try Entity(objectID: freeObjectID(), object: partObject, vm: self, group: group)
+                entity.masterDefinition = definition
+                register(entity)
+            }
+        } else {
+            group = MultitileGroup(isMultiTile: false)
+            register(try Entity(objectID: freeObjectID(), object: object, vm: self, group: group))
+        }
+
+        for entity in group.objects {
+            entity.mainStackObjectID = mainStackObjectID
+            entity.mainParameter = mainParameter
+        }
+        for entity in group.objects { try entity.initialize() }
+        moveOutOfWorld(group, facing: direction)
+        return group
+    }
+
+    /// Deletes an entity, or with `wholeGroup`, every part of its object (`VMEntity.Delete`).
+    ///
+    /// While entities are running, deletion waits until the tick ends, after the random seed
+    /// advances. A deleted entity leaves the entity list, the queries, the schedule, and its group,
+    /// and its object ID becomes free again. Deleting one twice does nothing. Contained objects
+    /// aren't moved out yet (containers come with slots).
+    public func delete(_ entity: Entity, wholeGroup: Bool = false) {
+        if wholeGroup {
+            for part in entity.group.objects { delete(part) }
+            return
+        }
+        guard !entity.isDead else { return }
+        if scheduler.isRunning {
+            scheduler.deleteAtEndOfTick(entity)
+            return
+        }
+        entity.isDead = true
+        removeFromTileIndex(entity)
+        removeFromCategoryIndex(entity)
+        if let index = entities.firstIndex(where: { $0 === entity }) {
+            entities.remove(at: index)
+            entitiesByID[entity.objectID] = nil
+            scheduler.descheduleTick(for: entity)
+            lowestFreeObjectID = min(lowestFreeObjectID, entity.objectID)
+        }
+        entity.group.remove(entity)
+        // A deleted entity never runs again; dropping its stack breaks the frames' references to it.
+        entity.thread.stack.removeAll()
+    }
+
+    private func gameObject(guid: UInt32) throws(SimAnticsError) -> GameObject? {
         do {
-            object = try content.objects.object(guid: guid)
+            return try content.objects.object(guid: guid)
         } catch {
             throw .content(error)
         }
-        guard let object else { throw .nullReference("no object with GUID \(String(guid, radix: 16))") }
-        let entity = try Entity(objectID: id, object: object, vm: self)
+    }
+
+    private func register(_ entity: Entity) {
         VMScheduler.insertInObjectIDOrder(entity, into: &entities)
-        entitiesByID[id] = entity
-        return entity
+        entitiesByID[entity.objectID] = entity
+    }
+
+    /// The lowest free object ID from the last one given out (`VM.NextObjID`), which can't be 0.
+    private func freeObjectID() throws(SimAnticsError) -> Int16 {
+        var id = lowestFreeObjectID
+        while entitiesByID[id] != nil {
+            guard id < .max else { throw .simantics("no free object ID") }
+            id += 1
+        }
+        lowestFreeObjectID = id
+        return id
     }
 
     // MARK: Ticking
@@ -160,6 +262,15 @@ public final class VM {
         tileIndex[tileKey(position)]
     }
 
+    /// Moves every part of a group, keeping each one's facing, as `ChangePosition` does for a
+    /// position out of the world. Placing a group in the world needs placement (not ported yet).
+    func moveOutOfWorld(_ group: MultitileGroup, facing direction: Direction) {
+        for entity in group.objects {
+            entity.direction = direction
+            move(entity, to: .outOfWorld)
+        }
+    }
+
     /// Moves an entity, keeping the tile index and its room (object data 29) current, as 2017's
     /// position change does. Footprints, portals, lighting, and the placement entry point come
     /// with the rest of the lot model.
@@ -194,13 +305,20 @@ public final class VM {
 
     /// Moves an object between categories, as `RemoveCategory` and `RegisterCategory` do.
     func changeCategory(of entity: Entity, from old: Int16?, to new: Int16) {
-        if let old, var list = categoryIndex[old], let index = list.firstIndex(where: { $0 === entity }) {
-            list.remove(at: index)
-            categoryIndex[old] = list.isEmpty ? nil : list
-        }
+        if let old { removeFromCategory(entity, old) }
         var list = categoryIndex[new] ?? []
         if !list.contains(where: { $0 === entity }) { VMScheduler.insertInObjectIDOrder(entity, into: &list) }
         categoryIndex[new] = list
+    }
+
+    private func removeFromCategoryIndex(_ entity: Entity) {
+        removeFromCategory(entity, entity.objectData[Int(ObjectVariable.category.rawValue)])
+    }
+
+    private func removeFromCategory(_ entity: Entity, _ category: Int16) {
+        guard var list = categoryIndex[category], let index = list.firstIndex(where: { $0 === entity }) else { return }
+        list.remove(at: index)
+        categoryIndex[category] = list.isEmpty ? nil : list
     }
 
     // MARK: Globals

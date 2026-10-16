@@ -9,8 +9,8 @@ extension Primitives {
     /// - Sims and family members, which only look at Sims (none are ported yet, so false);
     /// - "closest house", which is always false in 2017;
     /// - The Sims 1 neighbors and careers, which fail in TSO as 2017 has no neighborhood;
-    /// - parts of a multi-tile object, which is false for an object alone in its group (every
-    ///   entity, until multi-tile groups are ported);
+    /// - parts of a multi-tile object, by ID, wrapping around to the lowest; false for an object
+    ///   that isn't multi-tile;
     /// - objects on the pointer object's tile, wrapping around to the lowest ID;
     /// - objects next to the anchor object in a local: the first object on each neighboring tile,
     ///   north, east, south, then west, continuing after the side the pointer object is on.
@@ -77,10 +77,13 @@ extension Primitives {
             let candidates: [Entity]?
             switch Search(rawValue: operand.rawSearch) {
             case .partOfMultiTileObject:
-                // Only objects created through their group's lead are in a multi-tile group; every
-                // other object is a group of one, which 2017 answers with false. Groups aren't
-                // ported yet, so every entity is a group of one.
-                return .gotoFalse
+                // The next part by ID after the target, wrapping to the lowest; false for an object
+                // that isn't multi-tile (or doesn't exist).
+                guard let pointer = vm.entity(id: target), pointer.group.isMultiTile else { return .gotoFalse }
+                let ids = pointer.group.objects.map(\.objectID)
+                guard let next = ids.filter({ $0 > target }).min() ?? ids.min() else { return .gotoFalse }
+                try frame.setValue(next, of: operand.target)
+                return .gotoTrue
             case .objectAdjacentToObjectInLocal:
                 return try nextAdjacentObject(after: target, operand: operand, in: frame)
             case .career, .neighborID, .neighborOfType:

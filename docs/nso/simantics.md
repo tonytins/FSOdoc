@@ -5,11 +5,12 @@ logic is a set of routines (`BHAV` chunks) built from primitives: compare and as
 sleep, find another object, play a sound, and about 70 more. The port runs those routines tick by
 tick and gets the same results as FreeSO's 2017 VM, which `fso-oracle` checks case by case.
 
-What runs today: the VM core, entities and their entry points, threads with subroutine calls and
-check threads, every variable scope objects use, the scheduler and clock, and 7 of the 49
-primitives TSO uses (Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, and Test
-Object Type). 1,988 objects created alone on an empty lot match 2017's state tick for tick over 30
-ticks. Sims, routing, multi-tile objects, and lot loading come later; see the
+What runs today: the VM core, entities and their entry points, creating and deleting objects
+(multi-tile ones included), threads with subroutine calls and check threads, every variable scope
+objects use, the scheduler and clock, and 8 of the 49 primitives TSO uses (Expression, Sleep,
+Refresh, Random Number, Play Sound, Set To Next, Test Object Type, and Create Object Instance).
+2,597 objects created alone on an empty lot match 2017's state tick for tick over 30 ticks. Sims,
+routing, placement, slots, and lot loading come later; see the
 [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
 [lot.md](lot.md).
 
@@ -26,18 +27,15 @@ import TSOContent
 let content = try GameContent(.init(gameDirectory: install, freeSOContentDirectory: freeSOContent))
 let vm = try VM(content: content, seed: 0x0F50_D0C5_EED0_0001)
 
-let door = try vm.addObject(guid: 0x0000_01CA, id: 1)
-try door.initialize()              // runs init to completion, then queues main
+guard let door = try vm.createObject(guid: 0x0000_01CA)?.leadObject else { return }  // nil: no such object
 for _ in 0..<30 { vm.tick() }      // one second of game time
 
 print(door.objectData[0...3], vm.reportedErrors)
 print(StateDigest.hex(of: vm))     // compare with fso-oracle's digest for the same run
 ```
 
-`addObject(guid:id:)` builds an entity as 2017's `VMEntity` constructor does: zeroed object data
-except the chair-facing flag, the entry point table, and a position out of the world. It runs
-nothing until `initialize()`, which schedules the entity, runs its init entry point to completion,
-queues `main`, and disables it if the lot's category isn't one the object allows.
+`createObject(guid:)` works as 2017's `CreateObjectInstance` does; see
+[Creating and deleting objects](#creating-and-deleting-objects) below.
 
 Each `tick()` follows `VM.InternalTick`:
 
@@ -63,6 +61,10 @@ An `Entity` is an object on the lot (2017's `VMEntity` and `VMGameObject`). It h
 | `entryPoints` | The routines for init, main, load, cleanup, and the rest, from the `OBJD` or its `OBJf` |
 | `thread` | Its interpreter |
 
+Each entity belongs to a `MultitileGroup` (`group`): the parts of one object. Most objects are
+a group of one; a multi-tile object (a two-tile bed, a long counter) is one entity per part.
+`leadObject` is the part that leads the group, and the lead-tile attribute scopes read through it.
+
 Writing some object data has side effects, as in 2017. Writing the direction snaps it to the
 object's rotation step (data 23); writing the category moves it in the category index; lockout
 counts down. Use `setValue(_:of:)` for writes that should behave that way, and `objectData`
@@ -73,6 +75,35 @@ try door.setValue(3, of: ObjectVariable.direction.rawValue)
 let ranImmediately = try door.executeEntryPoint(.load, runImmediately: true)
 door.reset()                       // clears the stack, runs cleanup, queues main
 ```
+
+## Creating and deleting objects
+
+`VM.createObject(guid:at:facing:mainStackObjectID:mainParameter:)` follows 2017's
+`CreateObjectInstance`:
+
+1. A multi-tile **master** definition (a master ID, and a sub-index of -1) creates one entity per
+   part: each definition in the master's file with the same master ID, in file order. Each part
+   keeps the master definition (`masterDefinition`), and its offset in the group comes from its
+   sub-index (x tile in the high byte, y in the low byte) and level offset. Anything else creates
+   one entity.
+2. Each entity gets the **lowest free object ID**, so IDs freed by deletion are reused.
+3. Each entity is **initialized** in turn: it's scheduled for the next tick, its init entry point
+   runs to completion, and `main` is queued, with argument 0 and the stack object that the creator
+   passed. An object whose definition doesn't allow the lot's category is disabled.
+4. The group is **placed**. Only out of the world for now; a position on the lot needs placement
+   checks, which come next.
+
+```swift
+if let table = try vm.createObject(guid: tableGUID) {        // a multi-tile master
+    print(table.isMultiTile, table.objects.map(\.objectID))   // true [2, 3]
+    print(table.offsets)                                      // each part's offset from the group
+}
+```
+
+`VM.delete(_:wholeGroup:)` takes an entity (or every part of its object) off the lot: out of the
+entity list, the queries, and the schedule, and its ID is free again. While entities are running,
+deletion waits until the tick ends, after the random seed has counted the entity. That's how 2017
+deletes an object whose routines fail twice within 10 ticks, and the port does the same.
 
 ## Threads and routines
 
@@ -160,6 +191,7 @@ ones; the 2017 names of all 49 TSO primitives are in `PrimitiveTable.tso2017Name
 | 23 | `PlaySound` | Plays a sound event (headless, as on 2017's server: changes nothing) |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |
+| 42 | `CreateObjectInstance` | Creates an object and makes it the stack object (out of the world only, so far) |
 
 A VM can run its own table, which is how extensions will add primitives without touching the
 ported ones:
@@ -201,5 +233,5 @@ let custom = try VM(content: content, seed: 1, primitives: table)
 
 `StateDigest.hex(of:)` hashes the VM state (seed, entities, positions, object data, stacks) the
 same way `fso-oracle run-objects` and `run-lot` do. Equal digests after the same ticks mean the
-two VMs agree. This is how the 1,988 single-object runs are checked; when a run differs, the first
+two VMs agree. This is how the 2,597 single-object runs are checked; when a run differs, the first
 tick whose digest differs points at the problem.

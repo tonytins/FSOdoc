@@ -18,7 +18,7 @@ let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
 /// are compared. Cases that need behavior this port doesn't have yet are counted, not failed.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct OraclePrimitiveTests {
-    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number", "play_sound"])
+    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number", "play_sound", "create_object_instance"])
     func matches2017(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let requests = try Dictionary(uniqueKeysWithValues: jsonLines(directory.appendingPathComponent("\(primitive).requests.jsonl"))
@@ -300,26 +300,22 @@ struct OracleObjectRunTests {
             guard lines.first?.hasPrefix("tick") == true else { skipped["2017 couldn't run it", default: 0] += 1; continue }
             let guid = try required(UInt32(guidText, radix: 16))
             guard let object = try content.objects.object(guid: guid) else { skipped["not in Swift content", default: 0] += 1; continue }
-            if object.definition.masterID != 0 && object.definition.subIndex == -1 {
-                skipped["multi-tile", default: 0] += 1
-                continue
-            }
             let vm = try VM(content: content, seed: 0x0F50_D0C5_EED0_0001)
             var actual: [String] = []
             func record(_ tick: Int) {
                 actual.append("tick \(tick) seed \(String(format: "%016llx", vm.random.seed)) entities \(vm.entities.count) digest \(StateDigest.hex(of: vm))")
             }
             do {
-                // As CreateObjectInstance does: initialize, then place out of the world facing north.
                 vm.architecture = try emptyLotArchitecture()
-                let entity = try vm.addObject(guid: guid, id: 1)
-                try entity.initialize()
-                vm.move(entity, to: .outOfWorld)
+                guard try vm.createObject(guid: guid) != nil else { skipped["Swift couldn't create it", default: 0] += 1; continue }
                 record(0)
                 for tick in 1...30 {
                     vm.tick()
                     if tick % 10 == 0 { record(tick) }
                 }
+            } catch SimAnticsError.unsupported(let reason) {
+                skipped["unsupported while creating: \(reason)", default: 0] += 1
+                continue
             } catch {
                 skipped["Swift failed to create it", default: 0] += 1
                 continue

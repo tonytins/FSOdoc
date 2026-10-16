@@ -72,10 +72,15 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
             // Cleanup ran twice: 2017 resets the callee and then the caller, here the same entity.
             #expect(chair.attribute(at: 2) == 2)
             #expect(chair.thread.stack.map(\.routine.id) == [4096])  // and main was pushed again
+            let seed = vm.random.seed
             vm.tick()
-            // Failing again within 10 ticks: 2017 deletes the object, which isn't ported yet.
-            #expect(vm.reportedErrors.count == 2)
-            #expect(vm.reportedErrors.last?.error == .unsupported("deleting an object that keeps failing"))
+            // Failing again within 10 ticks deletes the object, once the tick ends: the seed still
+            // counts it, and the error isn't reported again during the cooldown.
+            #expect(vm.reportedErrors.count == 1)
+            #expect(chair.isDead && vm.entities.isEmpty && vm.entity(id: 1) == nil)
+            #expect(vm.random.seed == seed &+ 1)
+            vm.tick()
+            #expect(vm.random.seed == seed &+ 1)                      // no entities left
         }
     }
 

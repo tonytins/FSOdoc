@@ -4,9 +4,9 @@ import TSOFiles
 /// An object on the lot.
 ///
 /// Ports the parts of FreeSO's `VMEntity` and `VMGameObject` that SimAntics variables
-/// read and write. Sims (`VMAvatar`), containers and slots, multi-tile groups, positions,
-/// and interactions aren't ported yet; reading values that need them throws
-/// ``SimAnticsError/unsupported(_:)``.
+/// read and write, and the entity's place in its ``MultitileGroup``. Sims (`VMAvatar`),
+/// containers and slots, and interactions aren't ported yet; reading values that need them
+/// throws ``SimAnticsError/unsupported(_:)``.
 ///
 /// A known gap in writes, which stores the value but skips a 2017 side effect: `flags`
 /// doesn't recompute the footprint (no routing yet).
@@ -24,13 +24,22 @@ public final class Entity {
     public internal(set) var position = LotPosition.outOfWorld
     public var direction = Direction.north
 
-    /// The lead object of the entity's multi-tile group (`MultitileGroup.BaseObject`). Groups
-    /// aren't ported yet, so every entity is a group of one and leads itself, as a lone object
-    /// does in 2017.
-    public var leadObject: Entity { self }
+    /// What main gets on its first run, set by whoever created the entity: argument 0, when not
+    /// 0 (`MainParam`), and the stack object's ID, when not 0 (`MainStackOBJ`). Both are used once.
+    public var mainParameter: Int16 = 0
+    public var mainStackObjectID: Int16 = 0
 
-    /// For a part of a multi-tile object, the lead object's definition. Multi-tile
-    /// groups aren't ported yet, so this is always `nil`.
+    /// Whether the entity was deleted (`Dead`).
+    public internal(set) var isDead = false
+
+    /// The object the entity is part of: itself alone, or every part of a multi-tile object.
+    public internal(set) var group: MultitileGroup
+
+    /// The lead object of the entity's group (`MultitileGroup.BaseObject`); a lone object leads itself.
+    public var leadObject: Entity { group.leadObject ?? self }
+
+    /// For a part of a multi-tile object, the master definition it was created from, which
+    /// lot category checks and definition reads through the master scope use.
     public internal(set) var masterDefinition: OBJD?
     /// Which dynamic sprites show: bits 0 to 63, then 64 to 127.
     public var dynamicSpriteFlags: (UInt64, UInt64) = (0, 0)
@@ -46,12 +55,15 @@ public final class Entity {
 
     /// A new entity, as the `VMEntity` constructor builds it: zeroed object data except the
     /// chair-facing flag, and the entry point table.
-    init(objectID: Int16, object: GameObject, vm: VM) throws(SimAnticsError) {
+    /// The entity joins `group`, or a new group of one.
+    init(objectID: Int16, object: GameObject, vm: VM, group: MultitileGroup? = nil) throws(SimAnticsError) {
         self.objectID = objectID
         self.object = object
         self.vm = vm
+        self.group = group ?? MultitileGroup(isMultiTile: false)
         entryPoints = try Self.entryPoints(of: object)
         objectData[Int(ObjectVariable.flags.rawValue)] |= Self.chairFacingFlag
+        self.group.add(self)
     }
 
     /// `VMEntityFlags.ChairFacing`.
@@ -179,11 +191,21 @@ public final class Entity {
     }
 
     /// Starts the entity, as `VMGameObject.Init` does: schedules it, runs init to completion,
-    /// pushes main, then disables it if the lot's category isn't one its definition allows.
+    /// pushes main (with ``mainParameter`` and ``mainStackObjectID``), then disables it if the lot's category isn't one its definition allows.
     public func initialize() throws(SimAnticsError) {
         vm.scheduler.scheduleTick(for: self, in: 1)
         try executeEntryPoint(.initialize, runImmediately: true)
-        try executeEntryPoint(.main, runImmediately: false)
+        var arguments: [Int16]?
+        if mainParameter != 0 {
+            arguments = [mainParameter, 0, 0, 0]
+            mainParameter = 0
+        }
+        var stackObject: Entity?
+        if mainStackObjectID != 0 {
+            stackObject = vm.entity(id: mainStackObjectID)
+            mainStackObjectID = 0
+        }
+        try executeEntryPoint(.main, runImmediately: false, stackObject: stackObject, arguments: arguments)
         let categories = (masterDefinition ?? object.definition).lotCategories
         if categories > 0 && Int(categories) & (1 << (Int(vm.propertyCategory) & 31)) == 0 {
             disabledFlags |= Self.lotCategoryWrong

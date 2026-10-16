@@ -69,7 +69,7 @@ func makeFAR1(_ files: [(name: String, contents: Data)]) -> Data {
 }
 
 /// An object definition (version 142) with a GUID and any other words set (word 3 is main, 41 init, 50 cleanup).
-func objdChunk(label: String, guid: UInt32, words: [Int: UInt16] = [:]) -> ChunkFixture {
+func objdChunk(label: String, guid: UInt32, words: [Int: UInt16] = [:], id: UInt16 = 128) -> ChunkFixture {
     var writer = ByteWriter()
     writer.uint32(142)
     for index in 0..<103 { // version 142 has 105 fields; the version takes the first two
@@ -79,7 +79,7 @@ func objdChunk(label: String, guid: UInt32, words: [Int: UInt16] = [:]) -> Chunk
         default: writer.uint16(words[index] ?? 0)
         }
     }
-    return ChunkFixture(type: "OBJD", id: 128, label: label, contents: writer.bytes)
+    return ChunkFixture(type: "OBJD", id: id, label: label, contents: writer.bytes)
 }
 
 /// One instruction to write into a BHAV.
@@ -142,11 +142,13 @@ let chairGUID: UInt32 = 0x100
 
 /// Builds an install with one object (`chair`), its semi-global, and the global, loads
 /// it, and runs `body` with a VM holding the chair as object 1. The install lives until `body` returns.
+/// `objects` lists the GUIDs of other objects in `chair.iff` (their `OBJD`s go in `chair`).
 func withVM(chair: [ChunkFixture] = [], chairWords: [Int: UInt16] = [:], chairOTF: Data? = nil,
             semiGlobal: [ChunkFixture] = [], global: [ChunkFixture] = [], seed: UInt64 = 1,
-            _ body: (VM, Entity) throws -> Void) throws {
+            objects: [UInt32] = [], _ body: (VM, Entity) throws -> Void) throws {
     let install = try FakeInstall()
-    try install.write(Data(#"<ObjectInfoTable><I g="0x100" n="chair" m="0" i="0"/></ObjectInfoTable>"#.utf8),
+    let entries = ([chairGUID] + objects).map { #"<I g="0x\#(String($0, radix: 16))" n="chair" m="0" i="0"/>"# }
+    try install.write(Data("<ObjectInfoTable>\(entries.joined())</ObjectInfoTable>".utf8),
                       to: "packingslips/objecttable.xml")
     let chairIFF = makeIFF([objdChunk(label: "chair", guid: chairGUID, words: chairWords),
                             ChunkFixture(type: "GLOB", id: 128, contents: Data("testglobals\0".utf8))] + chair)

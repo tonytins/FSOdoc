@@ -37,7 +37,7 @@ ORACLE_GUIDS=$(echo '{"opcode":2,"stackObject":2}' | oracle run-primitive 2>/dev
     python3 -I -c 'import json, sys; r = json.load(sys.stdin); print(r["callerGUID"] + "," + r["stackObjectGUID"])')
 export ORACLE_GUIDS
 
-for primitive in expression sleep test_object_type refresh set_to_next random_number play_sound; do
+for primitive in expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance; do
     echo "Running $primitive cases..."
     python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_cases.py" "$primitive" "$output/$primitive.requests.jsonl"
     oracle run-primitive <"$output/$primitive.requests.jsonl" >"$output/$primitive.responses.jsonl" 2>"$output/$primitive.log"

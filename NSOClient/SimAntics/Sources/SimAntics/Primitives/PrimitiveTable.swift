@@ -53,6 +53,7 @@ public struct PrimitiveTable: Sendable {
         table.register(Primitives.SetToNext.self)
         table.register(Primitives.Expression.self)
         table.register(Primitives.TestObjectType.self)
+        table.register(Primitives.CreateObjectInstance.self)
         return table
     }()
 

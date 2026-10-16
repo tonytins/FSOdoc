@@ -248,6 +248,30 @@ def play_sound_cases():
                     "operand": struct.pack("<HHBB", event, 0, options, 50).hex(),
                     **({"stackObject": STACK_OBJECT} if stack_object else {})}
 
+# MARK: Create Object Instance
+
+def create_object_instance_cases(caller_guid, stack_guid):
+    # Every position mode (10 is invalid), with flags that change what main gets, the stack
+    # object, and the locals and parameter some modes read. Objects out of the world stay there;
+    # every other mode needs the new object placed.
+    guids = [("caller", caller_guid), ("stack", stack_guid), ("missing", 0x12345678)]
+    flag_sets = [0, 2, 16, 18, 4, 64, 128]  # pass IDs, temp 0, both, neighbor, callback, persist
+    for position in range(11):
+        for guid_name, guid in guids:
+            for flags in flag_sets:
+                for stack_object in (False, True):
+                    yield f"create-{position}-{guid_name}-{flags}-{stack_object}", {
+                        "operand": struct.pack("<IBBBB", guid, position, flags, 0, 0).hex(),
+                        "temps": [7], "locals": [STACK_OBJECT, 0], "args": [STACK_OBJECT, 0, 0, 0],
+                        **({"stackObject": STACK_OBJECT} if stack_object else {})}
+    for local, value in ((0, 99), (1, 2), (1, 4), (1, 6), (1, 3), (5, 0)):  # missing objects, directions, a bad local
+        for position in (8, 9):
+            yield f"create-local-{position}-{local}-{value}", {
+                "operand": struct.pack("<IBBBB", caller_guid, position, 0, local, 0).hex(),
+                "locals": [value, value]}
+    yield "create-param-missing", {"operand": struct.pack("<IBBBB", caller_guid, 7, 0, 0, 0).hex(), "args": [99, 0, 0, 0]}
+
+
 # MARK: Writing
 
 # Each primitive's opcode, whether its cases name real objects, and its cases given the
@@ -260,6 +284,7 @@ GENERATORS = {
     "play_sound": (23, False, lambda guids: play_sound_cases()),
     "set_to_next": (31, True, lambda guids: set_to_next_cases(guids[1])),
     "test_object_type": (32, True, lambda guids: test_object_type_cases(*guids)),
+    "create_object_instance": (42, True, lambda guids: create_object_instance_cases(*guids)),
 }
 
 
