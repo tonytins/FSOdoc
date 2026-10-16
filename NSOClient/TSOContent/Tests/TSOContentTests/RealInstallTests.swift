@@ -12,8 +12,11 @@ let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].ma
 let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 
-/// Output of `fso-oracle list-objects` for the same install, named by `TSO_ORACLE_OBJECTS`, or `nil`.
-let oracleObjects: URL? = ProcessInfo.processInfo.environment["TSO_ORACLE_OBJECTS"].map { URL(fileURLWithPath: $0) }
+/// `objects.tsv` (`fso-oracle list-objects`) in the folder `NSOClient/scripts/oracle-fixtures.sh`
+/// writes, named by `TSO_ORACLE_DIR`, or `nil`.
+let oracleObjects: URL? = ProcessInfo.processInfo.environment["TSO_ORACLE_DIR"].map {
+    URL(fileURLWithPath: $0).appendingPathComponent("objects.tsv")
+}
 
 /// Checks against a real TSO install. Skipped unless `TSO_GAME_DIR` is set; no game data is in the repository.
 @Suite(.enabled(if: gameDirectory != nil, "TSO_GAME_DIR is not set"))
@@ -89,7 +92,7 @@ struct RealInstallTests {
     /// Where 2017 loads an object, the label, resource, semi-global, routine names, BHAV
     /// count, and tuning table count must match. Where 2017 fails (on an older install,
     /// FreeSO's patches for 2003 files don't fit), the object must still load here.
-    @Test(.enabled(if: oracleObjects != nil, "TSO_ORACLE_OBJECTS is not set"))
+    @Test(.enabled(if: oracleObjects != nil, "TSO_ORACLE_DIR is not set"))
     func matchesThe2017ContentSystem() throws {
         let expected = try String(contentsOf: try #require(oracleObjects), encoding: .utf8)
             .split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }

@@ -1,0 +1,138 @@
+import Foundation
+import Testing
+import TSOFiles
+@testable import SimAntics
+
+@Suite struct VMRandomTests {
+    /// Values from `fso-oracle run-primitive` (Random Number with a range of 100).
+    @Test(arguments: [
+        (UInt64(0x0F50_D0C5_EED0_0001), UInt64(97), UInt64(0x9E95_3801_3229_EF5D)),
+        (1, 65, 0x0000_0000_0200_0001),
+    ])
+    func drawsTheSameNumbersAs2017(seed: UInt64, value: UInt64, nextSeed: UInt64) {
+        var random = VMRandom(seed: seed)
+        #expect(random.next(below: 100) == value)
+        #expect(random.seed == nextSeed)
+    }
+
+    @Test func aLimitOfZeroReturnsZeroWithoutAdvancing() {
+        var random = VMRandom(seed: 5)
+        #expect(random.next(below: 0) == 0)
+        #expect(random.seed == 5)
+    }
+}
+
+@Suite struct EntityTests {
+    @Test func objectVariablesMatch2017Indexes() {
+        #expect(ObjectVariable.allCases.count == ObjectVariable.count)
+        #expect(ObjectVariable.room.rawValue == 29)
+        #expect(ObjectVariable.fsoEngineQuery.rawValue == 79)
+    }
+
+    @Test func readsAndWritesObjectData() throws {
+        try withVM { _, chair throws in
+            try chair.setValue(42, of: ObjectVariable.graphic.rawValue)
+            #expect(try chair.value(of: 0) == 42)
+            #expect(try chair.value(of: ObjectVariable.objectID.rawValue) == 1)
+        }
+    }
+
+    @Test(arguments: [(Int16(9), Int16(1)), (-1, 7), (8, 0)])
+    func normalizesDirection(written: Int16, stored: Int16) throws {
+        try withVM { _, chair throws in
+            try chair.setValue(written, of: ObjectVariable.direction.rawValue)
+            #expect(chair.directionNotch == stored)
+            #expect(chair.objectData[1] == stored)
+            #expect(try chair.value(of: 1) == stored)
+        }
+    }
+
+    @Test func failsOutsideTheObjectData() throws {
+        try withVM { _, chair throws in
+            #expect(throws: SimAnticsError.simantics("Object Data out of range!")) { try chair.value(of: 80) }
+            #expect(throws: SimAnticsError.indexOutOfRange("object data -1")) { try chair.setValue(1, of: -1) }
+        }
+    }
+
+    @Test func growsAttributesWhenRead() throws {
+        try withVM { _, chair throws in
+            #expect(chair.attribute(at: 3) == 0)
+            #expect(chair.attributes.count == 4)
+            chair.setAttribute(7, at: 5)
+            #expect(chair.attributes == [0, 0, 0, 0, 0, 7])
+        }
+    }
+
+    @Test func countsDownTheLockoutFromWhenItWasSet() throws {
+        try withVM { vm, chair throws in
+            vm.scheduler.currentTick = 100
+            try chair.setValue(30, of: ObjectVariable.lockoutCount.rawValue)
+            vm.scheduler.currentTick = 110
+            #expect(try chair.value(of: ObjectVariable.lockoutCount.rawValue) == 20)
+            vm.scheduler.currentTick = 200
+            #expect(try chair.value(of: ObjectVariable.lockoutCount.rawValue) == 0)
+        }
+    }
+}
+
+@Suite struct VMMemoryTests {
+    @Test func setsTheDefaultGlobals() throws {
+        try withVM { vm, _ throws in
+            #expect(vm.globalState.count == 38)
+            #expect(vm.globalState[20] == 255 && vm.globalState[25] == 4 && vm.globalState[17] == 4)
+            #expect(throws: SimAnticsError.simantics("Global Access out of bounds!")) { try vm.globalValue(at: 38) }
+        }
+    }
+
+    @Test func keepsAStackObjectIDWithNoEntity() throws {
+        try withVM { vm, chair throws in
+            let (_, frame) = try vm.runPrimitive(opcode: 2, operand: expression(.assign, .stackObjectID, 0, .literal, 9),
+                                                 caller: chair)
+            #expect(frame.stackObjectID == 9)
+            #expect(frame.stackObject == nil)
+        }
+    }
+
+    @Test func failsForAnUnknownScope() throws {
+        try withVM { vm, chair throws in
+            var operand = expression(.assign, .temps, 0, .literal, 1)
+            operand[7] = 39 // no scope 39
+            #expect(throws: SimAnticsError.simantics("Unknown get variable")) {
+                try vm.runPrimitive(opcode: 2, operand: operand, caller: chair)
+            }
+        }
+    }
+
+    /// Table numbers in the tuning scope: the top 9 bits pick a table, the low 7 a key.
+    static func tuning(table: UInt16, key: UInt16) -> Int16 { Int16(bitPattern: table << 7 | key) }
+
+    @Test func readsTuningFromTheOwnerSemiGlobalAndGlobal() throws {
+        try withVM(chair: [bconChunk(id: 4096, [11, 12])], semiGlobal: [bconChunk(id: 8193, [21])],
+                   global: [bconChunk(id: 258, [31, 32, 33])]) { vm, chair throws in
+            func read(_ data: Int16) throws -> Int16 {
+                let (_, frame) = try vm.runPrimitive(opcode: 2, operand: expression(.assign, .temps, 0, .tuning, data),
+                                                     caller: chair)
+                return frame.thread.tempRegisters[0]
+            }
+            #expect(try read(Self.tuning(table: 0, key: 1)) == 12)
+            #expect(try read(Self.tuning(table: 65, key: 0)) == 21)
+            #expect(try read(Self.tuning(table: 130, key: 2)) == 33)
+            #expect(try read(Self.tuning(table: 130, key: 3)) == 0) // past a checked BCON, with no OTF
+            #expect(throws: SimAnticsError.indexOutOfRange("constant 2 of BCON 4096")) {
+                try read(Self.tuning(table: 0, key: 2)) // the owner's BCONs aren't checked
+            }
+        }
+    }
+
+    @Test func fallsBackToTheObjectsTuningTables() throws {
+        try withVM(chairOTF: otf([(id: 4097, keys: [(id: 3, value: 70_000)])])) { vm, chair throws in
+            let (_, frame) = try vm.runPrimitive(opcode: 2, operand: expression(.assign, .temps, 0, .tuning,
+                                                                                Self.tuning(table: 1, key: 3)), caller: chair)
+            #expect(frame.thread.tempRegisters[0] == Int16(truncatingIfNeeded: 70_000))
+            #expect(throws: SimAnticsError.nullReference("key 4 of tuning table 4097")) {
+                try vm.runPrimitive(opcode: 2, operand: expression(.assign, .temps, 0, .tuning,
+                                                                    Self.tuning(table: 1, key: 4)), caller: chair)
+            }
+        }
+    }
+}

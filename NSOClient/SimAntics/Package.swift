@@ -13,7 +13,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "SimAntics", dependencies: ["TSOContent", "TSOFiles"]),
-        .testTarget(name: "SimAnticsTests", dependencies: ["SimAntics"]),
+        .testTarget(name: "SimAnticsTests", dependencies: [
+            "SimAntics",
+            .product(name: "TSOContent", package: "TSOContent"),
+            .product(name: "TSOFiles", package: "TSOFiles"),
+        ]),
     ],
     swiftLanguageModes: [.v6]
 )

@@ -118,6 +118,7 @@ namespace FSO.Oracle
                     entity.ObjectData[index] = value;
                 }
                 foreach (var (index, value) in state.Attributes) entity.SetAttribute(index, value);
+                if (state.List != null) entity.MyList = new LinkedList<short>(state.List);
             }
             var thread = caller.Thread;
             Array.Clear(thread.TempRegisters);
@@ -182,6 +183,9 @@ namespace FSO.Oracle
             response["locals"] = Values(frame.Locals);
             response["args"] = Values(frame.Args);
             response["stackObject"] = frame.StackObjectID;
+            response["callerGUID"] = caller.Object.OBJ.GUID.ToString("x8");
+            var requestedStackObject = vm.GetObjectById(request.StackObject);
+            if (requestedStackObject != null) response["stackObjectGUID"] = requestedStackObject.Object.OBJ.GUID.ToString("x8");
             response["seed"] = vm.Context.RandomSeed.ToString("x16");
             response["frames"] = thread.Stack.Count - thread.Stack.IndexOf(frame); // more than 1: the primitive pushed frames
             Snapshot.Take(vm).Describe(before, response);
@@ -225,6 +229,8 @@ namespace FSO.Oracle
             {
                 public List<(int Index, short Value)> Data;
                 public List<(int Index, short Value)> Attributes;
+                /// <summary>The whole list (<c>MyList</c>), front first, or null to leave it.</summary>
+                public short[] List;
             }
 
             public static Request Parse(JsonObject json, ulong defaultSeed)
@@ -314,9 +320,10 @@ namespace FSO.Oracle
                 {
                     if (!short.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out var objectID) || objectID == 0)
                         throw new RequestException($"\"objects\" key \"{key}\" is not an object ID");
-                    if (value is not JsonObject state || state.Any(pair => pair.Key != "data" && pair.Key != "attributes"))
-                        throw new RequestException($"object {key} state must be an object with \"data\" and \"attributes\"");
-                    states.Add((objectID, new ObjectState { Data = Sparse(state["data"], "data"), Attributes = Sparse(state["attributes"], "attributes") }));
+                    if (value is not JsonObject state || state.Any(pair => pair.Key != "data" && pair.Key != "attributes" && pair.Key != "list"))
+                        throw new RequestException($"object {key} state must be an object with \"data\", \"attributes\", and \"list\"");
+                    states.Add((objectID, new ObjectState { Data = Sparse(state["data"], "data"), Attributes = Sparse(state["attributes"], "attributes"),
+                        List = state["list"] == null ? null : Shorts(state["list"], "list", short.MaxValue, 0) }));
                 }
                 return states;
             }
@@ -332,6 +339,7 @@ namespace FSO.Oracle
             {
                 public short[] Data;
                 public short[] Attributes;
+                public short[] List;
                 public short X, Y;
                 public sbyte Level;
                 public byte Direction;
@@ -344,6 +352,7 @@ namespace FSO.Oracle
                 {
                     Data = (short[])entity.ObjectData?.Clone() ?? Array.Empty<short>(),
                     Attributes = ((List<short>)AttributesField.GetValue(entity))?.ToArray() ?? Array.Empty<short>(),
+                    List = entity.MyList.ToArray(),
                     X = entity.Position.x,
                     Y = entity.Position.y,
                     Level = entity.Position.Level,
@@ -364,6 +373,7 @@ namespace FSO.Oracle
                     if (data.Count > 0) changes["data"] = data;
                     var attributes = Changes(old.Attributes, state.Attributes);
                     if (attributes.Count > 0) changes["attributes"] = attributes;
+                    if (!old.List.SequenceEqual(state.List)) changes["list"] = Values(state.List);
                     if (old.X != state.X || old.Y != state.Y || old.Level != state.Level)
                         changes["position"] = new JsonArray(state.X, state.Y, state.Level);
                     if (old.Direction != state.Direction) changes["direction"] = state.Direction;

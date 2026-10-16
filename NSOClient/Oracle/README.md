@@ -73,7 +73,7 @@ Request fields (only `opcode` is required; unknown fields are rejected):
 | `temps`, `tempXL` | up to 20 temps and 2 extended temps; the rest are 0 | all 0 |
 | `locals`, `args` | the frame's locals and arguments | none, and four 0 arguments |
 | `globals` | `{"index": value}` to set before running | |
-| `objects` | `{"objectID": {"data": {"index": value}, "attributes": {"index": value}}}` to set before running | |
+| `objects` | `{"objectID": {"data": {"index": value}, "attributes": {"index": value}, "list": [values]}}` to set before running; `list` replaces the whole list | |
 
 Response fields:
 
@@ -85,9 +85,10 @@ Response fields:
 | `exception` | instead of `exit`, if the handler threw: `Type: message` (2017 resets the thread when this happens) |
 | `noPrimitive` | `true` if 2017 has no primitive for the opcode; it then counts as `GOTO_TRUE` |
 | `temps`, `tempXL`, `locals`, `args`, `stackObject`, `seed` | the values after running |
+| `callerGUID`, `stackObjectGUID` | the GUIDs (8 hex digits) of the caller and the requested stack object, so a test can build the same objects |
 | `frames` | stack frames from the request's frame up; more than 1 means the primitive pushed one |
 | `globals` | `{"index": value}` for each global the primitive changed |
-| `objects` | for each object the primitive changed: changed `data` and `attributes` entries, and the new `position` (`[x, y, level]`) and `direction` |
+| `objects` | for each object the primitive changed: changed `data` and `attributes` entries, the whole `list` if it changed, and the new `position` (`[x, y, level]`) and `direction` |
 | `created`, `removed` | object IDs added to or taken off the lot |
 | `requestError` | instead of all of the above, if the request couldn't be run, such as malformed JSON or an object not on the lot |
 
@@ -110,8 +111,7 @@ contained objects and object lists.
 ## Content: `list-objects`
 
 ```sh
-dotnet run --project NSOClient/Oracle -c Release -- list-objects > objects-2017.tsv
-TSO_ORACLE_OBJECTS=$PWD/objects-2017.tsv swift test --package-path NSOClient/TSOContent
+dotnet run --project NSOClient/Oracle -c Release -- list-objects > objects.tsv
 ```
 
 Loads every object registered at startup through the 2017 content system and prints one
@@ -123,9 +123,23 @@ tab-separated line per GUID, sorted by GUID:
 | no `OBJD` with the GUID | `missing` |
 | loading threw | `error` and the exception type; the full exception goes to standard error |
 
-The TSOContent real-install tests compare each line with the Swift content system when
-`TSO_ORACLE_OBJECTS` names the file. The output depends on the install, so don't
-commit it.
+The TSOContent real-install tests compare each line with the Swift content system.
+
+## Fixtures for the Swift tests
+
+`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every 2017 answer the
+Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
+`objects.tsv` from `list-objects`, and the Expression cases from
+`NSOClient/SimAntics/OracleCases/make_expression_cases.py` with their `run-primitive`
+answers. Point the tests at it:
+
+```sh
+NSOClient/scripts/oracle-fixtures.sh /tmp/oracle
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/TSOContent
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics
+```
+
+The answers depend on the install, so don't commit them.
 
 ## How it stands in for the 2017 build
 
