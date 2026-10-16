@@ -73,6 +73,7 @@ NSOClient/                   Swift reimplementation of the engine-free libraries
   SimAntics/                 the VM; depends on ../TSOContent and ../TSOFiles
   SimsScript/                proof of concept: BHAV text assembly and an LSL-like compiler; depends on ../SimAntics
   Lots/                      the owner's lots as blueprint XML, for tests and benchmarks (see its README)
+  MockInstall/               a tiny made-up TSO install for tests and CI, with no game data (see its README)
 Charvatia/                   standalone SimAntics VM server (console, .NET Framework)
 FSOInstaller/                WinForms installer that fetches the original TSO files
 Other/
