@@ -7,7 +7,7 @@ page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets 
 
 **As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
 `TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of
-those also `TSO_ORACLE_DIR`), SimAntics 33 passed (1 needs `TSO_GAME_DIR` and `TSO_ORACLE_DIR`). The
+those also `TSO_ORACLE_DIR`), SimAntics 46 passed (3 need `TSO_GAME_DIR` and `TSO_ORACLE_DIR`). The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
 expected and handled for backwards compatibility.
 
@@ -20,9 +20,9 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 |---|---:|---:|---:|---|
 | [Formats](#formats) | 13 | 0 | 8 | 128 test cases; real install (2002 beta): 94 containers, 82,131 entries, 51,620 typed chunks, tuning, data definition, and OTFs, 0 failures |
 | [Content](#content) | 3 | 2 | 4 | real install: 2,694 objects registered, 2,693 load (the beta lacks one IFF), 19 semi-globals; matches 2017 on all 2,649 objects 2017 loads, and loads 44 more it can't |
-| [SimAntics](#simantics) | 2 | 5 | 8 | Expression matches 2017 on all 3,289 oracle cases it can run; 98 more need state not ported yet |
-| [Fidelity](#fidelity) | 4 | 3 | 2 | install scan and real-data invariants clean; content matches 2017 object for object; Expression matches 2017 on 3,289 cases |
-| [Determinism](#determinism) | 0 | 0 | 5 | |
+| [SimAntics](#simantics) | 2 | 5 | 8 | Expression matches 2017 on all 3,691 oracle cases it can run; entry points match for 2,649 objects; objects running alone match 2017's digests tick by tick (6 so far, limited by unported primitives) |
+| [Fidelity](#fidelity) | 5 | 4 | 2 | install scan and real-data invariants clean; content and entry points match 2017 object for object; Expression matches on 3,691 cases; single-object runs match digest for digest |
+| [Determinism](#determinism) | 1 | 2 | 2 | the random seed matches 2017 tick for tick |
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
 | [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
 | [Platforms](#platforms) | 3 | 0 | 1 | |
@@ -84,13 +84,13 @@ Package: [SimAntics](../NSOClient/SimAntics/). Ports `TSOClient/tso.simantics` (
 |---|---|---|---|
 | VM-1 | Tick rate constant (30 per second) | done | `TickRate.swift`; `TickRateTests` |
 | VM-2 | BHAV translator: decode operands once per routine | done | `Routine` decodes every operand through `PrimitiveTable` once; `VM` caches routines per file and BHAV |
-| VM-3 | Thread, stack frames, exit codes, subroutine calls by opcode range | partial | `VMThread` and `StackFrame`: instructions, subroutine calls to the global, private, and semi-global ranges with 2017's argument rules, every exit code, branches 253 to 255, error unwinding, the 500,000-instruction guard. Missing: interaction queue, entry points, routing frames, entity reset (an error clears the stack instead) |
-| VM-4 | Variable scopes (`VMMemory`) including tuning lookup (BCON then OTF) | partial | `VMMemory`: every scope reads and writes as in 2017, or fails as 2017 does, except those needing the clock, slots, multi-tile groups, object definition fields, entry points, room data 1, 3, and 4, and Sims (which fail as 2017 does on objects). Tuning lookup ported in full |
-| VM-5 | Scheduler and `InternalTick` order | partial | `VMScheduler`: the tick counter and wake-up requests. Missing: running scheduled entities, `VM.tick()`, the clock |
-| VM-6 | Entities: objects, avatars, multitile groups, motives | partial | `Entity` for objects: object data with 2017's special cases, attributes, the list, direction, lockout count, dynamic sprite flags. Missing: Sims, multi-tile groups, containers and slots, positions, init and reset |
+| VM-3 | Thread, stack frames, exit codes, subroutine calls by opcode range | partial | `VMThread` and `StackFrame`: instructions, subroutine calls with 2017's argument rules, every exit code, branches 253 to 255, error unwinding, the instruction guard per entity tick, `main` pushed when the stack empties, check threads (`evaluateCheck`) sharing or copying temps as 2017 does, and errors that reset the caller and callee with 2017's 20-second report cooldown. Missing: interaction queue, routing frames, deleting an object that keeps failing |
+| VM-4 | Variable scopes (`VMMemory`) including tuning lookup (BCON then OTF) | partial | `VMMemory`: every scope reads and writes as in 2017, or fails as 2017 does, including the clock, object definition fields (`DefinitionVariable`, with 2017's quirks), and entry points. Missing: slots, multi-tile groups, room data 1, 3, and 4, and Sims (which fail as 2017 does on objects) |
+| VM-5 | Scheduler and `InternalTick` order | partial | `VMScheduler` and `VM.tick()`: tick IDs from 1, the clock and its globals, entities run in object ID order with 2017's sorted insert, runs scheduled into the current tick, the seed advancing by the entity count. Missing: pending deletions, the architecture tick, the global link |
+| VM-6 | Entities: objects, avatars, multitile groups, motives | partial | `Entity` for objects: object data with 2017's special cases (direction snapping to the rotation step), attributes, the list, lockout count, dynamic sprite flags, the chair-facing flag, entry point tables (`OBJD` or `OBJf`), `initialize()`, `reset()`, entry points run immediately or pushed, lot category disabling. Missing: Sims, multi-tile groups, containers and slots, positions, creation through `CreateObjectInstance` |
 | VM-7 | Lot model: architecture, rooms, placement queries | missing | Queen Margaret's |
 | VM-8 | Interactions: TTAB checks, action queue, priorities | missing | Queen Margaret's |
-| VM-9 | Primitives: about 70, `VMExpression` first | partial | 1 of about 70: Expression (opcode 2), checked against 2017 (FID-9) |
+| VM-9 | Primitives: about 70, `VMExpression` first | partial | 1 of 49 that TSO uses: Expression (opcode 2), checked against 2017 (FID-9). The others are known by name and fail as unsupported. Blocking the most objects (FID-10): Sleep (933), Test Object Type (542), Refresh (509), Set To Next (109) |
 | VM-10 | Routing: routing frame, rectangle router | missing | Shannopolis |
 | VM-11 | Saves: VMMarshal version 19 read and write, hollow saves | missing | Terra Tablante |
 | VM-12 | Lockstep: commands, tick lists, client and server drivers, resync | missing | The Billabong |
@@ -112,7 +112,9 @@ How we know the Swift code behaves like the 2017 code.
 | FID-5 | Swift VM matches recorded state hashes for a basic lot over an in-game day | missing | Queen Margaret's to Shannopolis |
 | FID-7 | Single 2017 primitives can be run on request with given state, for differential tests | done | `fso-oracle run-primitive` (protocol version 1, see `NSOClient/Oracle/README.md`): one JSON request per line, each on a fresh lot; reports the exit code, registers, changed globals and object values, created and removed objects, exceptions, and request errors. `check_protocol.py` checks 14 example requests. Avatars not covered yet |
 | FID-8 | Content loads every object the way 2017 does on a real install | done | `RealInstallTests.matchesThe2017ContentSystem` against `fso-oracle list-objects` (2026-10-16, 2002 beta with FreeSO's shipped patches and objects): all 2,649 objects 2017 loads have the same label, resource, semi-global, routine names, BHAV count, and tuning table count. 2017 fails on 45 more: 44 because production patches don't fit the beta (loaded here with those patches skipped, DIFF-11) and 1 whose IFF is missing (DIFF-14) |
-| FID-9 | Each primitive matches 2017 case for case | partial | `OracleExpressionTests` against `fso-oracle run-primitive` (2026-10-16): Expression matches on all 3,289 of 3,387 generated cases the port can run (every operator, every scope byte read and written with and without a stack object, 32-bit TempXL values, flags past bit 31, real tuning from two objects, lists, unknown operators). The other 98 need unported state. Other primitives: not started |
+| FID-9 | Each primitive matches 2017 case for case | partial | `OracleExpressionTests` against `fso-oracle run-primitive` (2026-10-16): Expression matches on all 3,691 of 3,760 generated cases the port can run (every operator, every scope byte read and written with and without a stack object, every object definition field, the clock, direction snapping, 32-bit TempXL values, flags past bit 31, real tuning from two objects, lists, unknown operators). The other 69 need slots or multi-tile groups. Other primitives: not started |
+| FID-10 | Objects run alone match 2017 digest for digest | partial | `OracleObjectRunTests` against `fso-oracle run-objects` (2026-10-16): each object created out of the world on an empty lot, digests after creation and every 10 ticks to 30. All 6 objects the port can run match (init, main, scheduler, clock, seed, object data, and stacks). Skipped: 2,104 that reach an unported primitive or scope, 390 multi-tile, 90 that 2017 can't create, 16 that keep failing (2017 deletes them) |
+| FID-11 | Entry point tables match 2017 for every object | done | `OracleEntryPointTests` against `objects.tsv` column 8 (2026-10-16): 2,649 of 2,649 match, from `OBJD` tree IDs or `OBJf`, with 2017's GUID special case |
 
 ## Determinism
 
@@ -121,9 +123,9 @@ or a lint when it does.
 
 | Id | Target | Status | Note |
 |---|---|---|---|
-| DET-1 | All 16-bit VM arithmetic wraps (`&+`, `&-`, `&*`), division matches FreeSO | missing | Overflow traps in Swift; C# wraps |
-| DET-2 | No `Dictionary` or `Set` iteration in VM logic | missing | Swift randomizes hash seeds per process |
-| DET-3 | One seeded random generator, owned by the VM context | missing | |
+| DET-1 | All 16-bit VM arithmetic wraps (`&+`, `&-`, `&*`), division matches FreeSO | partial | Every ported operation wraps or reports .NET's overflow as an error; Expression's arithmetic matches 2017 on 3,691 cases. Applies to each primitive as it's ported |
+| DET-2 | No `Dictionary` or `Set` iteration in VM logic | partial | The ported VM looks dictionaries up by key and never iterates them; entities and schedules are arrays in object ID order. Checked by hand; no lint yet (TST-5) |
+| DET-3 | One seeded random generator, owned by the VM context | done | `VMRandom` on `VM`: 2017's xorshift64*, advanced by the entity count each tick; seeds match 2017 tick for tick (FID-10) |
 | DET-4 | No wall-clock time or floating point feeding simulation state without review | missing | Routing and animation timing need a look |
 | DET-5 | Same replay result on Linux x86_64, Linux ARM64, and macOS ARM64 | missing | Needs FID-4 and CI on those runners |
 

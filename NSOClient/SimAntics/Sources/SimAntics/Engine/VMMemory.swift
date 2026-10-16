@@ -68,14 +68,23 @@ public enum VMMemory {
             guard let target else { throw .nullReference("no stack object") }
             return target.isDynamicSpriteFlagSet(UInt16(bitPattern: index)) ? 1 : 0
         case .cityTime, .gameTime:
-            guard (0...3).contains(data) else { throw .simantics("Unknown get variable") }
-            throw .unsupported("reading the clock")
-        case .stackObjectDefinition, .stackObjectMasterDefinition:
-            _ = try stackObject(of: frame)
-            throw .unsupported("reading object definition fields")
+            let clock = frame.vm.clock
+            switch data {
+            case 0: return Int16(truncatingIfNeeded: clock.seconds)
+            case 1: return Int16(truncatingIfNeeded: clock.minutes)
+            case 2: return Int16(truncatingIfNeeded: clock.hours)
+            case 3: return Int16(truncatingIfNeeded: clock.timeOfDay)
+            default: throw .simantics("Unknown get variable")
+            }
+        case .stackObjectDefinition:
+            return try DefinitionVariable.value(data, of: try stackObject(of: frame).object.definition)
+        case .stackObjectMasterDefinition:
+            let target = try stackObject(of: frame)
+            return try DefinitionVariable.value(data, of: target.masterDefinition ?? target.object.definition)
         case .stackObjectFunction:
-            _ = try stackObject(of: frame)
-            throw .unsupported("reading entry points")
+            guard let entryPoints = try stackObject(of: frame).entryPoints else { throw .nullReference("no entry point table") }
+            guard data >= 0, Int(data) < entryPoints.count else { throw .indexOutOfRange("entry point \(data)") }
+            return Int16(bitPattern: entryPoints[Int(data)].actionFunction)
         case .stackObjectSlot, .stackObjectLeadTileAttribute:
             _ = try stackObject(of: frame)
             throw .unsupported("reading scope \(scope) needs slots or multi-tile groups")

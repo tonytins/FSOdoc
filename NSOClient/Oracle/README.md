@@ -73,7 +73,8 @@ Request fields (only `opcode` is required; unknown fields are rejected):
 | `temps`, `tempXL` | up to 20 temps and 2 extended temps; the rest are 0 | all 0 |
 | `locals`, `args` | the frame's locals and arguments | none, and four 0 arguments |
 | `globals` | `{"index": value}` to set before running | |
-| `objects` | `{"objectID": {"data": {"index": value}, "attributes": {"index": value}, "list": [values]}}` to set before running; `list` replaces the whole list | |
+| `clock` | `{"hours": h, "minutes": m, "minuteFractions": f}` (0 to 149 fractions a minute) to set the game clock | the loaded lot's clock |
+| `objects` | `{"objectID": {"data": {"index": value}, "attributes": {"index": value}, "list": [values], "direction": d}}` to set before running; `list` replaces the whole list, and `direction` (0 north to 7, clockwise) sets the facing without snapping it to the rotation step | |
 
 Response fields:
 
@@ -108,6 +109,22 @@ Not covered yet: avatars (the default lot has none, so person data, motives, and
 relationships can't be tested), and state outside the fields above, such as
 contained objects and object lists.
 
+## Single objects: `run-objects`
+
+```sh
+cut -f1 objects.tsv | dotnet run --project NSOClient/Oracle -c Release -- run-objects --ticks 30 --every 10
+```
+
+Reads object GUIDs (hexadecimal) from standard input, one per line. For each, it loads the
+lot with every object taken out, creates the object out of the world as
+`VMContext.CreateObjectInstance` does (running its init), and prints
+`guid tick N seed S entities E digest D` (digest version 0) after creation (tick 0), every
+`--every` ticks, and at the end. It prints `guid missing` if 2017 can't create the object and
+`guid error Type` if creating or ticking throws; the full exception goes to standard error.
+
+The SimAntics tests run each object the same way and compare every line. Objects that reach
+behavior the port doesn't have yet are counted by what stopped them, which ranks what to port next.
+
 ## Content: `list-objects`
 
 ```sh
@@ -119,7 +136,7 @@ tab-separated line per GUID, sorted by GUID:
 
 | Result | Fields after the GUID (8 hex digits) |
 | --- | --- |
-| loaded | the `OBJD` label, the resource name, the semi-global (lower-case file name without extension, or `-`), the number of routines by name, the number of BHAVs, and the number of tuning tables |
+| loaded | the `OBJD` label, the resource name, the semi-global (lower-case file name without extension, or `-`), the number of routines by name, the number of BHAVs, the number of tuning tables, and the entry point table a 2017 entity builds (`condition:action` pairs, comma-separated, or `none`) |
 | no `OBJD` with the GUID | `missing` |
 | loading threw | `error` and the exception type; the full exception goes to standard error |
 

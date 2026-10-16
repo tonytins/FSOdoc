@@ -10,6 +10,9 @@ public final class VM {
     /// Global state values, the `Global` scope.
     public var globalState: [Int16]
     public var random: VMRandom
+    public var clock = VMClock()
+    /// The lot's category (`VMTSOLotState.PropertyCategory`), which some objects require.
+    public var propertyCategory: UInt8 = 0
     public let content: GameContent
     /// The global every object can call.
     public let global: GlobalResource
@@ -18,7 +21,18 @@ public final class VM {
     /// Entities in the order they were added.
     public private(set) var entities: [Entity] = []
 
+    /// Errors 2017 would show in a "SimAntics Exception" dialog, oldest first.
+    public private(set) var reportedErrors: [ReportedError] = []
+
+    /// An error a thread hit, and which entity and tick it was on.
+    public struct ReportedError: Sendable, Equatable {
+        public var objectID: Int16
+        public var tick: UInt32
+        public var error: SimAnticsError
+    }
+
     private var entitiesByID: [Int16: Entity] = [:]
+    private var nextTickID: UInt32 = 1
     private var routines: [RoutineKey: Routine] = [:]
 
     private struct RoutineKey: Hashable {
@@ -55,8 +69,9 @@ public final class VM {
 
     /// Adds an object with a given ID.
     ///
-    /// A first step toward 2017's object creation: the entity starts with zeroed data and
-    /// runs nothing. Placement, multi-tile groups, and init routines come later.
+    /// A first step toward 2017's object creation: the entity is built as the `VMEntity`
+    /// constructor builds it, out of the world, and runs nothing until ``Entity/initialize()``.
+    /// Placement, multi-tile groups, and catalog prices come later.
     ///
     /// - Throws: ``SimAnticsError/nullReference(_:)`` if the content has no object with
     ///   the GUID, ``SimAnticsError/simantics(_:)`` if the ID is taken or 0.
@@ -70,10 +85,30 @@ public final class VM {
             throw .content(error)
         }
         guard let object else { throw .nullReference("no object with GUID \(String(guid, radix: 16))") }
-        let entity = Entity(objectID: id, object: object, vm: self)
-        entities.append(entity)
+        let entity = try Entity(objectID: id, object: object, vm: self)
+        VMScheduler.insertInObjectIDOrder(entity, into: &entities)
         entitiesByID[id] = entity
         return entity
+    }
+
+    // MARK: Ticking
+
+    /// Advances the lot one tick, as the server driver and `VM.InternalTick` do: the clock moves,
+    /// the clock globals are copied, and the scheduled entities run. Tick IDs start at 1.
+    public func tick() {
+        let tick = nextTickID
+        nextTickID &+= 1
+        scheduler.beginTick(tick)
+        clock.tick()
+        globalState[6] = Int16(truncatingIfNeeded: clock.seconds)
+        globalState[5] = Int16(truncatingIfNeeded: clock.minutes)
+        globalState[0] = Int16(truncatingIfNeeded: clock.hours)
+        globalState[4] = Int16(truncatingIfNeeded: clock.timeOfDay)
+        scheduler.runTick(self)
+    }
+
+    func report(_ error: SimAnticsError, by entity: Entity) {
+        reportedErrors.append(ReportedError(objectID: entity.objectID, tick: scheduler.currentTick, error: error))
     }
 
     // MARK: Globals

@@ -6,7 +6,8 @@
 #   TSO_ORACLE_DIR=OUTPUT_DIR swift test --package-path NSOClient/SimAntics
 #
 # Needs TSO_GAME_DIR, the .NET SDK, and python3. Writes:
-#   objects.tsv                   fso-oracle list-objects (TSOContent tests)
+#   objects.tsv                   fso-oracle list-objects (TSOContent and SimAntics tests)
+#   objects.digests               fso-oracle run-objects: each object alone for 30 ticks (SimAntics tests)
 #   expression.requests.jsonl     generated Expression cases
 #   expression.responses.jsonl    fso-oracle run-primitive answers (SimAntics tests)
 set -euo pipefail
@@ -25,6 +26,9 @@ dotnet build "$repository/NSOClient/Oracle" -c Release >/dev/null
 
 echo "Listing objects..."
 oracle list-objects >"$output/objects.tsv" 2>"$output/objects.log"
+
+echo "Running each object alone (a few minutes)..."
+cut -f1 "$output/objects.tsv" | oracle run-objects --ticks 30 --every 10 >"$output/objects.digests" 2>"$output/objects.digests.log"
 
 echo "Running Expression cases..."
 python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_expression_cases.py" "$output/expression.requests.jsonl"

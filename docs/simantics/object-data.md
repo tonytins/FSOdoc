@@ -120,7 +120,9 @@ There are various flag fields used by behaviors to determine if certain interact
 
 Checked against the 2017 FreeSO snapshot (`VMEntity.GetValue` and `SetValue`):
 
-- **1 (direction):** read from the object's facing, not the stored value; a write is reduced to 0 to 7.
+- **1 (direction):** read from the object's facing, not the stored value. A write is reduced to 0 to 7
+  and stored; the facing then snaps down to a multiple of the rotation step in 23 (rotation notches)
+  when that is above 1.
 - **2 and 26 (container and parent ID), 3 (slot number), 62 (use count), 67 (slot count):** computed
   from containment, interactions, and slots rather than stored.
 - **11 (object ID):** always the object's ID.

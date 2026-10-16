@@ -115,7 +115,8 @@ struct RealInstallTests {
                 let actual = [fields[0], object.definition.label, resource.name, resource.semiGlobal?.name ?? "-",
                               "\(resource.treesByName.count)", "\(try resource.mainFile.chunks(BHAV.self).count)",
                               "\(resource.tuning?.tables.count ?? 0)"]
-                if actual != fields { mismatches.append("2017 \(fields) Swift \(actual)") }
+                // Later columns describe SimAntics entities and are compared in that package.
+                if actual != Array(fields.prefix(actual.count)) { mismatches.append("2017 \(fields) Swift \(actual)") }
                 compared += 1
             }
         }

@@ -1,44 +1,100 @@
 import TSOContent
 import TSOFiles
 
-/// An entity's interpreter: a stack of routines and the registers they share.
-///
-/// Ports the execution half of FreeSO's `VMThread`: instructions, subroutine calls,
-/// exit codes, and branches. The interaction queue, entry points (running `main` when
-/// the stack is empty), routing frames, and entity reset aren't ported yet; an error
-/// clears the stack instead of resetting the entity.
-public final class VMThread {
-    /// 2017's guard against routines that never yield.
-    public static let maximumInstructionsPerTick = 500_000
-
-    public unowned let entity: Entity
-    public var tempRegisters = [Int16](repeating: 0, count: 20)
+/// The temp registers, which a check thread may share with its entity's thread.
+public final class Registers {
+    public var temps = [Int16](repeating: 0, count: 20)
     /// The two 32-bit temps (`TempXL`).
     public var tempXL = [Int32](repeating: 0, count: 2)
+
+    public init() {}
+
+    func copy() -> Registers {
+        let copy = Registers()
+        copy.temps = temps
+        copy.tempXL = tempXL
+        return copy
+    }
+}
+
+/// An entity's interpreter: a stack of routines and the registers they share.
+///
+/// Ports FreeSO's `VMThread` without the interaction queue and routing frames: instructions,
+/// subroutine calls, exit codes and branches, running `main` when the stack empties, check
+/// threads (``evaluateCheck(entity:frame:)``), and error handling. An error resets the
+/// frame's caller and callee, and is reported at most once every 600 ticks (20 seconds).
+public final class VMThread {
+    /// 2017's guard against routines that never yield; the count restarts each entity tick.
+    public static let maximumInstructionsPerTick = 500_000
+    /// Ticks between error reports (`DialogCooldown`).
+    static let errorCooldownTicks = 30 * 20
+
+    public unowned let entity: Entity
+    /// Whether this is a check thread, which runs a routine to completion and has no `main`.
+    public let isCheck: Bool
+    public var registers: Registers
     /// The running routines; the last is executing.
     public var stack: [StackFrame] = []
-    /// How the last routine to leave the stack exited.
-    public private(set) var lastExitCode: ExitCode?
+    /// How the last routine to leave the stack exited (`LastStackExitCode`).
+    public private(set) var lastExitCode: ExitCode = .gotoFalse
     /// The error that ended the last tick, if one did.
     public private(set) var lastError: SimAnticsError?
     /// The tick a wait for the next tick started on (`ScheduleIdleStart`).
     public private(set) var idleStartTick: UInt32 = 0
+    /// The tick the entity is scheduled to run next, or 0 (`ScheduleIdleEnd`).
+    public internal(set) var scheduledTick: UInt32 = 0
+    /// Ticks until another error may be reported (`DialogCooldown`).
+    public private(set) var errorCooldown = 0
+    /// Instructions run since the entity's tick began (`TicksThisFrame`).
+    var instructionsThisTick = 0
 
     private var continuesExecution = false
-    private var instructionsThisTick = 0
 
-    init(entity: Entity) {
+    init(entity: Entity, isCheck: Bool = false, registers: Registers = Registers()) {
         self.entity = entity
+        self.isCheck = isCheck
+        self.registers = registers
     }
 
     public var vm: VM { entity.vm }
 
-    /// Runs instructions until one yields. A SimAntics error clears the stack and is kept in ``lastError``.
+    public var tempRegisters: [Int16] {
+        get { registers.temps }
+        set { registers.temps = newValue }
+    }
+
+    public var tempXL: [Int32] {
+        get { registers.tempXL }
+        set { registers.tempXL = newValue }
+    }
+
+    /// Runs a routine to completion on a temporary check thread, as `VMThread.EvaluateCheck` does.
+    ///
+    /// The check shares the entity's temps while the scheduler is running entities and works
+    /// on a copy otherwise. It returns how the routine exited, or `returnFalse` if it failed.
+    public static func evaluateCheck(entity: Entity, frame: StackFrame) -> ExitCode {
+        let shared = entity.vm.scheduler.isRunning
+        let check = VMThread(entity: entity, isCheck: true,
+                             registers: shared ? entity.thread.registers : entity.thread.registers.copy())
+        frame.thread = check
+        check.push(frame)
+        while !check.stack.isEmpty && check.errorCooldown == 0 {
+            check.tick()
+        }
+        return check.errorCooldown > 0 ? .returnFalse : check.lastExitCode
+    }
+
+    /// Runs instructions until one yields. With an empty stack, a normal thread first pushes `main`.
     public func tick() {
-        instructionsThisTick = 0
         lastError = nil
-        guard !stack.isEmpty else { return }
+        if errorCooldown > 0 { errorCooldown -= 1 }
         do throws(SimAnticsError) {
+            if stack.isEmpty {
+                if isCheck { return }
+                try entity.executeEntryPoint(.main, runImmediately: false)
+                if stack.isEmpty { return }
+            }
+            if stack.last?.isActionTree == true { throw .unsupported("interactions") }
             continuesExecution = true
             while continuesExecution {
                 instructionsThisTick += 1
@@ -47,8 +103,30 @@ public final class VMThread {
                 try nextInstruction()
             }
         } catch {
-            lastError = error
+            handle(error)
+        }
+    }
+
+    /// 2017's handler: report the error unless one was reported recently, then reset the frame's
+    /// caller and callee (or clear a check thread's stack).
+    private func handle(_ error: SimAnticsError) {
+        lastError = error
+        guard let frame = stack.last else { return }
+        let recentlyFailed = errorCooldown > Self.errorCooldownTicks - 10
+        if errorCooldown == 0 {
+            vm.report(error, by: entity)
+            errorCooldown = Self.errorCooldownTicks
+        }
+        guard !isCheck else {
             stack.removeAll()
+            return
+        }
+        // When the caller is the callee, 2017 resets it twice; its reset guard only stops nesting.
+        frame.callee?.reset()
+        frame.caller?.reset()
+        if recentlyFailed {
+            // 2017 deletes an object that fails again within 10 ticks; deletion isn't ported yet.
+            vm.report(.unsupported("deleting an object that keeps failing"), by: entity)
         }
     }
 
@@ -71,6 +149,8 @@ public final class VMThread {
             continuesExecution = true
         case .missingPrimitive:
             try handleResult(.gotoTrue, of: instruction, in: frame)
+        case .unportedPrimitive(let name):
+            throw .unsupported("primitive \(instruction.opcode) (\(name))")
         case .primitive(let primitive):
             try handleResult(try primitive.execute(in: frame), of: instruction, in: frame)
         }

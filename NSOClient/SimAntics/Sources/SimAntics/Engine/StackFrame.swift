@@ -4,7 +4,8 @@ import TSOContent
 ///
 /// Ports FreeSO's `VMStackFrame`.
 public final class StackFrame {
-    public unowned let thread: VMThread
+    /// The thread running the frame; a check thread takes over a frame it runs.
+    public unowned var thread: VMThread
     public var routine: Routine
     public var instructionPointer: UInt16 = 0
     /// The entity whose behavior this is. `nil` where 2017 allows a null caller.

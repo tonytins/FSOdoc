@@ -1,0 +1,140 @@
+import Foundation
+import Testing
+import TSOFiles
+@testable import SimAntics
+
+/// OBJD words for the entry points these tests use.
+let mainWord = 3, initWord = 41, cleanupWord = 50
+
+func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 254) -> InstructionFixture {
+    InstructionFixture(opcode: 2, truePointer: truePointer, operand: expression(.plusEquals, .myObjectAttributes, index, .literal, amount))
+}
+
+@Suite struct SchedulerTests {
+    @Test func keepsListsInObjectIDOrder() throws {
+        try withVM { vm, chair throws in
+            for id in [5, 3, 2, 4] as [Int16] { try vm.addObject(guid: chairGUID, id: id) }
+            #expect(vm.entities.map(\.objectID) == [1, 2, 3, 4, 5])
+            for entity in vm.entities.reversed() { vm.scheduler.scheduleTick(for: entity, in: 2) }
+            #expect(vm.scheduler.scheduledObjectIDs(on: 2) == [1, 2, 3, 4, 5])
+            #expect(chair.thread.scheduledTick == 2)
+        }
+    }
+}
+
+@Suite struct LifecycleTests {
+    @Test func initializeRunsInitToCompletionAndPushesMain() throws {
+        try withVM(chair: [
+            bhavChunk(id: 4096, [addToAttribute(0, 1)]),
+            bhavChunk(id: 4097, [InstructionFixture(opcode: 2, truePointer: 1, operand: expression(.assign, .temps, 0, .literal, 9)),
+                                 addToAttribute(1, 5)]),
+        ], chairWords: [mainWord: 4096, initWord: 4097]) { vm, chair throws in
+            try chair.initialize()
+            #expect(chair.attributes == [0, 5])            // init ran to completion
+            #expect(chair.thread.tempRegisters[0] == 0)    // on a copy of the temps, outside a tick
+            #expect(chair.thread.stack.map(\.routine.id) == [4096])
+            #expect(vm.scheduler.scheduledObjectIDs(on: 1) == [1])
+        }
+    }
+
+    @Test func runsMainAgainEachTickAfterItReturns() throws {
+        try withVM(chair: [bhavChunk(id: 4096, [addToAttribute(0, 1)])], chairWords: [mainWord: 4096]) { vm, chair throws in
+            try chair.initialize()
+            for _ in 0..<3 { vm.tick() }
+            #expect(chair.attribute(at: 0) == 3)
+            #expect(vm.scheduler.currentTick == 3)
+            #expect(vm.scheduler.scheduledObjectIDs(on: 4) == [1])
+            #expect(vm.reportedErrors.isEmpty)
+        }
+    }
+
+    @Test func advancesTheClockGlobalsAndSeedEachTick() throws {
+        try withVM(seed: 10) { vm, _ throws in
+            for _ in 0..<150 { vm.tick() }
+            #expect(vm.clock.minutes == 1 && vm.clock.minuteFractions == 0)
+            #expect(vm.globalState[5] == 1 && vm.globalState[6] == 0)
+            #expect(vm.random.seed == 10 + 150) // one entity: the seed rises by 1 a tick
+            vm.tick()
+            #expect(vm.globalState[6] == 0) // 1 * 60 / 150 rounds down
+        }
+    }
+
+    @Test func resetsAFailingEntityAndReportsOnlyOnceInTheCooldown() throws {
+        var failing = expression(.assign, .temps, 0, .literal, 1)
+        failing[5] = 20 // no such operator
+        try withVM(chair: [
+            bhavChunk(id: 4096, [InstructionFixture(opcode: 2, operand: failing)]),
+            bhavChunk(id: 4098, [addToAttribute(2, 1)]),
+        ], chairWords: [mainWord: 4096, cleanupWord: 4098]) { vm, chair throws in
+            try chair.initialize()
+            vm.tick()
+            #expect(vm.reportedErrors == [.init(objectID: 1, tick: 1, error: .simantics("Unknown expression type"))])
+            // Cleanup ran twice: 2017 resets the callee and then the caller, here the same entity.
+            #expect(chair.attribute(at: 2) == 2)
+            #expect(chair.thread.stack.map(\.routine.id) == [4096])  // and main was pushed again
+            vm.tick()
+            // Failing again within 10 ticks: 2017 deletes the object, which isn't ported yet.
+            #expect(vm.reportedErrors.count == 2)
+            #expect(vm.reportedErrors.last?.error == .unsupported("deleting an object that keeps failing"))
+        }
+    }
+
+    @Test func returnsWhetherAnImmediateEntryPointReturnedTrue() throws {
+        try withVM(chair: [
+            bhavChunk(id: 4097, [InstructionFixture(opcode: 2, truePointer: 254, falsePointer: 255,
+                                                    operand: expression(.equals, .parameters, 0, .literal, 1))]),
+        ], chairWords: [initWord: 4097]) { _, chair throws in
+            #expect(try chair.executeEntryPoint(.initialize, runImmediately: true, arguments: [1, 0, 0, 0]))
+            #expect(try !chair.executeEntryPoint(.initialize, runImmediately: true, arguments: [2, 0, 0, 0]))
+            #expect(try !chair.executeEntryPoint(.main, runImmediately: true)) // no routine
+        }
+    }
+
+    @Test func startsWithTheChairFacingFlag() throws {
+        try withVM { _, chair throws in #expect(chair.objectData[8] == 256) }
+    }
+}
+
+@Suite struct DefinitionVariableTests {
+    @Test func keepsThe2017Quirks() throws {
+        try withVM(chairWords: [52: 77]) { _, chair throws in
+            let definition = chair.object.definition
+            #expect(try DefinitionVariable.value(DefinitionVariable.guid1.rawValue, of: definition) == Int16(0x100 % 0xFFFF))
+            #expect(try DefinitionVariable.value(DefinitionVariable.ratingComfort.rawValue, of: definition) == 77)
+            #expect(try DefinitionVariable.value(DefinitionVariable.servingSurfaceTreeID.rawValue, of: definition) == 77)
+            #expect(try DefinitionVariable.value(97, of: definition) == 0)
+            #expect(throws: SimAnticsError.simantics("Not Implemented!")) {
+                try DefinitionVariable.value(DefinitionVariable.portalTreeID.rawValue, of: definition)
+            }
+        }
+    }
+}
+
+@Suite struct StateDigestTests {
+    /// FIPS 180-4 test vectors.
+    @Test(arguments: [
+        ("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+        ("abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+        ("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"),
+    ])
+    func hashesLikeSHA256(message: String, digest: String) {
+        let bytes = SHA256.hash(Array(message.utf8))
+        #expect(bytes.map { String(format: "%02x", $0) }.joined() == digest)
+    }
+
+    @Test func hashesAMillionAs() {
+        let bytes = SHA256.hash([UInt8](repeating: 0x61, count: 1_000_000))
+        #expect(bytes.map { String(format: "%02x", $0) }.joined() == "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0")
+    }
+
+    @Test func writesTheVersion0Layout() throws {
+        try withVM(seed: 0x0102) { vm, _ throws in
+            let bytes = StateDigest.bytes(of: vm)
+            #expect(Array(bytes.prefix(12)) == [0x02, 0x01, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]) // seed, entity count
+            #expect(Array(bytes[12..<14]) == [1, 0])           // object ID
+            #expect(Array(bytes[14..<18]) == [0, 1, 0, 0])     // GUID 0x100
+            #expect(Array(bytes[18..<24]) == [0, 0x80, 0, 0x80, 1, 1]) // out of the world, facing north
+            #expect(bytes.count == 12 + 2 + 4 + 4 + 1 + 1 + 4 + 160 + 4)
+        }
+    }
+}

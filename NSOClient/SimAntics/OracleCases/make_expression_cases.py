@@ -90,6 +90,22 @@ def cases():
             empty = {**state, "objects": {key: {**value, "list": []} for key, value in state["objects"].items()}}
             yield f"pop-empty-{scope}-{stack_object}", {**empty, "operand": operand(POP, TEMPS, 1, scope, 0)}
 
+    for scope, stack in ((21, True), (53, True), (21, False)):  # object definition fields
+        for field in list(range(-1, 99)) + [600]:
+            yield f"definition-{scope}-{field}-{stack}", {**preset(stack), "operand": operand(ASSIGN, TEMPS, 0, scope, field)}
+    for clock in ({"hours": 13, "minutes": 47, "minuteFractions": 75}, {"hours": 0, "minutes": 0, "minuteFractions": 149},
+                  {"hours": 23, "minutes": 59, "minuteFractions": 1}):
+        for scope in (43, 45):
+            for data in range(-1, 6):
+                yield f"clock-{scope}-{data}-{clock['hours']}-{clock['minuteFractions']}", {
+                    "operand": operand(ASSIGN, TEMPS, 0, scope, data), "clock": clock}
+
+    for step in (0, 1, 2, 4):  # direction writes snap to the rotation step (object data 23)
+        for value in (-9, -1, 0, 3, 7, 9, 13):
+            yield f"direction-{step}-{value}", {
+                "operand": operand(ASSIGN, 3, 1, LITERAL, value),
+                "objects": {str(CALLER): {"data": {"23": step}, "direction": 2}}}
+
     for operator in (20, 255):
         yield f"unknown-operator-{operator}", {"operand": operand(operator, TEMPS, 0, LITERAL, 1)}
     yield "upstairs-room-test", {**preset(False), "operand": operand(14, 3, 29, LITERAL, 1024)}

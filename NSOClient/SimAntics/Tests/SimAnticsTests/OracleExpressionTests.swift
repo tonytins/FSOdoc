@@ -78,11 +78,17 @@ struct OracleCase {
         }
 
         for (key, value) in request["globals"] as? [String: Int] ?? [:] { vm.globalState[Int(key)!] = Int16(value) }
+        if let clock = request["clock"] as? [String: Int] {
+            vm.clock.hours = Int32(clock["hours"] ?? 0)
+            vm.clock.minutes = Int32(clock["minutes"] ?? 0)
+            vm.clock.minuteFractions = Int32(clock["minuteFractions"] ?? 0)
+        }
         for (key, state) in request["objects"] as? [String: [String: Any]] ?? [:] {
             let entity = try required(vm.entity(id: Int16(key)!))
             for (index, value) in state["data"] as? [String: Int] ?? [:] { entity.objectData[Int(index)!] = Int16(value) }
             for (index, value) in state["attributes"] as? [String: Int] ?? [:] { entity.setAttribute(Int16(value), at: UInt16(index)!) }
             if let list = state["list"] as? [Int] { entity.list = list.map { Int16($0) } }
+            if let direction = state["direction"] as? Int { entity.directionNotch = Int16(direction) }
         }
         for (index, value) in (request["temps"] as? [Int] ?? []).enumerated() { caller.thread.tempRegisters[index] = Int16(value) }
         for (index, value) in (request["tempXL"] as? [Int] ?? []).enumerated() { caller.thread.tempXL[index] = Int32(value) }
@@ -194,4 +200,92 @@ func required<Value>(_ value: Value?, _ what: @autoclosure () -> String = "a fix
                      sourceLocation: SourceLocation = #_sourceLocation) throws -> Value {
     guard let value else { throw MissingFixtureValue(description: "missing \(what()) at \(sourceLocation)") }
     return value
+}
+
+/// Compares every object's entry point table with the one a 2017 entity builds (`objects.tsv`, column 8).
+@Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
+struct OracleEntryPointTests {
+    @Test func matches2017() throws {
+        let lines = try String(contentsOf: try required(oracleDirectory).appendingPathComponent("objects.tsv"), encoding: .utf8)
+            .split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
+        let content = try GameContent(.init(gameDirectory: try required(gameDirectory),
+                                            freeSOContentDirectory: freeSOContentDirectory))
+        let vm = try VM(content: content, seed: 1)
+        var compared = 0, mismatches: [String] = []
+        for (index, fields) in lines.enumerated() where fields.count == 8 {
+            let guid = try required(UInt32(fields[0], radix: 16))
+            let actual: String
+            do {
+                let entity = try vm.addObject(guid: guid, id: Int16(index + 1))
+                actual = entity.entryPoints.map { $0.map { "\($0.conditionFunction):\($0.actionFunction)" }.joined(separator: ",") } ?? "none"
+            } catch {
+                actual = "error \(error)"
+            }
+            if actual != fields[7] { mismatches.append("\(fields[0]): 2017 \(fields[7].prefix(80)) Swift \(actual.prefix(80))") }
+            compared += 1
+        }
+        print("Entry points against 2017: \(compared) objects compared, \(mismatches.count) mismatched")
+        #expect(compared > 2_000)
+        #expect(mismatches.isEmpty, "\(mismatches.prefix(5).joined(separator: "\n"))")
+    }
+}
+
+/// Runs each object alone, out of the world, and compares state digests with
+/// `fso-oracle run-objects` (`objects.digests`) after creation and every 10 ticks to 30.
+///
+/// Objects whose run needs behavior not ported yet are counted, not compared, as are
+/// multi-tile objects (not ported) and objects 2017 can't create.
+@Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
+struct OracleObjectRunTests {
+    @Test func matches2017() throws {
+        let text = try String(contentsOf: try required(oracleDirectory).appendingPathComponent("objects.digests"), encoding: .utf8)
+        var expected: [String: [String]] = [:], order: [String] = []
+        for line in text.split(separator: "\n") {
+            let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { continue }
+            if expected[parts[0]] == nil { order.append(parts[0]) }
+            expected[parts[0], default: []].append(parts[1])
+        }
+        let content = try GameContent(.init(gameDirectory: try required(gameDirectory),
+                                            freeSOContentDirectory: freeSOContentDirectory))
+        var matched = 0, mismatches: [String] = [], skipped: [String: Int] = [:]
+        for guidText in order {
+            let lines = try required(expected[guidText])
+            guard lines.first?.hasPrefix("tick") == true else { skipped["2017 couldn't run it", default: 0] += 1; continue }
+            let guid = try required(UInt32(guidText, radix: 16))
+            guard let object = try content.objects.object(guid: guid) else { skipped["not in Swift content", default: 0] += 1; continue }
+            if object.definition.masterID != 0 && object.definition.subIndex == -1 {
+                skipped["multi-tile", default: 0] += 1
+                continue
+            }
+            let vm = try VM(content: content, seed: 0x0F50_D0C5_EED0_0001)
+            var actual: [String] = []
+            func record(_ tick: Int) {
+                actual.append("tick \(tick) seed \(String(format: "%016llx", vm.random.seed)) entities \(vm.entities.count) digest \(StateDigest.hex(of: vm))")
+            }
+            do {
+                try vm.addObject(guid: guid, id: 1).initialize()
+                record(0)
+                for tick in 1...30 {
+                    vm.tick()
+                    if tick % 10 == 0 { record(tick) }
+                }
+            } catch {
+                skipped["Swift failed to create it", default: 0] += 1
+                continue
+            }
+            if let gap = vm.reportedErrors.first(where: { if case .unsupported = $0.error { true } else { false } }) {
+                if case .unsupported(let reason) = gap.error { skipped["unsupported: \(reason)", default: 0] += 1 }
+                continue
+            }
+            if actual == lines {
+                matched += 1
+            } else {
+                let first = zip(lines, actual).first { $0 != $1 }
+                mismatches.append("\(guidText) \(object.definition.label): 2017 \(first?.0 ?? "?") Swift \(first?.1 ?? "?")")
+            }
+        }
+        print("Objects run against 2017: \(matched) matched, \(mismatches.count) mismatched, skipped \(skipped.sorted { $0.value > $1.value }.prefix(10))")
+        #expect(mismatches.isEmpty, "\(mismatches.count) mismatches, first: \(mismatches.prefix(5).joined(separator: "\n"))")
+    }
 }

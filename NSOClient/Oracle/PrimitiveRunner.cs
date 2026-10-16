@@ -103,6 +103,12 @@ namespace FSO.Oracle
 
             // Apply the requested state, then snapshot it, so the response holds only the primitive's effects.
             vm.Context.RandomSeed = request.Seed;
+            if (request.Clock != null)
+            {
+                vm.Context.Clock.Hours = request.Clock.Value.Hours;
+                vm.Context.Clock.Minutes = request.Clock.Value.Minutes;
+                vm.Context.Clock.MinuteFractions = request.Clock.Value.MinuteFractions;
+            }
             foreach (var (index, value) in request.Globals)
             {
                 if (index >= vm.GlobalState.Length) throw new RequestException($"global {index} is out of range (0 to {vm.GlobalState.Length - 1})");
@@ -111,6 +117,14 @@ namespace FSO.Oracle
             foreach (var (objectID, state) in request.Objects)
             {
                 var entity = vm.GetObjectById(objectID) ?? throw new RequestException($"no object {objectID} on the lot");
+                if (state.Direction is int direction)
+                {
+                    // Set the facing exactly: the setter snaps to the rotation step in object data 23.
+                    var step = entity.ObjectData[23];
+                    entity.ObjectData[23] = 0;
+                    entity.Direction = (FSO.LotView.Model.Direction)(1 << direction);
+                    entity.ObjectData[23] = step;
+                }
                 foreach (var (index, value) in state.Data)
                 {
                     if (entity.ObjectData == null || index >= entity.ObjectData.Length)
@@ -224,6 +238,7 @@ namespace FSO.Oracle
             public short[] Args;
             public List<(int Index, short Value)> Globals;
             public List<(short ObjectID, ObjectState State)> Objects;
+            public (int Hours, int Minutes, int MinuteFractions)? Clock;
 
             public sealed class ObjectState
             {
@@ -231,11 +246,13 @@ namespace FSO.Oracle
                 public List<(int Index, short Value)> Attributes;
                 /// <summary>The whole list (<c>MyList</c>), front first, or null to leave it.</summary>
                 public short[] List;
+                /// <summary>The facing, 0 (north) to 7 clockwise, or null to leave it.</summary>
+                public int? Direction;
             }
 
             public static Request Parse(JsonObject json, ulong defaultSeed)
             {
-                var known = new HashSet<string> { "id", "opcode", "operand", "caller", "stackObject", "seed", "temps", "tempXL", "locals", "args", "globals", "objects" };
+                var known = new HashSet<string> { "id", "opcode", "operand", "caller", "stackObject", "seed", "temps", "tempXL", "locals", "args", "globals", "objects", "clock" };
                 foreach (var (key, _) in json)
                 {
                     if (!known.Contains(key)) throw new RequestException($"unknown field \"{key}\"");
@@ -255,7 +272,19 @@ namespace FSO.Oracle
                     Args = Shorts(json["args"], "args", byte.MaxValue, 4),
                     Globals = Sparse(json["globals"], "globals"),
                     Objects = ObjectStates(json["objects"]),
+                    Clock = ClockState(json["clock"]),
                 };
+            }
+
+            /// <summary><c>{"hours": h, "minutes": m, "minuteFractions": f}</c>, each required.</summary>
+            private static (int, int, int)? ClockState(JsonNode node)
+            {
+                if (node == null) return null;
+                if (node is not JsonObject clock || clock.Count != 3)
+                    throw new RequestException("\"clock\" must be an object with \"hours\", \"minutes\", and \"minuteFractions\"");
+                return ((int)Integer(clock["hours"] ?? throw new RequestException("\"clock\" needs \"hours\""), "hours", 0, 23),
+                        (int)Integer(clock["minutes"] ?? throw new RequestException("\"clock\" needs \"minutes\""), "minutes", 0, 59),
+                        (int)Integer(clock["minuteFractions"] ?? throw new RequestException("\"clock\" needs \"minuteFractions\""), "minuteFractions", 0, 149));
             }
 
             private static long Integer(JsonNode node, string name, long minimum, long maximum)
@@ -320,10 +349,11 @@ namespace FSO.Oracle
                 {
                     if (!short.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out var objectID) || objectID == 0)
                         throw new RequestException($"\"objects\" key \"{key}\" is not an object ID");
-                    if (value is not JsonObject state || state.Any(pair => pair.Key != "data" && pair.Key != "attributes" && pair.Key != "list"))
+                    if (value is not JsonObject state || state.Any(pair => pair.Key != "data" && pair.Key != "attributes" && pair.Key != "list" && pair.Key != "direction"))
                         throw new RequestException($"object {key} state must be an object with \"data\", \"attributes\", and \"list\"");
                     states.Add((objectID, new ObjectState { Data = Sparse(state["data"], "data"), Attributes = Sparse(state["attributes"], "attributes"),
-                        List = state["list"] == null ? null : Shorts(state["list"], "list", short.MaxValue, 0) }));
+                        List = state["list"] == null ? null : Shorts(state["list"], "list", short.MaxValue, 0),
+                        Direction = state["direction"] == null ? null : (int)Integer(state["direction"], "direction", 0, 7) }));
                 }
                 return states;
             }

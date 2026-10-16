@@ -23,6 +23,7 @@ namespace FSO.Oracle
         private const string Usage = @"usage: fso-oracle run-lot [options] [--ticks N] [--every N]
        fso-oracle run-primitive [options]
        fso-oracle list-objects [options]
+       fso-oracle run-objects [options] [--ticks N] [--every N]
 
 run-lot loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot
 server does, ticks it, and prints a state digest.
@@ -30,6 +31,10 @@ server does, ticks it, and prints a state digest.
 run-primitive loads the same lot, then reads JSON requests from standard input, one
 per line, runs each 2017 primitive on a fresh copy of the lot, and writes one JSON
 response per line (see README.md).
+
+run-objects reads object GUIDs (hexadecimal) from standard input, one per line. For each,
+it loads an empty lot, creates the object out of the world, and prints a state digest
+after creation and as it ticks (see README.md).
 
 list-objects loads every registered object through the 2017 content system and prints
 one tab-separated line per object (see README.md).
@@ -42,12 +47,12 @@ options:
                     (default: TSOClient/tso.content/Content in this repository)
   --blueprint FILE  lot XML (default: Blueprints/empty_lot_fso.xml in the content folder)
   --seed HEX        the VM's random seed once the lot is loaded (default: 0F50D0C5EED00001)
-  --ticks N         run-lot: ticks to run after loading (default: 1800, one minute of game time)
-  --every N         run-lot: also print a digest every N ticks (default: 0, only at the end)";
+  --ticks N         run-lot and run-objects: ticks to run after loading (default: 1800, one minute of game time)
+  --every N         run-lot and run-objects: also print a digest every N ticks (default: 0, only at the end)";
 
         public static int Main(string[] args)
         {
-            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive" && args[0] != "list-objects"))
+            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive" && args[0] != "list-objects" && args[0] != "run-objects"))
             {
                 Console.Error.WriteLine(Usage);
                 return 2;
@@ -83,6 +88,11 @@ options:
             }
             var blueprint = BlueprintForInstall(options.BlueprintPath);
 
+            if (args[0] == "run-objects")
+            {
+                RunObjects(EmptyBlueprint(blueprint), options, results);
+                return 0;
+            }
             if (args[0] == "run-lot")
             {
                 RunLot(LoadLot(blueprint, options.Seed), options, results);
@@ -118,6 +128,61 @@ options:
             return vm;
         }
 
+        /// <summary>The blueprint with every object taken out: the same lot, empty.</summary>
+        private static byte[] EmptyBlueprint(byte[] blueprint)
+        {
+            var document = XDocument.Load(new MemoryStream(blueprint));
+            document.Descendants("object").Remove();
+            using var stream = new MemoryStream();
+            document.Save(stream);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// For each GUID on standard input: an empty lot, the object created out of the world as
+        /// <c>VMContext.CreateObjectInstance</c> does (running its init), then ticks. Prints
+        /// <c>guid tick N seed S entities E digest D</c> after creation (tick 0), every
+        /// <c>--every</c> ticks, and at the end; or <c>guid missing</c> if the object can't be
+        /// created, or <c>guid error Type</c> if creating or ticking throws.
+        /// </summary>
+        private static void RunObjects(byte[] emptyBlueprint, Options options, TextWriter results)
+        {
+            string line;
+            while ((line = Console.In.ReadLine()) != null)
+            {
+                line = line.Trim();
+                if (line.Length == 0) continue;
+                if (!uint.TryParse(line, System.Globalization.NumberStyles.HexNumber, null, out var guid))
+                {
+                    results.WriteLine($"{line} error not a GUID");
+                    continue;
+                }
+                var prefix = guid.ToString("x8");
+                try
+                {
+                    var vm = LoadLot(emptyBlueprint, options.Seed);
+                    var group = vm.Context.CreateObjectInstance(guid, FSO.LotView.Model.LotTilePos.OUT_OF_WORLD, FSO.LotView.Model.Direction.NORTH);
+                    if (group == null)
+                    {
+                        results.WriteLine($"{prefix} missing");
+                        continue;
+                    }
+                    PrintDigest(vm, 0, results, prefix + " ");
+                    for (var tick = 1; tick <= options.Ticks; tick++)
+                    {
+                        vm.Tick();
+                        if ((options.Every > 0 && tick % options.Every == 0) || tick == options.Ticks) PrintDigest(vm, tick, results, prefix + " ");
+                    }
+                }
+                catch (Exception error)
+                {
+                    results.WriteLine($"{prefix} error {error.GetType().Name}");
+                    Console.Error.WriteLine($"fso-oracle: object {prefix}: {error}");
+                }
+                results.Flush();
+            }
+        }
+
         private static void RunLot(VM vm, Options options, TextWriter results)
         {
             PrintDigest(vm, 0, results);
@@ -138,7 +203,8 @@ options:
         /// One line per GUID registered at startup, sorted by GUID, tab-separated: the GUID
         /// (8 hex digits), then either the OBJD label, the resource name, the semi-global
         /// (lower-case file name without extension, or <c>-</c>), the number of routines by
-        /// name, the number of BHAVs, and the number of tuning tables; or <c>missing</c> if no
+        /// name, the number of BHAVs, the number of tuning tables, and the entry point table
+        /// (see <see cref="EntryPoints"/>); or <c>missing</c> if no
         /// OBJD has the GUID; or <c>error</c> and the exception type if loading fails.
         /// Loading can register objects again (patched files), so the GUIDs are taken first.
         /// </remarks>
@@ -167,7 +233,8 @@ options:
                             semiGlobal == null ? "-" : Path.GetFileNameWithoutExtension(semiGlobal).ToLowerInvariant(),
                             resource.TreeByName.Count,
                             resource.MainIff.List<Files.Formats.IFF.Chunks.BHAV>()?.Count ?? 0,
-                            resource.Tuning?.Tables?.Length ?? 0);
+                            resource.Tuning?.Tables?.Length ?? 0,
+                            EntryPoints(item));
                     }
                 }
                 catch (Exception error)
@@ -176,6 +243,25 @@ options:
                     Console.Error.WriteLine($"fso-oracle: object {guid:x8}: {error}");
                 }
                 results.WriteLine($"{guid:x8}\t{line}");
+            }
+        }
+
+        /// <summary>
+        /// The entry point table a 2017 entity builds for an object: each entry as
+        /// <c>condition:action</c>, comma-separated, or <c>none</c> without a table, or
+        /// <c>error</c> and the exception type if building the entity fails.
+        /// </summary>
+        private static string EntryPoints(Content.GameObject item)
+        {
+            try
+            {
+                var entity = new VMGameObject(item, null);
+                return entity.EntryPoints == null ? "none"
+                    : string.Join(",", entity.EntryPoints.Select(entry => $"{entry.ConditionFunction}:{entry.ActionFunction}"));
+            }
+            catch (Exception error)
+            {
+                return "error " + error.GetType().Name;
             }
         }
 
@@ -214,7 +300,7 @@ options:
         /// tile x, tile y, level, direction, the object data count and values, and the
         /// thread's stack depth, then each frame's routine ID and instruction pointer.
         /// </remarks>
-        private static void PrintDigest(VM vm, int tick, TextWriter results)
+        private static void PrintDigest(VM vm, int tick, TextWriter results, string prefix = "")
         {
             using var stream = new MemoryStream();
             using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
@@ -243,7 +329,7 @@ options:
                 }
             }
             var digest = Convert.ToHexString(SHA256.HashData(stream.ToArray())).ToLowerInvariant();
-            results.WriteLine($"tick {tick} seed {vm.Context.RandomSeed:x16} entities {vm.Entities.Count} digest {digest}");
+            results.WriteLine($"{prefix}tick {tick} seed {vm.Context.RandomSeed:x16} entities {vm.Entities.Count} digest {digest}");
         }
 
         private sealed class Options

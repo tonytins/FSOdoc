@@ -68,15 +68,15 @@ func makeFAR1(_ files: [(name: String, contents: Data)]) -> Data {
     return writer.bytes
 }
 
-/// An object definition (version 142) with a GUID.
-func objdChunk(label: String, guid: UInt32) -> ChunkFixture {
+/// An object definition (version 142) with a GUID and any other words set (word 3 is main, 41 init, 50 cleanup).
+func objdChunk(label: String, guid: UInt32, words: [Int: UInt16] = [:]) -> ChunkFixture {
     var writer = ByteWriter()
     writer.uint32(142)
     for index in 0..<103 { // version 142 has 105 fields; the version takes the first two
         switch index {
         case 12: writer.uint16(UInt16(truncatingIfNeeded: guid))
         case 13: writer.uint16(UInt16(truncatingIfNeeded: guid >> 16))
-        default: writer.uint16(0)
+        default: writer.uint16(words[index] ?? 0)
         }
     }
     return ChunkFixture(type: "OBJD", id: 128, label: label, contents: writer.bytes)
@@ -149,13 +149,13 @@ let chairGUID: UInt32 = 0x100
 
 /// Builds an install with one object (`chair`), its semi-global, and the global, loads
 /// it, and runs `body` with a VM holding the chair as object 1. The install lives until `body` returns.
-func withVM(chair: [ChunkFixture] = [], chairOTF: Data? = nil, semiGlobal: [ChunkFixture] = [],
-            global: [ChunkFixture] = [], seed: UInt64 = 1,
+func withVM(chair: [ChunkFixture] = [], chairWords: [Int: UInt16] = [:], chairOTF: Data? = nil,
+            semiGlobal: [ChunkFixture] = [], global: [ChunkFixture] = [], seed: UInt64 = 1,
             _ body: (VM, Entity) throws -> Void) throws {
     let install = try FakeInstall()
     try install.write(Data(#"<ObjectInfoTable><I g="0x100" n="chair" m="0" i="0"/></ObjectInfoTable>"#.utf8),
                       to: "packingslips/objecttable.xml")
-    let chairIFF = makeIFF([objdChunk(label: "chair", guid: chairGUID),
+    let chairIFF = makeIFF([objdChunk(label: "chair", guid: chairGUID, words: chairWords),
                             ChunkFixture(type: "GLOB", id: 128, contents: Data("testglobals\0".utf8))] + chair)
     try install.write(makeFAR1([(name: "chair.iff", contents: chairIFF)]), to: "objectdata/objects/objiff.far")
     try install.write(makeFAR1(chairOTF.map { [(name: "chair.otf", contents: $0)] } ?? []),
