@@ -30,6 +30,27 @@ extension Primitives {
             public var lhsScope: UInt8
             public var rhsScope: UInt8
 
+            public init(lhsScope: UInt8, lhsData: Int16, rawOperator: UInt8, rhsScope: UInt8, rhsData: Int16,
+                        isSigned: UInt8 = 0) {
+                self.lhsData = lhsData
+                self.rhsData = rhsData
+                self.isSigned = isSigned
+                self.rawOperator = rawOperator
+                self.lhsScope = lhsScope
+                self.rhsScope = rhsScope
+            }
+
+            public func encoded() -> [UInt8] {
+                OperandWriter.bytes { writer in
+                    writer.int16(lhsData)
+                    writer.int16(rhsData)
+                    writer.uint8(isSigned)
+                    writer.uint8(rawOperator)
+                    writer.uint8(lhsScope)
+                    writer.uint8(rhsScope)
+                }
+            }
+
             public init(bytes: [UInt8]) {
                 var reader = OperandReader(bytes)
                 lhsData = reader.int16()

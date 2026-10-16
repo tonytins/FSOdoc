@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's second pass: entities run on their own, matching 2017 digest for digest; lot loading moves after the lot model and the most-needed primitives) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (decision 5: scripting, as a later milestone with a proof of concept now) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -84,6 +84,7 @@ criteria met, not lines written.
 | Upper Shankelston | EOD plugin handlers | 5,217 | 65–105 | 0% | 65–105 | Server-side logic only; panels belong to a client. |
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
 | Charvatia | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT`, and field-encoded strings | 764 | 5–8 | 0% | 5–8 | Only TS1 hybrid mode reads these; a TSO install contains none (checked 2026-10-15). Deferred by the owner; port it when TS1 hybrid is needed, ideally checked against a TS1 install. `OBJM` is decoded by heuristic search in 2017. |
+| Yatesport | SimAntics Script: a text assembly for BHAVs, an LSL-like language that compiles to them, a decompiler from existing objects, LSL `state`s and interactions, editor support | new | 70–120 | 5% | 67–114 | Later, after alpha; not counted in the totals below. Proof of concept in `NSOClient/SimAnticsScript` (decision 5). |
 | | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 15% ready** | **≈ 459–730** | |
 
 ## Upcoming milestones, ranked
@@ -119,6 +120,11 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
    a new encoding. Recommended: byte-for-byte; it doubles as a fidelity check.
 4. **Editing support.** PIFF encoding and `IffFile` change tracking only matter for an editor. Port
    them now, or defer. Recommended: defer.
+5. **Scripting.** Decided (2026-10-16): an LSL-like language for both editing existing objects and
+   authoring new ones, compiling to ordinary BHAV, `OBJf`, and later `TTAB` chunks, so any VM runs
+   the result unchanged and objects can be edited on any platform as text. It's a later milestone
+   (Yatesport); for now a proof of concept tests feasibility: a text assembly that round-trips every
+   routine in the install, operand encoders, and a small compiler whose output runs on the Swift VM.
 5. **Real-file tests.** Decided (2026-10-15): tests read `TSO_GAME_DIR` and are skipped when it isn't set (`RealInstallTests`).
    `TSO_GAME_DIR` and are skipped when it isn't set.
 
@@ -144,6 +150,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Decision 5 (scripting): an LSL-like language for editing and authoring, as a later milestone, Yatesport, outside the alpha totals. Proof of concept added: `BHAV.encoded()` and operand encoders (every Expression and call operand in the install re-encodes to its bytes), a text assembly that round-trips all 15,723 routines, and a compiler for a small LSL-like subset whose output runs on the Swift VM. |
 | 2026-10-16 | minor | Queen Margaret's second pass: entry points (tables match 2017 for all 2,649 objects), init and reset, check threads, error handling, the clock, the scheduler, `VM.tick()`, object definition fields, and a version 0 state digest. `fso-oracle run-objects` runs each object alone; the 6 the port can run match 2017's digests over 30 ticks, and the rest rank the unported primitives by how many objects they block. Expression now matches on 3,691 cases. Lot loading moved to a third pass: it needs the lot model, multi-tile groups, and most primitives, so whole-lot digests come after Rancho Rizzo's first part. Found and fixed two port bugs: unported primitives silently took the true branch, and direction writes ignored the rotation step. |
 | 2026-10-16 | minor | Queen Margaret's first pass: the VM core (entities, threads, stack frames, variable scopes, tuning lookup, routine translation, the random generator) and Expression. `NSOClient/scripts/oracle-fixtures.sh` generates 3,387 Expression cases and their 2017 answers; all 3,289 the port can run match, and the other 98 need state not ported yet (clock, slots, multi-tile groups, object definition fields, entry points). The comparison found one wrong reading of 2017 (a list on a missing stack object fails at once), now fixed. |
 | 2026-10-16 | minor | Ocean's Edge object path done: `GameContent` indexes the install case-insensitively, applies FreeSO's patches, and loads objects, globals, and semi-globals. Against `fso-oracle list-objects` on the 2002 beta, all 2,649 objects 2017 loads match; 2017 fails on 45 more (44 production patches that don't fit, 1 missing IFF) and Swift loads 44 of them. Found and fixed a Linux slowdown in TSOFiles' directory listing (`resourceValues` cost 2 ms a file; indexing went from 3.7 s to 0.03 s). Alpha row 2 is now partial: only sprites are left. |

@@ -141,3 +141,28 @@ func record(_ typeCode: String, id: UInt16 = 1, label: String = "", _ build: (in
         #expect(tprp.localNames == ["count", "i"])
     }
 }
+
+@Suite struct BHAVEncodingTests {
+    static let instructions = [
+        BHAV.Instruction(opcode: 2, truePointer: 1, falsePointer: 255, operand: Data([1, 2, 3, 4, 5, 6, 7, 8])),
+        BHAV.Instruction(opcode: 4097, truePointer: 254, falsePointer: 253, operand: Data([9, 0, 0, 0, 0, 0, 0, 0])),
+    ]
+
+    @Test(arguments: [UInt16(0x8000), 0x8001, 0x8002, 0x8003])
+    func readsBackWhatItWrites(version: UInt16) throws {
+        let isVersion2or3 = version >= 0x8002
+        let original = BHAV(id: 4096, label: "main", version: version, type: isVersion2or3 ? 3 : 0,
+                            argumentCount: isVersion2or3 ? 2 : 0, localCount: isVersion2or3 ? 5 : 0,
+                            flags: isVersion2or3 ? 0x10 : 0, instructions: Self.instructions)
+        let read = try BHAV(record: IFFChunkRecord(typeCode: "BHAV", id: 4096, flags: 0, label: "main", data: original.encoded()))
+        #expect(read.version == version && read.type == original.type && read.argumentCount == original.argumentCount)
+        #expect(read.localCount == original.localCount && read.flags == original.flags)
+        #expect(read.instructions == Self.instructions)
+    }
+
+    @Test func writesAnUnknownVersionAsEmpty() throws {
+        let original = BHAV(id: 1, label: "", version: 7, instructions: Self.instructions)
+        let read = try BHAV(record: IFFChunkRecord(typeCode: "BHAV", id: 1, flags: 0, label: "", data: original.encoded()))
+        #expect(read.instructions.isEmpty)
+    }
+}

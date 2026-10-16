@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import TSOFiles
+import TSOContent
 @testable import SimAntics
 
 @Suite struct VMRandomTests {
@@ -134,5 +135,47 @@ import TSOFiles
                                                                     Self.tuning(table: 1, key: 4)), caller: chair)
             }
         }
+    }
+}
+
+@Suite struct OperandEncodingTests {
+    @Test func encodesAnExpressionAsItWasRead() {
+        let bytes: [UInt8] = [0x0a, 0x00, 0xff, 0xff, 1, 5, 8, 7]
+        #expect(Primitives.Expression.Operand(bytes: bytes).encoded() == bytes)
+    }
+
+    @Test func encodesACall() {
+        let call = SubroutineOperand(arguments: [-1, 2])
+        #expect(call.arguments == [-1, 2, 0, 0] && call.usesTemps)
+        #expect(call.encoded() == [0xff, 0xff, 2, 0, 0, 0, 0, 0])
+    }
+}
+
+/// Every Expression and call operand in the install encodes back to its bytes.
+@Suite(.enabled(if: gameDirectory != nil, "TSO_GAME_DIR is not set"))
+struct RealOperandEncodingTests {
+    @Test func everyOperandRoundTrips() throws {
+        let content = try GameContent(.init(gameDirectory: try required(gameDirectory)))
+        var resources: [any IFFResource] = [try content.global()]
+        var seen = Set<String>()
+        for reference in content.objects.references where seen.insert(reference.fileName).inserted {
+            guard let object = try? content.objects.object(guid: reference.guid) else { continue }
+            resources.append(object.resource)
+            if let semiGlobal = object.resource.semiGlobal, seen.insert("semi " + semiGlobal.name).inserted { resources.append(semiGlobal) }
+        }
+        var checked = 0, problems: [String] = []
+        for resource in resources {
+            for routine in try resource.mainFile.chunks(BHAV.self) {
+                for instruction in routine.instructions where instruction.opcode == 2 || instruction.opcode >= 256 {
+                    let bytes = [UInt8](instruction.operand)
+                    let encoded = instruction.opcode == 2
+                        ? Primitives.Expression.Operand(bytes: bytes).encoded() : SubroutineOperand(bytes: bytes).encoded()
+                    if encoded != bytes { problems.append("BHAV #\(routine.id) opcode \(instruction.opcode)") }
+                    checked += 1
+                }
+            }
+        }
+        #expect(checked > 50_000)
+        #expect(problems.isEmpty, "\(problems.count) operands differ, first: \(problems.prefix(5))")
     }
 }

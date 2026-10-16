@@ -17,6 +17,13 @@ public struct BHAV: IFFChunk {
         public var falsePointer: UInt8
         /// The primitive's 8-byte operand, decoded by the VM.
         public var operand: Data
+
+        public init(opcode: UInt16, truePointer: UInt8, falsePointer: UInt8, operand: Data) {
+            self.opcode = opcode
+            self.truePointer = truePointer
+            self.falsePointer = falsePointer
+            self.operand = operand
+        }
     }
 
     public let id: UInt16
@@ -33,6 +40,62 @@ public struct BHAV: IFFChunk {
     public let flags: UInt16
     /// The instructions, in order.
     public let instructions: [Instruction]
+
+    /// A routine built in code, for tools that write behavior.
+    public init(id: UInt16, label: String, version: UInt16 = 0x8002, type: UInt8 = 0, argumentCount: UInt8 = 4,
+                localCount: UInt16 = 0, flags: UInt16 = 0, instructions: [Instruction]) {
+        self.id = id
+        self.label = label
+        self.version = version
+        self.type = type
+        self.argumentCount = argumentCount
+        self.localCount = localCount
+        self.flags = flags
+        self.instructions = instructions
+    }
+
+    /// The chunk data, in the layout of ``version``, for writing an IFF.
+    ///
+    /// Reading the result gives back an equal routine. Bytes the reader skips are written as
+    /// zeros, so a routine read from a file may not encode to that file's exact bytes. Version
+    /// 0x8003 stores the local count in one byte; an unknown version writes only the version,
+    /// which reads back as an empty routine, as 2017 does.
+    public func encoded() -> Data {
+        var bytes = Data()
+        func append<Value: FixedWidthInteger>(_ value: Value) {
+            withUnsafeBytes(of: value.littleEndian) { bytes.append(contentsOf: $0) }
+        }
+        append(version)
+        switch version {
+        case 0x8000, 0x8001:
+            append(UInt16(truncatingIfNeeded: instructions.count))
+            bytes.append(contentsOf: [UInt8](repeating: 0, count: 8))
+        case 0x8002:
+            append(UInt16(truncatingIfNeeded: instructions.count))
+            append(type)
+            append(argumentCount)
+            append(localCount)
+            append(flags)
+            bytes.append(contentsOf: [0, 0])
+        case 0x8003:
+            append(type)
+            append(argumentCount)
+            append(UInt8(truncatingIfNeeded: localCount))
+            bytes.append(contentsOf: [0, 0])
+            append(flags)
+            append(UInt32(instructions.count))
+        default:
+            return bytes
+        }
+        for instruction in instructions {
+            append(instruction.opcode)
+            append(instruction.truePointer)
+            append(instruction.falsePointer)
+            let operand = [UInt8](instruction.operand.prefix(8))
+            bytes.append(contentsOf: operand + [UInt8](repeating: 0, count: 8 - operand.count))
+        }
+        return bytes
+    }
 
     public init(record: IFFChunkRecord) throws(IFFChunkError) {
         id = record.id

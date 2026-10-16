@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for package in TSOFiles TSOContent SimAntics; do
+          for package in TSOFiles TSOContent SimAntics SimAnticsScript; do
             echo "::group::$package"
             swift build --package-path "NSOClient/$package"
             swift test --package-path "NSOClient/$package"
@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for package in TSOFiles TSOContent SimAntics; do
+          for package in TSOFiles TSOContent SimAntics SimAnticsScript; do
             echo "::group::$package"
             swift build --package-path "NSOClient/$package"
             swift test --package-path "NSOClient/$package"

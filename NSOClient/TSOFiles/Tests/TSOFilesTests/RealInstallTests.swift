@@ -136,4 +136,22 @@ struct RealInstallTests {
         #expect(applied.count >= 15)
         #expect(unparsable.isEmpty, "patching made chunks unparsable: \(unparsable)")
     }
+
+    @Test func everyBHAVReadsBackFromItsEncoding() throws {
+        var checked = 0, problems: [String] = []
+        for (name, iff) in try installObjects() {
+            for routine in try iff.chunks(BHAV.self) {
+                let reread = try BHAV(record: IFFChunkRecord(typeCode: "BHAV", id: routine.id, flags: 0,
+                                                             label: routine.label, data: routine.encoded()))
+                if reread.instructions != routine.instructions || reread.version != routine.version
+                    || reread.argumentCount != routine.argumentCount || reread.localCount != routine.localCount
+                    || reread.type != routine.type || reread.flags != routine.flags {
+                    problems.append("\(name) BHAV #\(routine.id)")
+                }
+                checked += 1
+            }
+        }
+        #expect(checked > 10_000)
+        #expect(problems.isEmpty, "\(problems.count) routines differ, first: \(problems.prefix(5))")
+    }
 }

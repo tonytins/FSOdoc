@@ -53,6 +53,7 @@ NSOClient/                   Swift rewrite of the engine-free libraries (indepen
   TSOFiles/                  file format readers; no dependencies
   TSOContent/                content system; depends on ../TSOFiles
   SimAntics/                 the VM; depends on ../TSOContent and ../TSOFiles
+  SimAnticsScript/           proof of concept: BHAV text assembly and an LSL-like compiler; depends on ../SimAntics
 Charvatia/                   standalone SimAntics VM server (console, .NET Framework)
 FSOInstaller/                WinForms installer that fetches the original TSO files
 Other/
@@ -342,7 +343,7 @@ This covers the docs and any C# shown in them.
 ### NSOClient work
 
 ```sh
-for package in TSOFiles TSOContent SimAntics; do  # every package, even ones you didn't touch
+for package in TSOFiles TSOContent SimAntics SimAnticsScript; do  # every package, even ones you didn't touch
     swift build --package-path "NSOClient/$package" &&
     swift test --package-path "NSOClient/$package"
 done

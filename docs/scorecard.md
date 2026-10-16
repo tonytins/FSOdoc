@@ -5,9 +5,10 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
-`TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of
-those also `TSO_ORACLE_DIR`), SimAntics 46 passed (3 need `TSO_GAME_DIR` and `TSO_ORACLE_DIR`). The
+**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 131 passed (8 need
+`TSO_GAME_DIR`), TSOContent 37 passed (5 need `TSO_GAME_DIR`, and one of those also `TSO_ORACLE_DIR`),
+SimAntics 49 passed (4 need `TSO_GAME_DIR`, and 3 of those also `TSO_ORACLE_DIR`), SimAnticsScript 12
+passed (1 needs `TSO_GAME_DIR`). Tests that need either variable are skipped without it. The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
 expected and handled for backwards compatibility.
 
@@ -26,6 +27,7 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
 | [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
 | [Platforms](#platforms) | 3 | 0 | 1 | |
+| [Scripting](#scripting) | 3 | 1 | 3 | proof of concept: all 15,723 routines round-trip through assembly; compiled scripts run on the VM |
 | [Known differences from 2017](#known-differences-from-2017) | | | | 16 deliberate |
 | [Open bugs](#open-bugs) | 0 | 0 | 0 | none filed |
 
@@ -163,6 +165,21 @@ No `platforms:` are declared (owner decision); this tracks where the packages ar
 | PLAT-2 | Linux ARM64 | done | CI job `Linux (aarch64)`, `swift:6.3` container |
 | PLAT-3 | macOS | done | CI job `macOS` on `macos-latest`. With no `platforms:` declared, builds target macOS 10.13, so APIs newer than that can't be used (the first run failed on `FileHandle.read(upToCount:)`) |
 | PLAT-4 | Windows | missing | Untested; Foundation on Windows is the least tested |
+
+## Scripting
+
+Package: [SimAnticsScript](../NSOClient/SimAnticsScript/). A later milestone (Yatesport, roadmap
+decision 5); only a proof of concept so far.
+
+| Id | Target | Status | Note |
+|---|---|---|---|
+| SCR-1 | Routines and operands encode back to their bytes | done | `BHAV.encoded()` reads back equal for every BHAV in the install (TSOFiles `RealInstallTests`); Expression and call operands re-encode to their exact bytes (SimAntics `RealOperandEncodingTests`). Other primitives' operands get encoders as they're ported |
+| SCR-2 | Text assembly that round-trips every routine | done | `Assembly`: Expression and calls in readable form, other primitives as hex; all 15,723 routines in the beta convert to text and back unchanged |
+| SCR-3 | A compiler from an LSL-like language to routines | partial | `ScriptCompiler`: object variables, events as entry points, functions with up to 4 parameters, locals, arithmetic, comparisons, `&& \|\| !`, `if`, `while`, calls as conditions; output runs on the Swift VM (`CompilerTests`). Missing: primitives as built-ins, strings, `state`s, interactions (`TTAB`), checking compiled objects against the 2017 VM |
+| SCR-4 | Assembly instructions for every primitive's operand | done | Unmodeled primitives keep their 8 bytes in hex, so nothing is lost; readable forms come with each ported primitive |
+| SCR-5 | Decompiler from routines to the LSL-like language | missing | Yatesport |
+| SCR-6 | Interactions, `state`s, and built-ins for every primitive | missing | Yatesport |
+| SCR-7 | Editor support: language server, VS Code extension | missing | Yatesport |
 
 ## Known differences from 2017
 

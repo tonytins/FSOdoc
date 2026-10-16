@@ -80,6 +80,39 @@ public struct SubroutineOperand: Sendable, Equatable {
         arguments = (0..<4).map { _ in reader.int16() }
         usesTemps = !(arguments[1] == 0 && arguments[2] == 0 && arguments[3] == 0)
     }
+
+    /// A call with up to four arguments; ``usesTemps`` follows from them, as when decoding.
+    public init(arguments: [Int16]) {
+        self.init(bytes: OperandWriter.bytes { writer in
+            for argument in (arguments + [0, 0, 0, 0]).prefix(4) { writer.int16(argument) }
+        })
+    }
+
+    public func encoded() -> [UInt8] {
+        OperandWriter.bytes { writer in
+            for argument in arguments { writer.int16(argument) }
+        }
+    }
+}
+
+/// Writes an 8-byte operand in little-endian order, padded with zeros.
+public struct OperandWriter {
+    private(set) var bytes: [UInt8] = []
+
+    public static func bytes(_ write: (inout OperandWriter) -> Void) -> [UInt8] {
+        var writer = OperandWriter()
+        write(&writer)
+        return Array((writer.bytes + [UInt8](repeating: 0, count: 8)).prefix(8))
+    }
+
+    public mutating func uint8(_ value: UInt8) { bytes.append(value) }
+
+    public mutating func uint16(_ value: UInt16) {
+        bytes.append(UInt8(truncatingIfNeeded: value))
+        bytes.append(UInt8(truncatingIfNeeded: value >> 8))
+    }
+
+    public mutating func int16(_ value: Int16) { uint16(UInt16(bitPattern: value)) }
 }
 
 /// Reads an 8-byte operand in little-endian order. Reads past the end give zeros.

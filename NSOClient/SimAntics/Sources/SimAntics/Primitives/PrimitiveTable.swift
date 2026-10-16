@@ -13,8 +13,12 @@ public protocol Primitive: SendableMetatype {
 }
 
 /// A primitive's operand, decoded from the BHAV's 8 bytes.
+///
+/// Encoding is the reverse, for tools that write behavior: decoding an operand from a
+/// file and encoding it gives back the file's 8 bytes.
 public protocol PrimitiveOperand: Sendable {
     init(bytes: [UInt8])
+    func encoded() -> [UInt8]
 }
 
 /// The primitives a VM runs, by opcode.
