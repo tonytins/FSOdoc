@@ -28,6 +28,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="GameOverlay.cs" />
+    <Compile Include="PrimitiveRunner.cs" />
     <Compile Include="Stubs/**/*.cs" />
   </ItemGroup>
 

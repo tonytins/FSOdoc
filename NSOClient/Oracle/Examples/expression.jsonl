@@ -1,0 +1,18 @@
+# Example run-primitive requests: Expression (opcode 2) and Random Number (opcode 8).
+# Expression operand: lhs data (16), rhs data (16), signed (8), operator (8), lhs scope (8), rhs scope (8), little-endian.
+# Scopes: 0 my attributes, 3 my object data, 6 global, 7 literal, 8 temps, 25 (0x19) locals.
+{"id":"assign","opcode":2,"operand":"0000050000050807"}
+{"id":"plus","opcode":2,"operand":"0100000000030808","temps":[3,4]}
+{"id":"less","opcode":2,"operand":"00000a0000011907","locals":[3]}
+{"id":"divide-by-zero","opcode":2,"operand":"0000000000070807","temps":[8]}
+{"id":"global","opcode":2,"operand":"0a00030000050607"}
+{"id":"object-data","opcode":2,"operand":"0300090000050307"}
+{"id":"object-data-again","opcode":2,"operand":"0300090000050307"}
+{"id":"attribute","opcode":2,"operand":"0100020000030007","caller":1,"objects":{"1":{"attributes":{"1":40}}}}
+{"id":"no-stack-object","opcode":2,"operand":"0000000000050801"}
+# Random number operand: destination data (16), destination scope (16), range data (16), range scope (16).
+{"id":"random","opcode":8,"operand":"0000080064000700"}
+{"id":"random-again","opcode":8,"operand":"0000080064000700"}
+{"id":"no-primitive","opcode":250}
+{"id":"bad-opcode","opcode":300}
+{"id":"unknown-field","opcode":2,"bogus":1}

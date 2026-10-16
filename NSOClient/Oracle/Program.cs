@@ -20,22 +20,30 @@ namespace FSO.Oracle
     /// </summary>
     public static class Program
     {
-        private const string Usage = @"usage: fso-oracle run-lot [--game DIR] [--content DIR] [--blueprint FILE] [--ticks N] [--every N] [--seed HEX]
+        private const string Usage = @"usage: fso-oracle run-lot [options] [--ticks N] [--every N]
+       fso-oracle run-primitive [options]
 
-Loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot server does,
-ticks it, and prints a state digest.
+run-lot loads a lot from blueprint XML into a headless 2017 VM, as FreeSO's lot
+server does, ticks it, and prints a state digest.
 
+run-primitive loads the same lot, then reads JSON requests from standard input, one
+per line, runs each 2017 primitive on a fresh copy of the lot, and writes one JSON
+response per line (see README.md).
+
+Standard output carries only results; the 2017 code's own messages go to standard error.
+
+options:
   --game DIR        the TSO install (default: $TSO_GAME_DIR)
   --content DIR     FreeSO's Content folder, for patches and blueprints
                     (default: TSOClient/tso.content/Content in this repository)
   --blueprint FILE  lot XML (default: Blueprints/empty_lot_fso.xml in the content folder)
-  --ticks N         ticks to run after loading (default: 1800, one minute of game time)
-  --every N         also print a digest every N ticks (default: 0, only at the end)
-  --seed HEX        the VM's initial random seed (default: 0F50D0C5EED00001)";
+  --seed HEX        the VM's random seed once the lot is loaded (default: 0F50D0C5EED00001)
+  --ticks N         run-lot: ticks to run after loading (default: 1800, one minute of game time)
+  --every N         run-lot: also print a digest every N ticks (default: 0, only at the end)";
 
         public static int Main(string[] args)
         {
-            if (args.Length == 0 || args[0] != "run-lot")
+            if (args.Length == 0 || (args[0] != "run-lot" && args[0] != "run-primitive"))
             {
                 Console.Error.WriteLine(Usage);
                 return 2;
@@ -52,12 +60,10 @@ ticks it, and prints a state digest.
                 return 2;
             }
 
-            RunLot(options);
-            return 0;
-        }
+            // The 2017 code writes diagnostics to standard output; keep that for results only.
+            var results = Console.Out;
+            Console.SetOut(Console.Error);
 
-        private static void RunLot(Options options)
-        {
             // Content: the game files (through an overlay that fills in files older installs lack),
             // plus FreeSO's own folder for patches and standalone objects.
             using var overlay = new GameOverlay(options.GameDirectory);
@@ -66,13 +72,27 @@ ticks it, and prints a state digest.
             FSOEnvironment.ContentDir = options.ContentDirectory;
             FSOEnvironment.UserDir = overlay.UserPath;
             Content.Content.Init(overlay.Path, Content.ContentMode.SERVER);
+            var blueprint = BlueprintForInstall(options.BlueprintPath);
 
+            if (args[0] == "run-lot")
+            {
+                RunLot(LoadLot(blueprint, options.Seed), options, results);
+            }
+            else
+            {
+                new PrimitiveRunner(() => LoadLot(blueprint, options.Seed), options.Seed).Run(Console.In, results);
+            }
+            return 0;
+        }
+
+        private static VM LoadLot(byte[] blueprint, ulong seed)
+        {
             // The VM, built the way LotContainer.ResetVM builds it on the lot server.
             VM.UseWorld = false;
             var driver = new VMServerDriver(new VMTSOGlobalLinkStub());
             // 2017 seeds the VM from an unseeded Random. A fixed seed makes runs repeatable;
             // in multiplayer the server's seed is authoritative in the same way.
-            var context = new VMContext(null) { RandomSeed = options.Seed };
+            var context = new VMContext(null) { RandomSeed = seed };
             var vm = new VM(context, driver, new VMNullHeadlineProvider());
             vm.Init();
 
@@ -80,20 +100,25 @@ ticks it, and prints a state digest.
             vm.SendCommand(new VMBlueprintRestoreCmd
             {
                 JobLevel = -1,
-                XMLData = BlueprintForInstall(options.BlueprintPath),
+                XMLData = blueprint,
             });
             vm.Tick();
             // Loading replaces the VM's context (VMWorldActivator.LoadFromXML), which reseeds
             // itself from an unseeded Random. Seed it again once the lot is loaded.
-            vm.Context.RandomSeed = options.Seed;
-            PrintDigest(vm, 0);
+            vm.Context.RandomSeed = seed;
+            return vm;
+        }
+
+        private static void RunLot(VM vm, Options options, TextWriter results)
+        {
+            PrintDigest(vm, 0, results);
 
             for (var tick = 1; tick <= options.Ticks; tick++)
             {
                 vm.Tick();
-                if (options.Every > 0 && tick % options.Every == 0 && tick != options.Ticks) PrintDigest(vm, tick);
+                if (options.Every > 0 && tick % options.Every == 0 && tick != options.Ticks) PrintDigest(vm, tick, results);
             }
-            if (options.Ticks > 0) PrintDigest(vm, options.Ticks);
+            if (options.Ticks > 0) PrintDigest(vm, options.Ticks, results);
         }
 
         /// <summary>
@@ -131,7 +156,7 @@ ticks it, and prints a state digest.
         /// tile x, tile y, level, direction, the object data count and values, and the
         /// thread's stack depth, then each frame's routine ID and instruction pointer.
         /// </remarks>
-        private static void PrintDigest(VM vm, int tick)
+        private static void PrintDigest(VM vm, int tick, TextWriter results)
         {
             using var stream = new MemoryStream();
             using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
@@ -160,7 +185,7 @@ ticks it, and prints a state digest.
                 }
             }
             var digest = Convert.ToHexString(SHA256.HashData(stream.ToArray())).ToLowerInvariant();
-            Console.WriteLine($"tick {tick} seed {vm.Context.RandomSeed:x16} entities {vm.Entities.Count} digest {digest}");
+            results.WriteLine($"tick {tick} seed {vm.Context.RandomSeed:x16} entities {vm.Entities.Count} digest {digest}");
         }
 
         private sealed class Options

@@ -5,7 +5,7 @@ Maintained by hand from the source tree and `swift test` in each package under
 page and [roadmap.md](roadmap.md) disagree, this page wins and the roadmap gets re-estimated. Every
 `done` row names the code or test that proves it.
 
-**As of:** 2026-10-15 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
+**As of:** 2026-10-16 · Swift 6.3.3 on Linux x86_64 · `swift test`: TSOFiles 128 passed (121 without
 `TSO_GAME_DIR`, which skips the 7 real-install tests), TSOContent 1 passed, SimAntics 1 passed. The
 owner's install is a 2002 beta; FreeSO targets the 2003 production files, so beta-only differences are
 expected and handled for backwards compatibility.
@@ -20,7 +20,7 @@ Status values: `done` (works and is tested), `partial` (works with gaps, named i
 | [Formats](#formats) | 13 | 0 | 8 | 128 test cases; real install (2002 beta): 94 containers, 82,131 entries, 51,620 typed chunks, tuning, data definition, and OTFs, 0 failures |
 | [Content](#content) | 0 | 0 | 9 | |
 | [SimAntics](#simantics) | 1 | 0 | 14 | 0 of about 70 primitives |
-| [Fidelity](#fidelity) | 2 | 2 | 2 | install scan and real-data invariants clean; the 2017 VM runs headless as an oracle; no Swift comparison yet |
+| [Fidelity](#fidelity) | 3 | 2 | 2 | install scan and real-data invariants clean; the 2017 VM runs headless as an oracle, for whole lots and single primitives; no Swift comparison yet |
 | [Determinism](#determinism) | 0 | 0 | 5 | |
 | [Reliability](#reliability) | 4 | 1 | 2 | 0 force unwraps, 0 `try!`, 0 `fatalError` in sources |
 | [Tests and tooling](#tests-and-tooling) | 5 | 2 | 0 | |
@@ -107,8 +107,9 @@ How we know the Swift code behaves like the 2017 code.
 | FID-2 | Each ported reader keeps the 2017 behavior on valid input, with quirks tested | partial | Done for FMT-1 to FMT-5 (quirks listed under [known differences](#known-differences-from-2017) and in each type's doc comment); applies to every later format |
 | FID-6 | Typed chunks parse across a real install, and their values hang together | done | `tsofiles-check` parses every supported chunk in every IFF (51,620 chunks, 0 failures). `RealInstallTests` checks that BHAV branch targets stay inside their routine and that loaded interactions fit their pie menu strings. Five old `TTAB`s (version 2 and 3) that no `OBJD` references fail to parse, as they would in 2017; the scanner lists them as unreferenced. **Unverified:** where the game finds pie menu strings for objects whose IFF has no `TTAs` (mostly expansion objects). Not in their sprite IFFs; the owner points to the game's CST files (`gamedata/uitext.dir` holds 112, `gamedata/objectdata.dir` one, which is empty). To confirm in Ocean's Edge |
 | FID-3 | Byte-level comparison of decoded output against the 2017 readers on real files | missing | Needs the 2017 build or recorded dumps (roadmap decision 2) |
-| FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | partial | `NSOClient/Oracle/` (`fso-oracle run-lot`) compiles the 2017 SimAntics, Files, Content, LotView, HIT, and Vitaboy sources unchanged on .NET 10, loads a lot headless against the install, and prints a version 0 state digest; three runs of 1,800 ticks give identical digests. Older installs go through a temporary overlay with reported placeholders. Missing: the per-primitive protocol (phase 2) and lot recordings (phase 3) |
+| FID-4 | Replay harness: 2017 recordings of commands and per-tick state hashes | partial | `NSOClient/Oracle/` (`fso-oracle run-lot`) compiles the 2017 SimAntics, Files, Content, LotView, HIT, and Vitaboy sources unchanged on .NET 10, loads a lot headless against the install, and prints a version 0 state digest; three runs of 1,800 ticks give identical digests. Older installs go through a temporary overlay with reported placeholders. Missing: lot recordings and replays (West Darrington phase 3, after Terra Tablante) |
 | FID-5 | Swift VM matches recorded state hashes for a basic lot over an in-game day | missing | Queen Margaret's to Shannopolis |
+| FID-7 | Single 2017 primitives can be run on request with given state, for differential tests | done | `fso-oracle run-primitive` (protocol version 1, see `NSOClient/Oracle/README.md`): one JSON request per line, each on a fresh lot; reports the exit code, registers, changed globals and object values, created and removed objects, exceptions, and request errors. `check_protocol.py` checks 14 example requests. Avatars not covered yet |
 
 ## Determinism
 

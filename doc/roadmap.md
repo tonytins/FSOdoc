@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (West Darrington phase 1 done: the 2017 VM runs headless on Linux as an oracle, with repeatable digests) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (West Darrington phase 2 done: the oracle runs single 2017 primitives on request over a JSON-lines protocol) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -39,18 +39,16 @@ is `partial, not blocking`.
 | Save and reload a lot (VMMarshal version 19) | no | Not started | 20–30 (Terra Tablante) |
 | Replay a recorded 2017 session to an identical state hash | no | No recording harness (decision 2) | 15–30 (West Darrington) plus everything above |
 
-**Result: pre-alpha.** Ready for real work: ≈ 5%.
+**Result: pre-alpha.** Ready for real work: ≈ 6%.
 
 ## Current focus
 
 In order:
 
-1. **West Darrington, phase 2:** a stdin/stdout protocol in the oracle that runs a single 2017
-   primitive on a given operand and variables, for the Swift tests to compare against.
-2. **The object path of Ocean's Edge:** `WorldObjectProvider` and semi-globals, so one object loads end
+1. **The object path of Ocean's Edge:** `WorldObjectProvider` and semi-globals, so one object loads end
    to end.
-3. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
-   with `VMExpression` as the first primitive.
+2. **Queen Margaret's core:** `VM`, `VMContext`, `VMThread`, `VMMemory`, the scheduler, and the BHAV translator,
+   with `VMExpression` as the first primitive, checked against `fso-oracle run-primitive`.
 
 ## Milestones
 
@@ -74,7 +72,7 @@ criteria met, not lines written.
 | Landry Lakes | Audio formats: UTK, XA, HIT, HOT, EVT, HSM, FSC, TLO, hitlists | 1,651 | 11–17 | 0% | 11–17 | Decoding only; playback is a client concern. |
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 0% | 39–58 | Async initialization with progress; no singleton. |
-| West Darrington | Oracle harness and replays: 2017 SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 35% | 13–26 | Phase 1 done: `fso-oracle run-lot` compiles 549 unchanged 2017 files with four small stubs, runs a lot headless against the 2002 beta through a reporting overlay, and prints repeatable state digests (version 0). Phase 2: the per-primitive protocol. Phase 3, after Terra Tablante: lot recordings and replays. |
+| West Darrington | Oracle harness and replays: 2017 SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single 2017 primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
 | Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 0% | 165–270 | Wrapping 16-bit arithmetic and ordered iteration are rules from the first line. |
 | Rancho Rizzo | Primitives (about 70) | 6,665 | 85–135 | 0% | 85–135 | `VMExpression` first. Each primitive lands with a replay or unit test. |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
@@ -83,13 +81,12 @@ criteria met, not lines written.
 | Upper Shankelston | EOD plugin handlers | 5,217 | 65–105 | 0% | 65–105 | Server-side logic only; panels belong to a client. |
 | Virginia Islands | Lot utilities: world and TS1 activators, architecture tools, lot rotation, terrain restore | 2,680 | 35–55 | 0% | 35–55 | Needed for houses from XML and surrounding lots. |
 | Charvatia | TS1 house and neighborhood chunks: `OBJT`, `OBJM`, `ARRY`, `WALm`, `FLRm`, `CARR`, `FAMI`, `FAMs`, `NBRS`, `NGBH`, `SIMI`, `TATT`, and field-encoded strings | 764 | 5–8 | 0% | 5–8 | Only TS1 hybrid mode reads these; a TSO install contains none (checked 2026-10-15). Deferred by the owner; port it when TS1 hybrid is needed, ideally checked against a TS1 install. `OBJM` is decoded by heuristic search in 2017. |
-| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 5% ready** | **≈ 542–864** | |
+| | **Total** | **≈ 53,000** | **≈ 580–930** | **≈ 6% ready** | **≈ 536–852** | |
 
 ## Upcoming milestones, ranked
 
 | Rank | Next milestone | Closes | Estimate (h) |
 |---|---|---|---|
-| 0 | Oracle harness, phase 2 | West Darrington (first part) | 6–12 |
 | 1 | One object end to end: object path of Ocean's Edge | alpha row 2 | 30–45 |
 | 2 | VM core with `VMExpression` | Queen Margaret's (first pass) | 60–100 |
 | 3 | Sprites and images | Hyde Park | 24–35 |
@@ -144,6 +141,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | West Darrington phase 2 done: `fso-oracle run-primitive` reads JSON requests (opcode, operand, registers, globals, object data and attributes), runs the 2017 handler on a freshly loaded lot each time (about a quarter second per request), and reports the exit code, the registers, and every changed value. Exceptions and bad requests come back as responses. Early finding: 2017's Expression divides by zero without failing and gives -1. The 2017 code's console messages now go to standard error, so standard output carries only results. Avatars aren't covered yet; the default lot has none. |
 | 2026-10-15 | minor | West Darrington phase 1 done: the oracle compiles the unchanged 2017 SimAntics stack on .NET 10 with four small stubs and runs it headless on Linux. The 2002 beta needed placeholders (three sound groups, six expansion archives), adapted object and catalog tables, and six production-only objects left out of the default lot, all reported. The VM reseeds when a lot loads, so the oracle seeds it again afterwards; three 1,800-tick runs give identical digests. |
 | 2026-10-15 | minor | Decision 2 settled: an oracle harness that compiles the 2017 SimAntics sources on modern .NET serves per-primitive differential tests first and whole-lot replays later. West Darrington re-planned in three phases and re-estimated from 15–30 to 20–40 hours (stubs for LotView and HIT). AGENTS.md allows `dotnet` for the oracle only. |
 | 2026-10-15 | minor | PIFF is FreeSO's own format, written against TSO's 2003 production files; the owner's install is a 2002 beta. Checked against FreeSO's 36 shipped patches: fixed a port bug (a final removal past the end is allowed when nothing remains, as in 2017), and the patch registry now applies each patch only if it fits, skipping and reporting the rest (of the 27 that target `objiff.far` objects, 17 apply to the beta and 10 are skipped). Estimates unchanged. |
