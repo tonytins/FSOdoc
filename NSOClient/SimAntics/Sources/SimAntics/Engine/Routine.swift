@@ -113,6 +113,11 @@ public struct OperandWriter {
     }
 
     public mutating func int16(_ value: Int16) { uint16(UInt16(bitPattern: value)) }
+
+    public mutating func uint32(_ value: UInt32) {
+        uint16(UInt16(truncatingIfNeeded: value))
+        uint16(UInt16(truncatingIfNeeded: value >> 16))
+    }
 }
 
 /// Reads an 8-byte operand in little-endian order. Reads past the end give zeros.
@@ -135,5 +140,9 @@ public struct OperandReader {
 
     public mutating func int16() -> Int16 {
         Int16(bitPattern: uint16())
+    }
+
+    public mutating func uint32() -> UInt32 {
+        UInt32(uint16()) | UInt32(uint16()) << 16
     }
 }

@@ -175,3 +175,26 @@ func addToAttribute(_ index: Int16, _ amount: Int16, true truePointer: UInt8 = 2
         }
     }
 }
+
+@Suite struct TestObjectTypeTests {
+    func test(guid: UInt32, id: Int16) throws -> ExitCode {
+        var exit = ExitCode.error
+        try withVM { vm, chair throws in
+            let operand = Primitives.TestObjectType.Operand(guid: guid, idScope: VariableScope.literal.rawValue, idData: id)
+            exit = try vm.runPrimitive(opcode: 32, operand: operand.encoded(), caller: chair).0
+        }
+        return exit
+    }
+
+    @Test func comparesTheObjectsGUID() throws {
+        #expect(try test(guid: chairGUID, id: 1) == .gotoTrue)
+        #expect(try test(guid: 0x101, id: 1) == .gotoFalse)
+        #expect(try test(guid: chairGUID, id: 7) == .error) // no object 7: an error exit, not an exception
+    }
+
+    @Test func encodesItsOperand() {
+        let operand = Primitives.TestObjectType.Operand(guid: 0x6271_EFF3, idScope: 8, idData: 3)
+        #expect(operand.encoded() == [0xF3, 0xEF, 0x71, 0x62, 3, 0, 8, 0])
+        #expect(Primitives.TestObjectType.Operand(bytes: operand.encoded()) == operand)
+    }
+}
