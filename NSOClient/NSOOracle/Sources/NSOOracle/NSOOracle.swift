@@ -18,7 +18,7 @@ struct NSOOracle: ParsableCommand {
         subcommands: [ListObjects.self, RunObjects.self, RunLot.self, RunPrimitive.self, RoomMaps.self, Compare.self])
 }
 
-/// The folder of FreeSO's content in the 2017 snapshot, which `fso-oracle` uses too.
+/// The folder of FreeSO's content in the snapshot (update-46), which `fso-oracle` uses too.
 private let repositoryContent = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 

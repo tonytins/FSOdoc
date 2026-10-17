@@ -376,7 +376,7 @@ Returns Avatar's ID.
 
 ## Notes for NSOClient
 
-Checked against the 2017 FreeSO snapshot (`VMMemory.cs`), which NSOClient's `VMMemory`
+Checked against the FreeSO snapshot (update-46) (`VMMemory.cs`), which NSOClient's `VMMemory`
 matches case for case (scorecard VM-4 and FID-9). Where FreeSO differs from the text above:
 
 - **2 and 5 (target object):** fail with "Target Object is Deprecated!".

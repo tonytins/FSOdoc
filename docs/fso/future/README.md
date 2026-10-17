@@ -1,6 +1,6 @@
 # Beyond the snapshot: FreeSO's other branches
 
-The rest of [`docs/fso/`](../README.md) describes FreeSO as of August 9, 2017, the snapshot in
+The rest of [`docs/fso/`](../README.md) describes FreeSO at beta/update-46 (August 2017), the snapshot in
 [`TSOClient/`](../../../TSOClient/). This repository also carries four of FreeSO's branches. Two of
 them led *into* the snapshot; two carry FreeSO's development *after* it. "Future" is relative to the
 snapshot: all of this work was finished long ago.
@@ -30,12 +30,12 @@ git log --oneline origin/feature/upgrades ^main          # commits past the snap
 git diff --stat main...origin/feature/lotview-refactor   # what changed since they split
 ```
 
-## Why I stuck with the 2017 snapshot
+## Why I stuck with the update-46 snapshot
 
 FreeSO's later work has a lot of great features, but I wasn't too
 fond of 3D. At that point, you might as well have just made The Sims 2 Online. It made an already
 complicated engine even more daunting and confusing, and it would have gone well beyond the scope
-of what this project remains about: understanding the original game. The 2017 snapshot is still close
+of what this project remains about: understanding the original game. The update-46 snapshot is still close
 enough to TSO to learn from, so that's where I drew the line.
 
 ## Why it matters here

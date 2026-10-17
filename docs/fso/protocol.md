@@ -19,7 +19,7 @@ original game client could in principle talk to these servers. The
 server README says the API matches the Maxis protocol for login and shard
 selection.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Two transports
 

@@ -20,7 +20,7 @@ where the TSOClient game folder ended up.
 
 options:
   --lowercase    lower-case every extracted path (cabextract -L); helps tools
-                 that assume lower-case paths, such as the 2017 FreeSO client
+                 that assume lower-case paths, such as FreeSO's update-46 client
   --force        extract into an output folder that isn't empty
   --skip-test    don't test cabinet integrity before extracting
   --check        run tsofiles-check on the result (needs the Swift toolchain)

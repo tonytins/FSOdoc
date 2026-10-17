@@ -3,19 +3,22 @@
 SimsCraft is rebuilding the engine of The Sims Online in **Swift**, so the game can be played
 again. It started as a documentation fork of [FreeSO](https://github.com/riperiperi/FreeSO),
 a reimplementation of The Sims Online in **C#** on a forked MonoGame, and keeps FreeSO's source
-frozen at a single snapshot (August 9, 2017), written for classic **.NET Framework** (mostly
-4.5) and Visual Studio 2017 on Windows. FreeSO's own servers have since shut down; what its
+frozen at a single snapshot, **beta/update-46** (August 2017), written for classic **.NET
+Framework** (mostly 4.5) and Visual Studio 2017 on Windows. FreeSO's own servers have since shut down; what its
 creator left the public is a replayable snapshot of its city as it closed. The new game is
 **NewSO**, built from the NSOClient packages. Write the name as **SimsCraft** in prose. The upstream game is
 **FreeSO**, and the original game is **The Sims Online** (TSO).
 
 **"FreeSO" means the snapshot.** In this repository, in prose, comments, and
 names alike, "FreeSO" on its own means that snapshot: the code in
-[TSOClient/](./TSOClient/) that the docs describe and NSOClient matches. Write
-"2017" only to place the snapshot in time ("the 2017 snapshot", "How it works
-(2017)"), never as a stand-in for FreeSO. FreeSO has kept going since; name
-that work explicitly ("FreeSO's later branches", "after the snapshot"), as
-[docs/fso/future/](./docs/fso/future/README.md) does. Swift names that carry
+[TSOClient/](./TSOClient/) that the docs describe and NSOClient matches. To name its
+version, write **update-46**: FreeSO's own name for the build, "FreeSO beta/update-46
+(August 2017)" on a page's first mention, then "update-46" ("the update-46 snapshot", "How it
+works (update-46)"). Don't write "2017" as a stand-in for the snapshot (it's easily confused
+with Visual Studio 2017); use dates only to place things in time. FreeSO has kept going since;
+name that work explicitly ("FreeSO's later branches", "after the snapshot", or its update
+names), as [docs/fso/future/](./docs/fso/future/README.md) and
+[docs/fso/releases.md](./docs/fso/releases.md) do. Swift names that carry
 FreeSO's own names for compatibility use `fsoCompat` (such as
 `PrimitiveTable.fsoCompat` and `ExitCode.fsoCompatName`); use a `compat`
 suffix the same way for anything kept only for the TSO beta.
@@ -64,7 +67,7 @@ docs/                        the Markdown documentation
   README.md                  overview and outline of everything in docs/
   roadmap.md                 NSOClient milestones, alpha gate, estimates, owner decisions
   scorecard.md               NSOClient status per feature, with evidence (wins over the roadmap)
-  fso/                       documentation of the 2017 FreeSO snapshot
+  fso/                       documentation of the update-46 FreeSO snapshot, and releases.md, FreeSO's updates by name
     README.md                index, coverage table, and conventions (start here)
     architecture.md          layers, dependency graph, runtime flows
     modernization.md         the earlier modern .NET rewrite plan, kept for reference (no longer a goal)
@@ -79,7 +82,7 @@ docs/                        the Markdown documentation
 .agents/skills/
   dotnet-guidelines/         C# and .NET conventions, for the oracle
   swift-guidelines/          Swift conventions for the NSOClient packages
-TSOClient/                   the 2017 FreeSO snapshot (all paths below are relative to it)
+TSOClient/                   the update-46 FreeSO snapshot (all paths below are relative to it)
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
@@ -227,7 +230,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
    results. Command-line executables such as `tsofiles-check` may print.
 2. **Compatibility is the baseline, not the ceiling.** Every change keeps
    two baselines:
-   - **FreeSO.** Match the results FreeSO's 2017 snapshot gives, not its
+   - **FreeSO.** Match the results FreeSO's update-46 snapshot gives, not its
      code. On valid input and on TSO's 2003 production files, which FreeSO
      targets, the observable behavior must agree, including quirks that
      change results (SimAntics state, what loads and how), and `fso-oracle`
@@ -320,7 +323,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
 10. **Measure before optimizing.** Time a release build against a real
     install (`tsofiles-check` prints counts; `time` it) before and after.
 
-### Documenting the 2017 snapshot
+### Documenting the update-46 snapshot
 
 #### The source is the ground truth
 
@@ -333,7 +336,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
   `../TSOClient/tso.simantics/VM.cs`). Name types and members exactly as
   they appear in the code.
 - **Describe the snapshot, not upstream.** FreeSO kept changing after
-  August 2017. Don't import later designs, and don't call something a bug
+  update-46. Don't import later designs, and don't call something a bug
   unless the code shows it.
 - **Don't change the snapshot's behavior.** Documentation work doesn't
   edit `TSOClient/`, `Charvatia/`, `FSOInstaller/`, or `Other/`. Adding
@@ -349,7 +352,7 @@ These apply to everything under [NSOClient/](./NSOClient/).
 
 #### What a page holds
 
-- **How it works (2017)** describes the code as it is, including its
+- **How it works (update-46)** describes the code as it is, including its
   Windows-only parts, without judging them. This is what new pages write.
 - **Modern .NET rewrite** sections come from an earlier goal of rewriting
   FreeSO on modern .NET. Keep them for reference, but don't add new ones or

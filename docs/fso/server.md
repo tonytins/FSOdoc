@@ -18,7 +18,7 @@ FreeSO's backend is one executable, `server.exe` (project
 The wire protocols are in [protocol.md](./protocol.md). The lot
 simulation is [SimAntics](./simantics.md).
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Startup
 

@@ -5,7 +5,7 @@
 > and platform blockers, which still applies to the code in `TSOClient/`. Nothing in it is being
 > worked on.
 
-This guide plans a rewrite of the 2017 FreeSO snapshot onto modern,
+This guide plans a rewrite of the FreeSO snapshot (update-46) onto modern,
 cross-platform .NET. It collects the "Modern .NET rewrite" sections of
 the other pages into one plan. It follows the
 [.NET guidelines skill](../../.agents/skills/dotnet-guidelines/SKILL.md).

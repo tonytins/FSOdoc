@@ -7,7 +7,7 @@ settings, a small game and rendering framework on top of MonoGame, the
 MonoGame (WindowsGL), Mina.NET, Mp3Sharp, Ninject, NLog, Common.Logging,
 and Newtonsoft.Json.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Process-wide state
 

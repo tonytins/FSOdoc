@@ -1,6 +1,6 @@
 # Architecture overview
 
-This page shows how the 2017 FreeSO snapshot fits together: the layers,
+This page shows how the FreeSO snapshot (beta/update-46, August 2017) fits together: the layers,
 the project dependencies, and what happens at run time. Each layer has
 its own page; links are in the [index](./README.md).
 

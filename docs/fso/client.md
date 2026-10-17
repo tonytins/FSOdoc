@@ -8,7 +8,7 @@ library, **FSO.UI** (`TSOClient/FSO.UI`), whose code mostly lives in
 [SimAntics](./simantics.md), [audio](./audio.md), and the
 [network protocols](./protocol.md).
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Startup
 

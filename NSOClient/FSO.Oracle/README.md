@@ -1,6 +1,6 @@
 # SimAntics oracle
 
-`fso-oracle` runs FreeSO's SimAntics VM (the 2017 snapshot) headless on modern .NET, to produce
+`fso-oracle` runs FreeSO's SimAntics VM (the update-46 snapshot) headless on modern .NET, to produce
 reference results for the Swift port (roadmap decision 2, the West Darrington
 milestone). It compiles FreeSO's SimAntics, Files, Content, LotView, HIT, and
 Vitaboy sources unchanged: `SnapshotSources.props` links them read-only from

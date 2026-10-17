@@ -4,7 +4,8 @@ SimsCraft is rebuilding the engine of *The Sims Online* in Swift. This folder do
 of that work:
 
 - **FreeSO**, the open-source C# reimplementation of the game that SimsCraft learns from, as its
-  source stood on August 9, 2017. That copy of the code is in [`TSOClient/`](../TSOClient/).
+  source stood at its beta/update-46 build (August 2017). That copy of the code is in
+  [`TSOClient/`](../TSOClient/), and [fso/releases.md](fso/releases.md) places it among FreeSO's updates.
 - **NSOClient**, the new Swift code, in [`NSOClient/`](../NSOClient/). It covers the parts of
   FreeSO that don't depend on a game engine (no graphics, sound, user interface, or networking):
   reading the game's files, loading its content, and running its object behavior.
@@ -83,7 +84,7 @@ aren't covered.
 | [nso-review.md](results/nso-review.md) | `fso-oracle` and `nso-oracle` run side by side on each install, compared: matches, mismatches, what NSOClient doesn't support yet, and timings. Written after each phase of the roadmap |
 | [install-differences.md](results/install-differences.md) | How the production and beta installs differ: files, archive entries, IFF chunks, and object GUIDs, with no game data. The reference for keeping NSOClient working on the beta |
 
-### [fso/](fso/README.md): FreeSO's code, as of 2017
+### [fso/](fso/README.md): FreeSO's code, at update-46
 
 Written from reading the source in `TSOClient/`. Each page explains how one part of FreeSO works.
 The "Modern .NET rewrite" sections are from an earlier plan to modernize FreeSO itself, which
@@ -104,6 +105,7 @@ SimsCraft dropped in favor of NSOClient; they're kept for reference.
 | [client.md](fso/client.md) | FSO.Client and FSO.UI |
 | [server.md](fso/server.md) | FSO.Server: city and lot servers, database, watchdog |
 | [tools.md](fso/tools.md) | Volcanic IDE, debug tools, patcher, installer, Charvatia |
+| [releases.md](fso/releases.md) | FreeSO's updates by name, from the early tags to the Archive Beta, with the snapshot (beta/update-46) marked |
 | [future/](fso/future/README.md) | FreeSO's branches before and after the snapshot: lot serialization, the server rebuild, and 2017–2019 development |
 
 ### [simantics/](simantics/README.md): the SimAntics Wiki, in Markdown

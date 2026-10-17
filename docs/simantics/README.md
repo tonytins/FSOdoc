@@ -2,7 +2,7 @@
 
 A Markdown copy of the [SimAntics Wiki](https://simantics.wikidot.com/), a community reference for
 the scripting language behind objects and Sims in The Sims and The Sims Online. It describes what
-the game does; the [FreeSO docs](../fso/simantics.md) describe how the 2017 snapshot implements it.
+the game does; the [FreeSO docs](../fso/simantics.md) describe how FreeSO's update-46 snapshot implements it.
 Where the two disagree, FreeSO's code is what NSOClient matches, and the "Notes for NSOClient"
 sections at the end of each page say so.
 
@@ -36,6 +36,6 @@ Changes from the original:
 - The Edith and Interactions pages are merged into the introduction.
 - Operand tables are rewritten as byte ranges, and wiki markup leftovers fixed.
 - Links to pages the wiki never wrote (entry points, balloon icons) became plain text.
-- Notes comparing the text with the 2017 FreeSO code were added.
+- Notes comparing the text with FreeSO's code (update-46) were added.
 
 Left out: the front page, which is only navigation, and the glossary, which is an empty template.

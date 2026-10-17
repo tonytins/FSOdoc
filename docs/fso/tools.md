@@ -4,7 +4,7 @@ Everything here is outside the game's main runtime path: editors, debug
 windows, installers, and older code kept in the repository. Almost all of
 it is WinForms on .NET Framework.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Volcanic: the object IDE
 

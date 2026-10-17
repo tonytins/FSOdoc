@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase D2: `nso-oracle run-primitive`) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase D2: `nso-oracle run-primitive`) · **Target:** behavior parity with FreeSO's engine-free libraries at the beta/update-46 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).

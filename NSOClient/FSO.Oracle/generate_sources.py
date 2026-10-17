@@ -1,4 +1,4 @@
-"""Writes SnapshotSources.props: the 2017 source files the oracle compiles.
+"""Writes SnapshotSources.props: the snapshot's source files the oracle compiles.
 
 Each FreeSO folder holds files its project doesn't compile, so the list comes
 from each project's own <Compile> items, not from a folder wildcard. Run it

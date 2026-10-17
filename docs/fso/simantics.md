@@ -14,7 +14,7 @@ It depends on [FSO.Files](./files.md), [FSO.Content](./content.md),
 [FSO.LotView](./rendering.md) (the VM drives world rendering objects
 directly), FSO.Vitaboy, [FSO.HIT](./audio.md), and Mina.NET.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Main types
 

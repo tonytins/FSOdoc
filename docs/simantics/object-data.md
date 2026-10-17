@@ -118,7 +118,7 @@ There are various flag fields used by behaviors to determine if certain interact
 
 ## Notes for NSOClient
 
-Checked against the 2017 FreeSO snapshot (`VMEntity.GetValue` and `SetValue`):
+Checked against the FreeSO snapshot (update-46) (`VMEntity.GetValue` and `SetValue`):
 
 - **1 (direction):** read from the object's facing, not the stored value. A write is reduced to 0 to 7
   and stored; the facing then snaps down to a multiple of the rotation step in 23 (rotation notches)

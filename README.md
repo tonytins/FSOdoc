@@ -38,7 +38,7 @@ FSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating 
 | Folder | Holds |
 | --- | --- |
 | [`NSOClient/`](./NSOClient/) | The Swift code: independent Swift packages for the file formats (TSOFiles), content (TSOContent), and the SimAntics VM (SimAntics), plus tools and SimsScript |
-| [`TSOClient/`](./TSOClient/) | FreeSO's C# source as of August 9, 2017, the reference NSOClient is checked against. It's read, never changed |
+| [`TSOClient/`](./TSOClient/) | FreeSO's C# source at its beta/update-46 build (August 2017), the reference NSOClient is checked against. It's read, never changed |
 | [`docs/`](./docs/README.md) | How FreeSO and NSOClient work, the plan, and the results, with a glossary of terms |
 
 To build and test, you need Swift 6 (and the .NET 10 SDK to compare with FreeSO). You don't need

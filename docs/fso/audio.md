@@ -10,7 +10,7 @@ The formats are read by [FSO.Files](./files.md#other-formats) (`HIT/`,
 `UTK/`, `XA/`) and loaded by the content system's
 [`Audio`](../../TSOClient/tso.content/Audio.cs) provider.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Pieces
 

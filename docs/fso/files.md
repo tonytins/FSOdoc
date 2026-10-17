@@ -5,7 +5,7 @@ formats. It is the lowest layer of the client: it depends only on
 FSO.Common, MonoGame (for `Texture2D` and `Color`), and TargaImagePCL, and
 nearly every other project depends on it.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Binary reading
 

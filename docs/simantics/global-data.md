@@ -46,7 +46,7 @@ Most of these are unused, especially the UI related ones, probably to avoid risk
 
 ## Notes for NSOClient
 
-Checked against the 2017 FreeSO snapshot (`VM.cs`):
+Checked against the FreeSO snapshot (update-46) (`VM.cs`):
 
 - FreeSO keeps 38 globals (0 to 37); reading or writing past them fails.
 - A new lot starts with 17 (runtime code version) at 4, 20 (game edition) at 255, and 25 at 4.

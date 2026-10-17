@@ -29,7 +29,7 @@ public enum Review {
 
         SimsCraft is rebuilding the engine of *The Sims Online* (Maxis and EA, 2002) in Swift, as
         NSOClient. Its reference is FreeSO, an open-source C# reimplementation of the same game, as it
-        stood in 2017 (the copy in `TSOClient/`). NSOClient counts as correct when it gives the same
+        stood at its beta/update-46 build, August 2017 (the copy in `TSOClient/`). NSOClient counts as correct when it gives the same
         results as FreeSO on the same game files. Neither project ships those files: each run reads a copy
         of the game installed on the machine running it.
 

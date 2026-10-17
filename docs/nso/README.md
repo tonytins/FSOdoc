@@ -3,7 +3,7 @@
 NSOClient is a Swift reimplementation of the parts of FreeSO that don't depend on a game engine
 (no graphics, sound, user interface, or networking): the file formats, the content system, and the
 SimAntics virtual machine that runs object behavior. It aims to get the same results as FreeSO, as
-its code stood in 2017 (in [`TSOClient/`](../../TSOClient/)), without copying that code. It also
+its code stood at beta/update-46, in August 2017 (in [`TSOClient/`](../../TSOClient/)), without copying that code. It also
 keeps working on a 2002 beta of the game, whose files differ from the release FreeSO expects.
 
 This folder describes how the code behaves today. For what's finished and the evidence for it, see
@@ -81,3 +81,13 @@ NSOClient/scripts/oracle-review.sh --mock /tmp/review     # both oracles on the 
 
 The snippets on these pages use the public API. Where a snippet needs an install, it assumes
 `TSO_GAME_DIR` points at one.
+
+## Compatibility
+
+NSOClient matches FreeSO as of beta/update-46 (August 2017), the snapshot in
+[`TSOClient/`](../../TSOClient/); [FreeSO's releases](../fso/releases.md) list what came before and
+after it. Nothing newer is a target. In particular, FreeSO is rebuilding its server and client for
+the self-hosting FreeSO Archive, and says modifications to the current software may need to be
+refactored to work with them ([freeso.org/download](https://freeso.org/download/)). NewSO doesn't
+follow that rework, so expect the Archive's server and client to be incompatible with NewSO, and
+with content made for FreeSO before its server shut down in December 2024.

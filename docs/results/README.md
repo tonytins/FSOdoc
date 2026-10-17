@@ -1,7 +1,7 @@
 # Results
 
 SimsCraft is rebuilding the engine of *The Sims Online* (Maxis and EA, 2002) in Swift, as
-NSOClient, using FreeSO, an open-source C# reimplementation of the game as it stood in 2017, as
+NSOClient, using FreeSO, an open-source C# reimplementation of the game as it stood at its beta/update-46 build (August 2017), as
 its reference. This folder records how close NSOClient is, measured on real copies of the game.
 
 Neither project ships the game's files, so the measurements are run on copies installed on the

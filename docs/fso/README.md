@@ -1,8 +1,8 @@
-# SimsCraft: the 2017 FreeSO snapshot
+# SimsCraft: the FreeSO snapshot
 
-These pages explain the FreeSO source code as of August 9, 2017 (the
+These pages explain the FreeSO source code at beta/update-46 (August 2017; the
 snapshot in [`TSOClient/`](../../TSOClient/)), the reference that NSOClient's
-Swift reimplementation draws on. **How it works (2017)** describes the code as
+Swift reimplementation draws on. **How it works (update-46)** describes the code as
 it is. The **Modern .NET rewrite** sections come from an earlier goal of
 rewriting FreeSO on .NET; they're kept for reference and no longer maintained.
 Unfamiliar terms are explained in the [docs index](../README.md#terms).
@@ -38,6 +38,9 @@ Claims that couldn't be confirmed in the code are marked **Unverified**.
 [future/](./future/README.md) covers FreeSO's branches in this repository: the two that led into
 the snapshot (`lot-serialize`, `feature/server-rebuild`) and the two that carry its development
 afterward, to October 2019 (`feature/upgrades`, `feature/lotview-refactor`).
+
+[releases.md](./releases.md) lists FreeSO's updates by the names it gave them, from its early tags
+to the Archive Beta, with the snapshot (beta/update-46) marked among them.
 
 ## Coverage
 

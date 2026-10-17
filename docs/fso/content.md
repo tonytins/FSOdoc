@@ -10,7 +10,7 @@ come from an installed The Sims 1 instead. It sits on top of
 FreeSO ships none of these assets. The user must have the original game
 installed, and the content system reads it in place.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Locating the game
 

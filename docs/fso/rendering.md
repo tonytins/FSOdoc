@@ -12,7 +12,7 @@ Three pieces draw the game world:
 All three use MonoGame (the FSOMonoGame fork) and HLSL effects compiled
 through the MonoGame content pipeline.
 
-## How it works (2017)
+## How it works (update-46)
 
 ### Shaders and compiled content
 

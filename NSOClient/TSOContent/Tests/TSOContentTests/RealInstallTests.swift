@@ -8,7 +8,7 @@ let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].ma
     URL(fileURLWithPath: $0, isDirectory: true)
 }
 
-/// FreeSO's own content folder in the 2017 snapshot: shipped patches and standalone objects.
+/// FreeSO's own content folder in the snapshot (update-46): shipped patches and standalone objects.
 let freeSOContentDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../../TSOClient/tso.content/Content").standardizedFileURL
 

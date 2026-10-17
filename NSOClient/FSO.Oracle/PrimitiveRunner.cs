@@ -36,7 +36,7 @@ namespace FSO.Oracle
         /// </summary>
         private static readonly FieldInfo AttributesField =
             typeof(VMEntity).GetField("Attributes", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("VMEntity.Attributes not found; the 2017 sources changed");
+            ?? throw new InvalidOperationException("VMEntity.Attributes not found; the snapshot's sources changed");
 
         /// <summary>Readable output: quotes and apostrophes in messages aren't escaped as \u0022.</summary>
         private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };

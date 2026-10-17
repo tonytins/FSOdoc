@@ -105,6 +105,6 @@ Certain features, such as spawning new instances of objects on a lot and debuggi
 
 ## Notes for NSOClient
 
-In 2017 FreeSO, an error result unwinds the thread's whole stack. Any other failure inside a thread
+In FreeSO's update-46, an error result unwinds the thread's whole stack. Any other failure inside a thread
 resets the object, and a dialog reports it, at most once every 20 seconds. An object that fails
 again within that window is deleted. See [FSO.SimAntics](../fso/simantics.md#executing-behavior).
