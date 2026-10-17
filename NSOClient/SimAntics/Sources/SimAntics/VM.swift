@@ -86,17 +86,71 @@ public final class VM {
         globalState[17] = 4   // runtime code version
     }
 
-    /// Loads a lot's walls and floors and puts every entity in its room, as
-    /// `VMWorldActivator.LoadFromXML` does before it creates the lot's objects.
+    /// A blueprint object ``load(_:)`` left out, and why.
+    public struct LeftOut: Sendable, Equatable {
+        public var object: Blueprint.Object
+        public var reason: String
+    }
+
+    /// Loads a lot as the lot server does (`VMBlueprintRestoreCmd`, then
+    /// `VMWorldActivator.LoadFromXML`).
     ///
-    /// - Throws: ``SimAnticsError/simantics(_:)`` if the blueprint is off the lot.
-    public func load(_ blueprint: Blueprint) throws(SimAnticsError) {
+    /// The job level (global 11) is set to -1, then come the walls and floors, with rooms, and
+    /// every entity already on the lot goes in its room. Each of the blueprint's objects follows, in
+    /// order: created out of the world, which runs its init; placed on its tile if its level isn't
+    /// 0, accepting slots (a placement that fails leaves it out of the world, since FreeSO ignores
+    /// the result); given the blueprint's group ID, if any, on every part; and every part runs its
+    /// user placement entry point at once. Last, rooms are regenerated if the objects changed them.
+    ///
+    /// The lot server loads in the tick the command arrives in, so that tick runs next: call
+    /// ``tick()`` once to be where FreeSO is after loading.
+    ///
+    /// Differences from FreeSO, to keep loading: FreeSO starts the lot over with no entities, where
+    /// this keeps the ones already added. And an object the content doesn't have, or can't load, is
+    /// left out and returned, where FreeSO fails.
+    ///
+    /// - Throws: ``SimAnticsError/simantics(_:)`` if the blueprint is off the lot, and any error
+    ///   an object's init or entry point throws.
+    @discardableResult
+    public func load(_ blueprint: Blueprint) throws(SimAnticsError) -> [LeftOut] {
+        globalState[11] = -1
         do {
             architecture = try blueprint.architecture()
         } catch {
             throw .simantics("can't load the blueprint: \(error)")
         }
         updateRooms()
+
+        var leftOut: [LeftOut] = []
+        for object in blueprint.objects {
+            let group: MultitileGroup?
+            do {
+                group = try createObject(guid: object.guid, facing: object.direction)
+            } catch .content(let error) {
+                leftOut.append(LeftOut(object: object, reason: "can't load it: \(error)"))
+                continue
+            }
+            guard let group, !group.objects.isEmpty else {
+                leftOut.append(LeftOut(object: object, reason: "the content has no such object"))
+                continue
+            }
+            if object.level != 0 {
+                let tile = LotPosition.center(ofTileX: Int16(truncatingIfNeeded: object.x), y: Int16(truncatingIfNeeded: object.y),
+                                              level: Int8(truncatingIfNeeded: object.level))
+                try place(group, at: tile, facing: object.direction, flags: .acceptSlots)
+            }
+            if object.group != 0 {
+                for part in group.objects {
+                    _ = try part.setValue(Int16(truncatingIfNeeded: object.group), of: Int16(ObjectVariable.groupID.rawValue))
+                }
+            }
+            for part in group.objects { try part.executeEntryPoint(.userPlace, runImmediately: true) }
+        }
+        if architecture.isDirty {
+            architecture.regenerateRooms()
+            updateRooms()
+        }
+        return leftOut
     }
 
     deinit {

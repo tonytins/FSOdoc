@@ -69,13 +69,15 @@ there what the files change before calling it a bug in NSOClient.
 | --- | --- |
 | `list-objects` | What loads for every registered object: label, resource, semi-global, routine and tuning counts, entry points |
 | `run-objects` | Each GUID on standard input run alone on an empty lot, with a state digest after creation and as it ticks |
+| `run-lot` | One lot (`--blueprint`) loaded with its objects and run, with a state digest after loading and as it ticks; `--leave-out GUID` leaves out an object `fso-oracle` left out, and `--dump` adds every entity's digested fields |
 | `room-maps` | Each blueprint path on standard input: its room maps and rooms |
 | `compare` | Both sides' answers compared, and with `--review FILE`, that install's section of the review written |
 
 Where NSOClient can't answer yet, `run-objects` adds an `unsupported` line naming what isn't
 ported; comparisons count those as skipped, ranked, so they show what to port next.
-`run-primitive` and `run-lot` follow once NSOClient can load a lot by itself (phase D of the
-current milestone on the [roadmap](../roadmap.md)).
+`run-lot` stops at the first tick that reaches something not ported, with `unsupported at tick
+N:` and what. `run-primitive` follows (phase D2 of the current milestone on the
+[roadmap](../roadmap.md)).
 
 ```sh
 cut -f1 objects.tsv | swift run --package-path NSOClient/NSOOracle nso-oracle run-objects --ticks 30 --every 10

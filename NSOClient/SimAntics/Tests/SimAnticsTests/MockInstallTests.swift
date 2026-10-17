@@ -40,3 +40,26 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304
         #expect(entity.attributes.first == 10)  // main returns and runs again each tick, as in FreeSO
     }
 }
+
+/// Loading `NSOClient/MockInstall/Lots/mock-lot.xml`, which `fso-oracle run-lot` matches tick for tick.
+@Suite struct MockLotTests {
+    private let lotFile = mockInstall.deletingLastPathComponent().appendingPathComponent("Lots/mock-lot.xml")
+
+    @Test func loadsEveryObjectItHasAndLeavesOutTheRest() throws {
+        let vm = try VM(content: try GameContent(.init(gameDirectory: mockInstall)), seed: 1)
+        let lot = try Blueprint(xml: try Data(contentsOf: lotFile))
+        let leftOut = try vm.load(lot)
+        #expect(leftOut.map(\.object.guid) == [0x4D4F_43FF])
+        #expect(vm.globalState[11] == -1)                                   // the job level
+        #expect(vm.entities.map(\.object.guid) == [mockChairGUID, mockChairGUID, mockLeftGUID, mockRightGUID, mockLeftGUID, mockRightGUID])
+
+        let (outside, inside) = (vm.entities[0], vm.entities[1])
+        #expect(outside.position.isOutOfWorld)                              // level 0 stays out of the world
+        #expect(inside.position == .center(ofTileX: 3, y: 3, level: 1) && inside.direction == .east)
+        #expect(inside.objectData[Int(ObjectVariable.room.rawValue)] == 2)  // the walled room
+        // The table facing south: its right part turned to the left of its lead part.
+        #expect(vm.entities[2].position == .center(ofTileX: 7, y: 3, level: 1) && vm.entities[3].position.x == 104)
+        #expect(vm.entities[2...3].allSatisfy { $0.objectData[Int(ObjectVariable.groupID.rawValue)] == 9 })
+        #expect(vm.entities[4...5].allSatisfy { $0.objectData[Int(ObjectVariable.groupID.rawValue)] == 0 })
+    }
+}

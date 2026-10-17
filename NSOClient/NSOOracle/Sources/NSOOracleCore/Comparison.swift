@@ -118,6 +118,37 @@ public struct Comparison: Sendable, Equatable {
         return result
     }
 
+    /// `run-lot`: every digest line of each lot, prefixed with the lot's file name. A lot
+    /// matches if every line does. One where NSOClient stopped at something not ported is
+    /// skipped, by what, if every digest before it matches; otherwise, as for any other
+    /// difference, the mismatch names the first line that differs.
+    public static func lotRuns(fso: [String], nso: [String]) -> Comparison {
+        var result = Comparison(name: "Lots run")
+        let (expected, order) = groupedByGUID(fso)
+        let (actual, _) = groupedByGUID(nso)
+        for lot in order {
+            let lines = expected[lot] ?? []
+            guard lines.first?.hasPrefix("tick") == true else {
+                result.skip("FreeSO couldn't run it")
+                continue
+            }
+            let mine = actual[lot] ?? []
+            let reached = mine.prefix { !$0.hasPrefix("unsupported") }
+            if reached.count < mine.count, Array(lines.prefix(reached.count)) == Array(reached) {
+                // `unsupported at tick N: what`, counted by what.
+                let line = mine[reached.count]
+                let what = line.split(separator: ":", maxSplits: 1).last.map { $0.trimmingCharacters(in: .whitespaces) } ?? line
+                result.skip("unsupported: \(what)")
+            } else if mine == lines {
+                result.matched += 1
+            } else {
+                let first = zip(lines, mine).first { $0 != $1 }
+                result.mismatches.append("\(lot): FreeSO \(first?.0 ?? "\(lines.count) lines") NSOClient \(first?.1 ?? "\(mine.count) lines")")
+            }
+        }
+        return result
+    }
+
     /// `room-maps`: each lot's size, room maps, and rooms, entry for entry.
     public static func roomMaps(fso: [String], nso: [String]) -> Comparison {
         var result = Comparison(name: "Room maps")
@@ -167,7 +198,7 @@ public struct Comparison: Sendable, Equatable {
         return result
     }
 
-    /// `guid rest` lines, grouped by GUID in first-seen order.
+    /// `key rest` lines (a GUID or a lot's file name first), grouped by key in first-seen order.
     private static func groupedByGUID(_ lines: [String]) -> ([String: [String]], [String]) {
         var grouped: [String: [String]] = [:], order: [String] = []
         for line in lines {

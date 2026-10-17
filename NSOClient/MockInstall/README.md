@@ -37,6 +37,10 @@ Every object shares two routines. Init (`BHAV` 4097) lets it stand on floor or b
 floor height (object data 42 and 4). Main (`BHAV` 4096) counts its runs in attribute 0. Each
 object uses the `mockglobals` semi-global.
 
+`Lots/mock-lot.xml` is a made-up lot for it: a closed 3 by 3 room with floor, a chair out of
+the world, a chair in the room, two tables outside (one facing south, with a group ID), and one
+GUID the install doesn't have, which both oracles leave out.
+
 `fso-oracle` reads it too: its game overlay adds placeholders for what FreeSO loads and
 NSOClient doesn't (audio, tuning, wall and floor globals, and so on). CI runs both oracles on
 it and compares them:

@@ -8,7 +8,9 @@
 # Installs come from TSO_GAME_DIR ("production") and TSO_BETA_DIR ("beta"); either or both.
 # --mock runs on NSOClient/MockInstall ("mock") alone, as CI does; it never writes the review.
 # Needs the .NET SDK, Swift, and python3. Each install gets OUTPUT_DIR/NAME/{fso,nso}/ with
-# objects.tsv, objects.digests, rooms.jsonl, and timings.tsv; OUTPUT_DIR/NAME/fso also works as
+# objects.tsv, objects.digests, lots.digests (run-lot on each lot with objects, lines prefixed with
+# the lot's file name), rooms.jsonl, and timings.tsv, plus fso/lots.leftout (the objects fso-oracle
+# left out of each lot, which nso-oracle leaves out too). OUTPUT_DIR/NAME/fso also works as
 # TSO_ORACLE_DIR for `swift test --package-path NSOClient/NSOOracle`.
 set -euo pipefail
 
@@ -41,9 +43,17 @@ nso_binary="$(swift build --package-path "$repository/NSOClient/NSOOracle" -c re
 mkdir -p "$output"
 echo "Writing the synthetic lots..."
 python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_blueprints.py" "$output/blueprints" >/dev/null
+# Lots with objects, for run-lot: FreeSO's empty lot (its objects are the lot's mailbox and the
+# like), then the house in NSOClient/Lots, or on the mock install, the mock lots.
+{ echo "$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"
+  if $mock; then ls "$repository"/NSOClient/MockInstall/Lots/*.xml; else ls "$repository"/NSOClient/Lots/*.xml; fi
+} >"$output/lots-run.txt"
 { cat "$output/blueprints/blueprints.txt"
   echo "$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"
-  ls "$repository"/NSOClient/Lots/*.xml; } >"$output/lots.txt"
+  ls "$repository"/NSOClient/Lots/*.xml "$repository"/NSOClient/MockInstall/Lots/*.xml; } >"$output/lots.txt"
+# Kept in step with the run-lot test in NSOClient/NSOOracle (lotRunsMatchFreeSO).
+lot_ticks=1800
+lot_every=300
 
 # timed SIDE NAME OUTPUT COMMAND...: runs COMMAND with standard output to OUTPUT, and records its seconds.
 timed() {
@@ -63,7 +73,8 @@ for install in "${installs[@]}"; do
     mkdir -p "$folder/fso" "$folder/nso"
     # Each side's folder is then a TSO_ORACLE_DIR for the NSOOracle fixture tests.
     ln -sfn "$output/blueprints" "$folder/fso/blueprints"
-    rm -f "$folder/fso/timings.tsv" "$folder/nso/timings.tsv" "$folder/fso/log.txt" "$folder/nso/log.txt"
+    rm -f "$folder/fso/timings.tsv" "$folder/nso/timings.tsv" "$folder/fso/log.txt" "$folder/nso/log.txt" \
+        "$folder/fso/lots.digests" "$folder/nso/lots.digests" "$folder/fso/lots.leftout"
     fso() { dotnet run --project "$repository/NSOClient/Oracle" -c Release --no-build -- "$@" --game "$game"; }
     nso() { "$nso_binary" "$1" --game "$game" "${@:2}"; }
 
@@ -74,6 +85,29 @@ for install in "${installs[@]}"; do
     cut -f1 "$folder/fso/objects.tsv" >"$folder/guids.txt"
     timed fso run-objects "$folder/fso/objects.digests" fso run-objects --ticks 30 --every 10 <"$folder/guids.txt"
     timed nso run-objects "$folder/nso/objects.digests" nso run-objects --ticks 30 --every 10 <"$folder/guids.txt"
+    echo "[$name] Running each lot..."
+    # run-lot takes one lot; run both sides on each, prefix lines with the lot's file name, and time the whole.
+    run_lots() {
+        local side="$1" lot file guids
+        while read -r lot; do
+            file="$(basename "$lot")"
+            if [[ "$side" == fso ]]; then
+                fso run-lot --blueprint "$lot" --ticks "$lot_ticks" --every "$lot_every" 2>"$folder/fso/lot-err.txt" | sed "s|^|$file |"
+                cat "$folder/fso/lot-err.txt" >>"$folder/fso/log.txt"
+                grep -o 'object 0x[0-9A-Fa-f]*; left out' "$folder/fso/lot-err.txt" | awk -v f="$file" '{ print f "\t" substr($2, 1, length($2) - 1) }' \
+                    >>"$folder/fso/lots.leftout" || true
+            else
+                guids=()
+                while IFS=$'\t' read -r leftFile guid; do
+                    [[ "$leftFile" == "$file" ]] && guids+=(--leave-out "$guid")
+                done <"$folder/fso/lots.leftout"
+                nso run-lot --blueprint "$lot" --ticks "$lot_ticks" --every "$lot_every" "${guids[@]}" | sed "s|^|$file |"
+            fi
+        done <"$output/lots-run.txt"
+    }
+    touch "$folder/fso/lots.leftout"
+    timed fso run-lot "$folder/fso/lots.digests" run_lots fso
+    timed nso run-lot "$folder/nso/lots.digests" run_lots nso
     echo "[$name] Room maps..."
     timed fso room-maps "$folder/fso/rooms.jsonl" fso room-maps <"$output/lots.txt"
     timed nso room-maps "$folder/nso/rooms.jsonl" "$nso_binary" room-maps <"$output/lots.txt"

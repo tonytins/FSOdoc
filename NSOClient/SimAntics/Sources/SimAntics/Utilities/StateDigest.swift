@@ -17,6 +17,16 @@ public enum StateDigest {
         }.joined()
     }
 
+    /// The digested fields, readable, one line per entity in object ID order, as
+    /// `fso-oracle run-lot --dump` prints them: `  id guid x y level direction data=... stack=routine:ip,...`.
+    public static func lines(of vm: VM) -> [String] {
+        vm.entities.map { entity in
+            "  \(entity.objectID) \(String(format: "%08x", entity.object.guid)) \(entity.position.x) \(entity.position.y) "
+                + "\(entity.position.level) \(entity.direction.rawValue) data=\(entity.objectData.map(String.init).joined(separator: ",")) "
+                + "stack=\(entity.thread.stack.map { "\($0.routine.id):\($0.instructionPointer)" }.joined(separator: ","))"
+        }
+    }
+
     static func bytes(of vm: VM) -> [UInt8] {
         var bytes: [UInt8] = []
         func append<Value: FixedWidthInteger>(_ value: Value) {

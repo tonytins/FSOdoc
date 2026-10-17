@@ -52,7 +52,8 @@ options:
   --blueprint FILE  lot XML (default: Blueprints/empty_lot_fso.xml in the content folder)
   --seed HEX        the VM's random seed once the lot is loaded (default: 0F50D0C5EED00001)
   --ticks N         run-lot and run-objects: ticks to run after loading (default: 1800, one minute of game time)
-  --every N         run-lot and run-objects: also print a digest every N ticks (default: 0, only at the end)";
+  --every N         run-lot and run-objects: also print a digest every N ticks (default: 0, only at the end)
+  --dump            run-lot: after each digest, the digested fields of every entity, one line each";
 
         public static int Main(string[] args)
         {
@@ -124,15 +125,12 @@ options:
             var vm = new VM(context, driver, new VMNullHeadlineProvider());
             vm.Init();
 
-            // Load the lot the way LotContainer.BlueprintReset does.
-            vm.SendCommand(new VMBlueprintRestoreCmd
-            {
-                JobLevel = -1,
-                XMLData = blueprint,
-            });
+            // Load the lot the way LotContainer.BlueprintReset does (a VMBlueprintRestoreCmd),
+            // but seeded throughout: see LotLoader. The command runs inside a tick, so the
+            // load is followed by that tick, as on the lot server.
+            LotLoader.Load(vm, blueprint, seed);
             vm.Tick();
-            // Loading replaces the VM's context (VMWorldActivator.LoadFromXML), which reseeds
-            // itself from an unseeded Random. Seed it again once the lot is loaded.
+            // Seed it again once the lot is loaded, so the first digest starts from the seed.
             vm.Context.RandomSeed = seed;
             return vm;
         }
@@ -239,14 +237,14 @@ options:
 
         private static void RunLot(VM vm, Options options, TextWriter results)
         {
-            PrintDigest(vm, 0, results);
+            PrintDigest(vm, 0, results, dump: options.Dump);
 
             for (var tick = 1; tick <= options.Ticks; tick++)
             {
                 vm.Tick();
-                if (options.Every > 0 && tick % options.Every == 0 && tick != options.Ticks) PrintDigest(vm, tick, results);
+                if (options.Every > 0 && tick % options.Every == 0 && tick != options.Ticks) PrintDigest(vm, tick, results, dump: options.Dump);
             }
-            if (options.Ticks > 0) PrintDigest(vm, options.Ticks, results);
+            if (options.Ticks > 0) PrintDigest(vm, options.Ticks, results, dump: options.Dump);
         }
 
         /// <summary>
@@ -363,7 +361,7 @@ options:
         /// tile x, tile y, level, direction, the object data count and values, and the
         /// thread's stack depth, then each frame's routine ID and instruction pointer.
         /// </remarks>
-        private static void PrintDigest(VM vm, int tick, TextWriter results, string prefix = "")
+        private static void PrintDigest(VM vm, int tick, TextWriter results, string prefix = "", bool dump = false)
         {
             using var stream = new MemoryStream();
             using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
@@ -393,6 +391,15 @@ options:
             }
             var digest = Convert.ToHexString(SHA256.HashData(stream.ToArray())).ToLowerInvariant();
             results.WriteLine($"{prefix}tick {tick} seed {vm.Context.RandomSeed:x16} entities {vm.Entities.Count} digest {digest}");
+            if (!dump) return;
+            // The same fields, readable: `  id guid x y level direction data=... stack=routine:ip,...`.
+            foreach (var entity in vm.Entities.OrderBy(entity => entity.ObjectID))
+            {
+                var stack = entity.Thread?.Stack ?? new List<VMStackFrame>();
+                results.WriteLine($"  {entity.ObjectID} {entity.Object?.OBJ?.GUID ?? 0u:x8} {entity.Position.x} {entity.Position.y} "
+                    + $"{entity.Position.Level} {(byte)entity.Direction} data={string.Join(",", entity.ObjectData ?? Array.Empty<short>())} "
+                    + $"stack={string.Join(",", stack.Select(frame => $"{frame.Routine?.ID ?? 0}:{frame.InstructionPointer}"))}");
+            }
         }
 
         private sealed class Options
@@ -402,6 +409,7 @@ options:
             public string BlueprintPath;
             public int Ticks = 1800;
             public int Every;
+            public bool Dump;
             public ulong Seed = 0x0F50_D0C5_EED0_0001;
 
             public static Options Parse(string[] args)
@@ -429,6 +437,7 @@ options:
                         case "--blueprint": options.BlueprintPath = Value(); break;
                         case "--ticks": options.Ticks = Count(); break;
                         case "--every": options.Every = Count(); break;
+                        case "--dump": options.Dump = true; break;
                         case "--seed":
                             options.Seed = ulong.TryParse(Value(), System.Globalization.NumberStyles.HexNumber, null, out var seed)
                                 ? seed

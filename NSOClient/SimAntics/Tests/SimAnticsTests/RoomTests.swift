@@ -163,3 +163,22 @@ struct RoomTests {
         }
     }
 }
+
+@Suite struct BlueprintObjectTests {
+    @Test func readsObjectsAsXmlSerializerDoes() throws {
+        let xml = """
+            <house><size>4</size><objects>
+              <object guid="0x0000ABCD" level="1" x="2" y="3" dir="4" group="7"/>
+              <object guid="ff" dir="2"/><object dir="6"/><object guid="0X1" dir="3"/>
+            </objects></house>
+            """
+        let objects = try Blueprint(xml: Data(xml.utf8)).objects
+        #expect(objects == [Blueprint.Object(guid: 0xABCD, level: 1, x: 2, y: 3, direction: .south, group: 7),
+                            Blueprint.Object(guid: 0xFF, direction: .east),
+                            Blueprint.Object(guid: 0, direction: .west),           // no GUID reads as 0
+                            Blueprint.Object(guid: 1, direction: .west)])          // an odd dir is west
+        #expect(throws: BlueprintError.self) {
+            try Blueprint(xml: Data(#"<house><size>4</size><objects><object guid="chair"/></objects></house>"#.utf8))
+        }
+    }
+}

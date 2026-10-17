@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<house>
+  <size>10</size>
+  <category>0</category>
+  <world>
+    <floors>
+      <floor level="0" x="2" y="2" value="1" />
+      <floor level="0" x="2" y="3" value="1" />
+      <floor level="0" x="2" y="4" value="1" />
+      <floor level="0" x="3" y="2" value="1" />
+      <floor level="0" x="3" y="3" value="1" />
+      <floor level="0" x="3" y="4" value="1" />
+      <floor level="0" x="4" y="2" value="1" />
+      <floor level="0" x="4" y="3" value="1" />
+      <floor level="0" x="4" y="4" value="1" />
+    </floors>
+    <walls>
+      <wall level="0" x="2" y="2" segments="3" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="2" y="3" segments="1" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="2" y="4" segments="1" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="2" y="5" segments="2" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="3" y="2" segments="2" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="3" y="5" segments="2" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="4" y="2" segments="2" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="4" y="5" segments="2" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="5" y="2" segments="1" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="5" y="3" segments="1" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+      <wall level="0" x="5" y="4" segments="1" tls="1" trs="1" tlp="1" trp="1" brp="0" blp="0" placement="0" />
+    </walls>
+    <pools />
+  </world>
+  <objects>
+    <object guid="0x4D4F4301" level="0" x="-2048" y="-2048" dir="0" group="0" />
+    <object guid="0x4D4F4301" level="1" x="3" y="3" dir="2" group="0" />
+    <object guid="0x4D4F4302" level="1" x="7" y="3" dir="4" group="9" />
+    <object guid="0x4D4F4302" level="1" x="3" y="7" dir="0" group="0" />
+    <object guid="0x4D4F43FF" level="1" x="8" y="8" dir="0" group="0" />
+  </objects>
+  <sounds />
+</house>

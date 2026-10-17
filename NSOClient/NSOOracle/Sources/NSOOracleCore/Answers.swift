@@ -51,45 +51,107 @@ public struct Answers {
         }
     }
 
-    // MARK: run-objects
+    // MARK: Loading a lot
 
-    /// For one GUID: an empty lot, the object created out of the world, then ticks, as
-    /// `fso-oracle run-objects` does. Lines don't include the GUID: `tick N seed S entities E
-    /// digest D` after creation, every `every` ticks, and at the end; `missing` if there's no such
-    /// object; `error` and the error if creating it fails; and, after the digests, `unsupported`
-    /// and what wasn't ported if the object reached it (naming what failed first when that came
-    /// before).
-    public func objectRun(guid: UInt32, on architecture: Architecture, ticks: Int, every: Int,
-                          seed: UInt64 = 0x0F50_D0C5_EED0_0001) -> [String] {
-        let vm: VM
-        do {
-            vm = try VM(content: content, seed: seed)
-        } catch {
-            return ["error \(error)"]
-        }
-        vm.architecture = architecture
-        func digest(_ tick: Int) -> String {
-            "tick \(tick) seed \(String(format: "%016llx", vm.random.seed)) entities \(vm.entities.count) digest \(StateDigest.hex(of: vm))"
-        }
-        var lines: [String] = []
-        do {
-            guard try vm.createObject(guid: guid) != nil else { return ["missing"] }
-        } catch SimAnticsError.unsupported(let reason) {
-            return ["unsupported while creating: \(reason)"]
-        } catch {
-            return ["error \(error)"]
-        }
-        lines.append(digest(0))
+    /// The seed both oracles use unless told otherwise.
+    public static let defaultSeed: UInt64 = 0x0F50_D0C5_EED0_0001
+
+    /// A VM with a lot loaded as `fso-oracle` loads one: the blueprint, then the tick the load
+    /// runs in, then the random seed set again, so the first digest starts from the seed.
+    func loadedLot(_ blueprint: Blueprint, seed: UInt64) throws(SimAnticsError) -> (VM, [VM.LeftOut]) {
+        let vm = try VM(content: content, seed: seed)
+        let leftOut = try vm.load(blueprint)
+        vm.tick()
+        vm.random = VMRandom(seed: seed)
+        return (vm, leftOut)
+    }
+
+    private static func digest(of vm: VM, tick: Int) -> String {
+        "tick \(tick) seed \(String(format: "%016llx", vm.random.seed)) entities \(vm.entities.count) digest \(StateDigest.hex(of: vm))"
+    }
+
+    /// The digest line, then with `dump`, each entity's digested fields.
+    private static func digestLines(of vm: VM, tick: Int, dump: Bool) -> [String] {
+        [digest(of: vm, tick: tick)] + (dump ? StateDigest.lines(of: vm) : [])
+    }
+
+    /// Ticks `vm`, with a digest every `every` ticks and at the end, then an `unsupported` line
+    /// if a thread reached something not ported (naming what failed first when that came before).
+    private static func run(_ vm: VM, ticks: Int, every: Int, dump: Bool = false, into lines: inout [String]) {
         if ticks > 0 {
             for tick in 1...ticks {
                 vm.tick()
-                if (every > 0 && tick % every == 0) || tick == ticks { lines.append(digest(tick)) }
+                if (every > 0 && tick % every == 0) || tick == ticks { lines += digestLines(of: vm, tick: tick, dump: dump) }
             }
         }
         if let gap = vm.reportedErrors.first(where: { if case .unsupported = $0.error { true } else { false } }),
            case .unsupported(let reason) = gap.error {
             let first = vm.reportedErrors.first
             lines.append("unsupported \(reason)" + (gap == first ? "" : " after \(first.map { "\($0.error)" } ?? "")"))
+        }
+    }
+
+    // MARK: run-objects
+
+    /// For one GUID: the lot with its objects taken out, the object created out of the world,
+    /// then ticks, as `fso-oracle run-objects` does. Lines don't include the GUID: `tick N seed S
+    /// entities E digest D` after creation, every `every` ticks, and at the end; `missing` if
+    /// there's no such object; `error` and the error if creating it fails; and, after the digests,
+    /// `unsupported` and what wasn't ported if the object reached it.
+    public func objectRun(guid: UInt32, on lot: Blueprint, ticks: Int, every: Int,
+                          seed: UInt64 = Answers.defaultSeed) -> [String] {
+        var empty = lot
+        empty.objects = []
+        let vm: VM
+        do {
+            (vm, _) = try loadedLot(empty, seed: seed)
+            guard try vm.createObject(guid: guid) != nil else { return ["missing"] }
+        } catch SimAnticsError.unsupported(let reason) {
+            return ["unsupported while creating: \(reason)"]
+        } catch {
+            return ["error \(error)"]
+        }
+        var lines = [Self.digest(of: vm, tick: 0)]
+        Self.run(vm, ticks: ticks, every: every, into: &lines)
+        return lines
+    }
+
+    // MARK: run-lot
+
+    /// A lot loaded with its objects, then ticked, as `fso-oracle run-lot` does: `tick N seed S
+    /// entities E digest D` after loading, every `every` ticks, and at the end. Once a thread
+    /// reaches something not ported, the state can't match FreeSO's any more, so the run stops
+    /// there with `unsupported at tick N:` and what wasn't ported, and no digest for that tick;
+    /// `N` is 0 if loading reached it. Other failures give `error`. Objects left out are reported
+    /// through `leftOut`, as `fso-oracle` reports them on standard error. With `dump`, each digest
+    /// is followed by every entity's digested fields, as `fso-oracle --dump` prints them.
+    public func lotRun(_ lot: Blueprint, ticks: Int, every: Int, seed: UInt64 = Answers.defaultSeed, dump: Bool = false,
+                       leftOut: (VM.LeftOut) -> Void = { _ in }) -> [String] {
+        let vm: VM
+        do {
+            let loaded = try loadedLot(lot, seed: seed)
+            vm = loaded.0
+            loaded.1.forEach(leftOut)
+        } catch SimAnticsError.unsupported(let reason) {
+            return ["unsupported at tick 0: \(reason)"]
+        } catch {
+            return ["error \(error)"]
+        }
+        func gap() -> String? {
+            for report in vm.reportedErrors { if case .unsupported(let reason) = report.error { return reason } }
+            return nil
+        }
+        if let reason = gap() { return ["unsupported at tick 0: \(reason)"] }
+        var lines = Self.digestLines(of: vm, tick: 0, dump: dump)
+        if ticks > 0 {
+            for tick in 1...ticks {
+                vm.tick()
+                if let reason = gap() {
+                    lines.append("unsupported at tick \(tick): \(reason)")
+                    break
+                }
+                if (every > 0 && tick % every == 0) || tick == ticks { lines += Self.digestLines(of: vm, tick: tick, dump: dump) }
+            }
         }
         return lines
     }

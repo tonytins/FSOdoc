@@ -27,10 +27,18 @@ Standard output carries only results. FreeSO's own messages (such as
 `Failed to get Object ID`) are sent to standard error.
 
 Options: `--game`, `--content` (FreeSO's `Content` folder), `--blueprint`,
-`--seed`, and for `run-lot`, `--ticks` and `--every`. Run without arguments for help.
+`--seed`, and for `run-lot`, `--ticks`, `--every`, and `--dump` (after each digest,
+the digested fields of every entity, one line each, for finding where two runs part).
+Run without arguments for help.
 
 Runs are repeatable: the same install, blueprint, seed, and tick count give the
-same digests.
+same digests. That takes one change to how FreeSO loads a lot. The lot server sends a
+`VMBlueprintRestoreCmd`, whose `VMWorldActivator.LoadFromXML` replaces the VM's context,
+and a new `VMContext` seeds itself from an unseeded `System.Random`; every random draw
+while the lot's objects are created, and on the tick the load runs in, would differ from
+run to run. `LotLoader.cs` is a copy of the command and the activator, in the same order,
+that seeds the new context as soon as it's made. After that tick, the seed is set again,
+so the first digest starts from `--seed`.
 
 ## The state digest (version 0)
 

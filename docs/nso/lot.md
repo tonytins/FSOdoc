@@ -164,21 +164,36 @@ ported yet.
 
 ## Blueprints
 
-`Blueprint` reads FreeSO's lot XML (`XmlHouseData`): the size, the category, floors, pools, and
-walls. `architecture()` builds the walls and floors as FreeSO's `VMWorldActivator` does, floors
+`Blueprint` reads FreeSO's lot XML (`XmlHouseData`): the size, the category, floors, pools,
+walls, and objects. `architecture()` builds the walls and floors as FreeSO's `VMWorldActivator` does, floors
 first, then pools (always on the ground floor), then walls, and generates the rooms:
 
 ```swift
 let blueprint = try Blueprint(xml: Data(contentsOf: freeSOContent.appendingPathComponent("Blueprints/empty_lot_fso.xml")))
 print(blueprint.size, blueprint.floors.count)            // 77, and its floor tiles
-try vm.load(blueprint)                                   // the lot's architecture, entities put in rooms
+let leftOut = try vm.load(blueprint)                     // the architecture, then every object
+vm.tick()                                                // the tick the lot server loads in
 ```
 
 Values are read as .NET's `XmlSerializer` reads them: missing attributes are 0, and floor patterns
 are truncated to 16 bits. A malformed file throws `BlueprintError.malformed`; a tile off the lot
 throws `BlueprintError.offLot`, where FreeSO fails with an index out of range. Lots are 1 to 255
-tiles a side. The lot's objects aren't loaded yet.
+tiles a side.
 
-All of this matches FreeSO exactly: `fso-oracle room-maps` dumps FreeSO's room maps and rooms, and
-all 62 lots compared (FreeSO's empty lot, a house built in-game, in `NSOClient/Lots`, and 60 synthetic
-ones with walls, fences, diagonals, pools, and upper floors) match entry for entry.
+`VM.load(_:)` loads a whole lot as FreeSO's lot server does (`VMBlueprintRestoreCmd`, then
+`VMWorldActivator.LoadFromXML`): it sets the job level (global 11) to -1, builds the architecture
+and puts every entity in its room, then creates each object in the blueprint's order. Each is
+created out of the world, which runs its init; placed on its tile if its level isn't 0 (accepting
+slots, and staying out of the world if it doesn't fit, since FreeSO ignores the result); given the
+blueprint's group ID on every part; and every part runs its user placement entry point at once.
+The lot server loads during a tick, so call `tick()` once afterward to be where FreeSO is.
+
+Two differences keep loading going: an object the content doesn't have, or can't load, is left out
+and returned (FreeSO fails), and entities already on the VM are kept (FreeSO starts over).
+
+All of this matches FreeSO exactly. `fso-oracle room-maps` dumps FreeSO's room maps and rooms, and
+all 63 lots compared (FreeSO's empty lot, a house built in-game, in `NSOClient/Lots`, the mock lot,
+and 60 synthetic ones with walls, fences, diagonals, pools, and upper floors) match entry for
+entry. `fso-oracle run-lot` loads and runs a lot: the mock lot matches tick for tick, FreeSO's
+empty lot matches until its objects reach a primitive not ported yet, and the house loads with
+the same entities but reaches one while loading.

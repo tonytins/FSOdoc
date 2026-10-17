@@ -15,6 +15,15 @@ let onMockInstall = gameDirectory?.standardizedFileURL.path
 /// The fewest objects a comparison must match: every mock object and FreeSO's own, or most of a real install.
 let leastObjects = onMockInstall ? 8 : 2_000
 
+/// A blueprint by file name: from the fixtures' synthetic lots, FreeSO's, the repository's, or the mock install's.
+func blueprintFile(_ file: String) throws -> URL {
+    let candidates = [try required(oracleDirectory).appendingPathComponent("blueprints/\(file)"),
+                      freeSOContent.appendingPathComponent("Blueprints/\(file)"),
+                      repository.appendingPathComponent("NSOClient/Lots/\(file)"),
+                      repository.appendingPathComponent("NSOClient/MockInstall/Lots/\(file)")]
+    return try required(candidates.first { FileManager.default.fileExists(atPath: $0.path) }, file)
+}
+
 struct MissingFixture: Error {
     var what: String
 }
@@ -30,7 +39,7 @@ func lines(_ name: String) throws -> [String] {
 }
 
 /// NSOClient against FreeSO's answers from the fixtures: content, entry points, objects run alone,
-/// and room maps. The primitive comparisons stay in the SimAntics tests, which rebuild the
+/// lots run, and room maps. The primitive comparisons stay in the SimAntics tests, which rebuild the
 /// oracle's lot.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct FixtureComparisonTests {
@@ -51,7 +60,6 @@ struct FixtureComparisonTests {
         let fso = try lines("objects.digests")
         let answers = try answers()
         let lot = try Blueprint(xml: try Data(contentsOf: freeSOContent.appendingPathComponent("Blueprints/empty_lot_fso.xml")))
-            .architecture()
         var nso: [String] = []
         for guid in Set(fso.compactMap { $0.split(separator: " ").first }).sorted() {
             let value = try required(UInt32(guid, radix: 16))
@@ -63,16 +71,35 @@ struct FixtureComparisonTests {
         #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
     }
 
+    /// Each lot `oracle-review.sh` ran, with the objects `fso-oracle` left out left out here too, for
+    /// the ticks the script runs (1,800, a digest every 300).
+    @Test func lotRunsMatchFreeSO() throws {
+        let fso = try lines("lots.digests")
+        let leftOut = (try? lines("lots.leftout")) ?? []
+        let answers = try answers()
+        var nso: [String] = []
+        for file in Set(fso.compactMap { $0.split(separator: " ").first.map(String.init) }).sorted() {
+            var lot = try Blueprint(xml: try Data(contentsOf: try blueprintFile(file)))
+            let guids = Set(leftOut.compactMap { line -> UInt32? in
+                let fields = line.split(separator: "\t")
+                guard fields.count == 2, fields[0] == file else { return nil }
+                return UInt32(fields[1].dropFirst(2), radix: 16)
+            })
+            lot.objects.removeAll { guids.contains($0.guid) }
+            nso += answers.lotRun(lot, ticks: 1800, every: 300).map { "\(file) \($0)" }
+        }
+        let comparison = Comparison.lotRuns(fso: fso, nso: nso)
+        print(comparison.summary, comparison.skipsByCount.prefix(8))
+        #expect(comparison.matched + comparison.skipped.values.reduce(0, +) > 1)
+        if onMockInstall { #expect(comparison.matched >= 1) }  // the mock lot runs in full
+        #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
+    }
+
     @Test func roomMapsMatchFreeSO() throws {
-        let directory = try required(oracleDirectory)
         let fso = try lines("rooms.jsonl")
         let nso = try fso.map { line -> String in
             let object = try required((try JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any])
-            let file = try required(object["file"] as? String)
-            let candidates = [directory.appendingPathComponent("blueprints/\(file)"),
-                              freeSOContent.appendingPathComponent("Blueprints/\(file)"),
-                              repository.appendingPathComponent("NSOClient/Lots/\(file)")]
-            let url = try required(candidates.first { FileManager.default.fileExists(atPath: $0.path) }, file)
+            let url = try blueprintFile(try required(object["file"] as? String))
             return String(decoding: try JSONSerialization.data(withJSONObject: Answers.roomMaps(of: url)), as: UTF8.self)
         }
         let comparison = Comparison.roomMaps(fso: fso, nso: nso)
@@ -105,6 +132,17 @@ struct FixtureComparisonTests {
         let runs = Comparison.objectRuns(fso: fso, nso: nso)
         #expect(runs.matched == 1 && runs.mismatches == ["b: FreeSO tick 0 seed 1 entities 1 digest x NSOClient tick 0 seed 1 entities 1 digest z"])
         #expect(runs.skipped == ["FreeSO couldn't run it": 1, "unsupported: primitive 11 (get_distance_to)": 1, "not in NSOClient's content": 1])
+    }
+
+    @Test func comparesLotRunsUpToWhatIsNotPorted() {
+        let fso = ["a.xml tick 0 x", "a.xml tick 300 y", "b.xml tick 0 x", "b.xml tick 300 y",
+                   "c.xml tick 0 x", "c.xml tick 300 y", "d.xml tick 0 x", "e.xml error X"]
+        let nso = ["a.xml tick 0 x", "a.xml tick 300 y", "b.xml tick 0 x", "b.xml unsupported at tick 13: primitive 28 (run_tree_by_name)",
+                   "c.xml tick 0 z", "c.xml unsupported at tick 13: primitive 28 (run_tree_by_name)", "d.xml tick 0 w"]
+        let lots = Comparison.lotRuns(fso: fso, nso: nso)
+        #expect(lots.matched == 1)
+        #expect(lots.skipped == ["unsupported: primitive 28 (run_tree_by_name)": 1, "FreeSO couldn't run it": 1])
+        #expect(lots.mismatches == ["c.xml: FreeSO tick 0 x NSOClient tick 0 z", "d.xml: FreeSO tick 0 x NSOClient tick 0 w"])
     }
 
     @Test func comparesRoomMapsEntryForEntry() {

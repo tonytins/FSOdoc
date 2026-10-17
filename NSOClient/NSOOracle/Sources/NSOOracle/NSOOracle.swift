@@ -11,11 +11,11 @@ struct NSOOracle: ParsableCommand {
         commandName: "nso-oracle",
         abstract: "Answer fso-oracle's questions with NSOClient, and compare the two.",
         discussion: """
-            list-objects, run-objects, and room-maps print the same formats as fso-oracle's \
+            list-objects, run-objects, run-lot, and room-maps print the same formats as fso-oracle's \
             commands of the same names (see NSOClient/Oracle/README.md). compare reads both sides' \
             answers and prints how they agree, and with --review writes docs/results/nso-review.md.
             """,
-        subcommands: [ListObjects.self, RunObjects.self, RoomMaps.self, Compare.self])
+        subcommands: [ListObjects.self, RunObjects.self, RunLot.self, RoomMaps.self, Compare.self])
 }
 
 /// The folder of FreeSO's content in the 2017 snapshot, which `fso-oracle` uses too.
@@ -67,9 +67,9 @@ extension NSOOracle {
 
         func run() throws {
             let answers = Answers(content: try install.load())
-            let lot = blueprint.map { URL(fileURLWithPath: $0) }
+            let lotFile = blueprint.map { URL(fileURLWithPath: $0) }
                 ?? install.contentDirectory.appendingPathComponent("Blueprints/empty_lot_fso.xml")
-            let architecture = try Blueprint(xml: try Data(contentsOf: lot)).architecture()
+            let lot = try Blueprint(xml: try Data(contentsOf: lotFile))
             while let line = readLine() {
                 let text = line.trimmingCharacters(in: .whitespaces)
                 guard !text.isEmpty else { continue }
@@ -78,10 +78,45 @@ extension NSOOracle {
                     continue
                 }
                 let prefix = String(format: "%08x", guid)
-                for answer in answers.objectRun(guid: guid, on: architecture, ticks: ticks, every: every) {
+                for answer in answers.objectRun(guid: guid, on: lot, ticks: ticks, every: every) {
                     print("\(prefix) \(answer)")
                 }
             }
+        }
+    }
+
+    struct RunLot: ParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "run-lot", abstract: "Load a lot with its objects, run it, and print digests.")
+        @OptionGroup var install: InstallOptions
+
+        @Option(help: "The lot (default: Blueprints/empty_lot_fso.xml in the content folder).")
+        var blueprint: String?
+
+        @Option(name: .customLong("leave-out"),
+                help: "An object GUID (hex) to leave out of the lot, such as one fso-oracle left out. Repeatable.")
+        var leaveOut: [String] = []
+
+        @Flag(help: "After each digest, print the digested fields of every entity, one line each.") var dump = false
+
+        @Option(help: "Ticks to run.") var ticks = 1800
+        @Option(help: "Also print a digest every this many ticks (0 for only the end).") var every = 0
+
+        func run() throws {
+            let answers = Answers(content: try install.load())
+            let lotFile = blueprint.map { URL(fileURLWithPath: $0) }
+                ?? install.contentDirectory.appendingPathComponent("Blueprints/empty_lot_fso.xml")
+            var lot = try Blueprint(xml: try Data(contentsOf: lotFile))
+            let leftOutGUIDs = try Set(leaveOut.map { text throws -> UInt32 in
+                let digits = text.lowercased().hasPrefix("0x") ? String(text.dropFirst(2)) : text
+                guard let guid = UInt32(digits, radix: 16) else { throw ValidationError("--leave-out \(text) isn't a hex GUID") }
+                return guid
+            })
+            lot.objects.removeAll { leftOutGUIDs.contains($0.guid) }
+            let lines = answers.lotRun(lot, ticks: ticks, every: every, dump: dump) { leftOut in
+                FileHandle.standardError.write(Data("nso-oracle: object \(String(format: "0x%08X", leftOut.object.guid)) left out of the lot: \(leftOut.reason)\n".utf8))
+            }
+            for line in lines { print(line) }
         }
     }
 
@@ -104,7 +139,8 @@ extension NSOOracle {
             abstract: "Compare fso-oracle's and nso-oracle's answers, and optionally write the review.",
             discussion: """
                 Each folder holds the same files from its side: objects.tsv (list-objects), \
-                objects.digests (run-objects), rooms.jsonl (room-maps), and optionally timings.tsv \
+                objects.digests (run-objects), lots.digests (run-lot, each line prefixed with the lot's \
+                file name), rooms.jsonl (room-maps), and optionally timings.tsv \
                 (command, tab, seconds). Missing files are left out of the comparison.
                 """)
 
@@ -126,6 +162,9 @@ extension NSOOracle {
             }
             if let theirs = lines(fso, "objects.digests"), let ours = lines(nso, "objects.digests") {
                 comparisons.append(.objectRuns(fso: theirs, nso: ours))
+            }
+            if let theirs = lines(fso, "lots.digests"), let ours = lines(nso, "lots.digests") {
+                comparisons.append(.lotRuns(fso: theirs, nso: ours))
             }
             if let theirs = lines(fso, "rooms.jsonl"), let ours = lines(nso, "rooms.jsonl") {
                 comparisons.append(.roomMaps(fso: theirs, nso: ours))

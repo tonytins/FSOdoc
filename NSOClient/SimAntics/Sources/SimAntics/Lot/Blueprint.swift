@@ -30,12 +30,47 @@ public struct Blueprint: Sendable, Equatable {
         public var tile: WallTile
     }
 
+    /// An object to create on the lot (`XmlHouseDataObject`).
+    public struct Object: Sendable, Equatable {
+        public var guid: UInt32
+        /// 0 leaves the object out of the world; 1 is the ground floor.
+        public var level: Int
+        /// The tile.
+        public var x: Int
+        public var y: Int
+        public var direction: Direction
+        /// A value for every part's object data `groupID`, or 0 to leave it.
+        public var group: Int
+
+        public init(guid: UInt32, level: Int = 0, x: Int = 0, y: Int = 0, direction: Direction = .north, group: Int = 0) {
+            self.guid = guid
+            self.level = level
+            self.x = x
+            self.y = y
+            self.direction = direction
+            self.group = group
+        }
+
+        /// The facing for a `dir` attribute, as `XmlHouseDataObject.Direction` reads it: 0, 2,
+        /// 4, and 6 are north, east, south, and west, and anything else is west.
+        public static func direction(dir: Int) -> Direction {
+            switch dir {
+            case 0: .north
+            case 2: .east
+            case 4: .south
+            default: .west
+            }
+        }
+    }
+
     /// The width and height in tiles.
     public var size: Int
     public var category: Int
     public var floors: [Floor]
     public var pools: [Pool]
     public var walls: [Wall]
+    /// The lot's objects, in the order they're created.
+    public var objects: [Object]
 
     /// Reads blueprint XML.
     ///
@@ -92,6 +127,15 @@ public struct Blueprint: Sendable, Equatable {
                 topLeftStyle: UInt16(truncatingIfNeeded: try value("tls")),
                 topRightStyle: UInt16(truncatingIfNeeded: try value("trs")))
             return Wall(level: try value("level"), x: try value("x"), y: try value("y"), tile: tile)
+        }
+        objects = try elements("/house/objects/object").map { (element) throws(BlueprintError) in
+            let value = attributes(element)
+            // `Convert.ToUInt32(text, 16)`: an optional 0x prefix; a missing GUID reads as 0.
+            var text = element.attribute(forName: "guid")?.stringValue ?? "0"
+            if text.lowercased().hasPrefix("0x") { text.removeFirst(2) }
+            guard let guid = UInt32(text, radix: 16) else { throw .malformed("object guid \"\(text)\" isn't a 32-bit hex number") }
+            return Object(guid: guid, level: try value("level"), x: try value("x"), y: try value("y"),
+                          direction: Object.direction(dir: try value("dir")), group: try value("group"))
         }
     }
 

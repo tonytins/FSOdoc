@@ -43,8 +43,12 @@ public enum Review {
           each tick of the simulation, or being used.
         - **Objects run alone:** each object placed by itself on an empty lot and simulated for 30 ticks.
           The whole simulation's state is compared, as a checksum, every 10 ticks.
+        - **Lots run:** each lot loaded with all its objects, as the game's lot server loads it, and
+          simulated for 1,800 ticks, compared every 300. The lots are FreeSO's empty lot (which holds a
+          mailbox and other fixtures) and a house built in-game. Where NSOClient reaches something it
+          doesn't support yet, the run stops there; it's skipped if every comparison before that matched.
         - **Room maps:** for each test lot, how its walls divide it into rooms. The lots are generated
-          layouts, FreeSO's empty lot, and a house built in-game.
+          layouts, FreeSO's empty lot, a house built in-game, and a small made-up lot.
 
         Each section below covers one copy of the game. *Production* is a 2002 release of the game
         (FreeSO was built against a 2003 one), and *beta* is a 2002 beta. In each table:
