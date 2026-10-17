@@ -377,6 +377,23 @@ def get_direction_to_cases(lot_guids):
                    {"operand": operand, "caller": caller, "stackObject": stack_object, "locals": [0]})
 
 
+# MARK: Transfer Funds
+
+def transfer_funds_cases(lot_guids):
+    """Every transfer type, tested or not, with literal amounts and a 32-bit one from TempXL 0,
+    from callers 1 and 2, with no stack object, object 1, and object 2 as the stack object."""
+    count = min(len(lot_guids), 13)
+    amounts = {"zero": (0, LITERAL, 0), "fifty": (0, LITERAL, 50), "minus": (0, LITERAL, 0xFFCE), "big": (3, TEMP_XL, 0)}
+    for caller in (1, 2) if count > 1 else (1,):
+        for stack_object in (0, 1, 2) if count > 1 else (0, 1):
+            for transfer_type in range(26):
+                for flags in (0, 1):
+                    for label, (old_owner, scope, data) in amounts.items():
+                        operand = struct.pack("<BBHBBBB", old_owner, scope, data, flags, 0, 0, transfer_type).hex()
+                        yield (f"caller{caller}-stack{stack_object}-type{transfer_type}-flags{flags}-{label}",
+                               {"operand": operand, "caller": caller, "stackObject": stack_object, "tempXL": [70000, 3]})
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -391,6 +408,7 @@ GENERATORS = {
     "stackobj_notify_out_of_idle": (49, True, lambda guids: notify_out_of_idle_cases(guids[0])),
     "get_distance_to": (11, True, lambda guids: get_distance_to_cases(guids[0])),
     "get_direction_to": (12, True, lambda guids: get_direction_to_cases(guids[0])),
+    "transfer_funds": (25, True, lambda guids: transfer_funds_cases(guids[0])),
 }
 
 

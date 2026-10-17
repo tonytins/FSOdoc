@@ -8,6 +8,7 @@ let mockInstall = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../MockInstall/TSOClient").standardizedFileURL
 let mockChairGUID: UInt32 = 0x4D4F_4301, mockTableGUID: UInt32 = 0x4D4F_4302
 let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, mockLampGUID: UInt32 = 0x4D4F_4305
+let mockRegisterGUID: UInt32 = 0x4D4F_4306
 
 /// The VM on the mock install's objects (see its README): init sets object data 42 and 4,
 /// and main counts its runs in attribute 0.
@@ -73,6 +74,37 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, moc
         #expect(chair.thread.scheduledTick == vm.scheduler.currentTick)
     }
 
+    /// Alone on the lot, the register is object 1, which persist ID 0 finds, so the money is its
+    /// own: paid 100, pays 30, can't pay 1,000, and copies its cash (70) to attribute 2. Each
+    /// transaction waits one tick for its answer.
+    @Test func theRegisterPaysAndIsPaidATickAtATime() throws {
+        let vm = try vm()
+        let register = try #require(try vm.createObject(guid: mockRegisterGUID)?.objects.first)
+        var ticks = 0
+        while register.attributes.count < 3 || register.attributes[2] == 0 {
+            vm.tick()
+            ticks += 1
+            try #require(ticks < 20)
+        }
+        #expect(register.attributes[2] == 70 && register.budget == 70)
+        #expect(ticks == 5 && vm.reportedErrors.isEmpty)
+        #expect(register.thread.blockingState == nil)
+    }
+
+    @Test func aResetForgetsAPendingTransaction() throws {
+        let vm = try vm()
+        let register = try #require(try vm.createObject(guid: mockRegisterGUID)?.objects.first)
+        vm.tick()
+        #expect(register.thread.blockingState != nil)
+        register.reset()
+        #expect(register.thread.blockingState == nil)
+        vm.tick()
+        // The first 100 was paid when it was asked for; only its answer, arriving for a thread no
+        // longer waiting, is dropped. Main then starts over and asks for 100 more.
+        #expect(register.budget == 200)
+        #expect(register.thread.blockingState != nil && register.thread.stack.first?.instructionPointer == 1)
+    }
+
     @Test func mainCountsItsRuns() throws {
         let vm = try vm()
         let entity = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
@@ -90,10 +122,10 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, moc
         let lot = try Blueprint(xml: try Data(contentsOf: lotFile))
         let leftOut = try vm.load(lot)
         #expect(leftOut.map(\.object.guid) == [0x4D4F_43FF])
-        #expect(vm.entities.last?.object.guid == mockLampGUID)
+        #expect(vm.entities.last?.object.guid == mockRegisterGUID)
         #expect(vm.globalState[11] == -1)                                   // the job level
         #expect(vm.entities.map(\.object.guid) == [mockChairGUID, mockChairGUID, mockLeftGUID, mockRightGUID, mockLeftGUID, mockRightGUID,
-                                                  mockLampGUID])
+                                                  mockLampGUID, mockRegisterGUID])
 
         let (outside, inside) = (vm.entities[0], vm.entities[1])
         #expect(outside.position.isOutOfWorld)                              // level 0 stays out of the world
@@ -110,7 +142,7 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, moc
     @Test func measuresDistanceAndDirectionBetweenLotObjects() throws {
         let vm = try VM(content: try GameContent(.init(gameDirectory: mockInstall)), seed: 1)
         try vm.load(try Blueprint(xml: try Data(contentsOf: lotFile)))
-        let chair = vm.entities[1], lamp = try #require(vm.entities.last)
+        let chair = vm.entities[1], lamp = vm.entities[6]
         #expect(chair.position == .center(ofTileX: 3, y: 3, level: 1) && lamp.position == .center(ofTileX: 4, y: 2, level: 1))
         let toLamp = try vm.makePrimitiveFrame(opcode: 12, operand: Primitives.GetDirectionTo.Operand(
             result: Variable(.temps, 0), flags: 0, object: Variable(.literal, 0)).encoded(), caller: chair, stackObjectID: lamp.objectID)

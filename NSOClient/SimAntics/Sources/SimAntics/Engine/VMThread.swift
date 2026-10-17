@@ -49,6 +49,8 @@ public final class VMThread {
     public internal(set) var scheduledTick: UInt32 = 0
     /// Ticks until another error may be reported (`DialogCooldown`).
     public private(set) var errorCooldown = 0
+    /// What the thread is waiting on from outside the lot, if anything (`BlockingState`).
+    public var blockingState: BlockingState?
     /// Instructions run since the entity's tick began (`TicksThisFrame`).
     var instructionsThisTick = 0
 
@@ -151,6 +153,7 @@ public final class VMThread {
     /// Runs instructions until one yields. With an empty stack, a normal thread first pushes `main`.
     public func tick() {
         lastError = nil
+        blockingState?.waitTime += 1
         if errorCooldown > 0 { errorCooldown -= 1 }
         do throws(SimAnticsError) {
             if stack.isEmpty {

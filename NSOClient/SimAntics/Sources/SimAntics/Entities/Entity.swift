@@ -27,6 +27,13 @@ public final class Entity {
     public var mainParameter: Int16 = 0
     public var mainStackObjectID: Int16 = 0
 
+    /// The ID the game's servers know the entity by (`PersistID`); 0 for objects on a blueprint lot.
+    public var persistID: UInt32 = 0
+    /// The entity's money (`TSOState.Budget`), from 0 up.
+    public var budget: UInt32 = 0
+    /// The persist ID of the object's owner (`VMTSOObjectState.OwnerID`); 0 on a blueprint lot.
+    public var ownerID: UInt32 = 0
+
     /// The rectangle the entity takes up on the lot, or `nil` out of the world or with no extent
     /// (`Footprint`); placement keeps it current.
     public internal(set) var footprint: Obstacle?
@@ -242,6 +249,7 @@ public final class Entity {
         isResetting = true
         defer { isResetting = false }
         thread.stack.removeAll()
+        thread.blockingState = nil
         do throws(SimAnticsError) {
             guard let table = entryPoints else { throw .nullReference("no entry point table") }
             guard table.count > EntryPointIndex.cleanup.rawValue else { throw .indexOutOfRange("entry point 3") }

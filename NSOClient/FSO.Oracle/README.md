@@ -40,6 +40,13 @@ run to run. `LotLoader.cs` is a copy of the command and the activator, in the sa
 that seeds the new context as soon as it's made. After that tick, the seed is set again,
 so the first digest starts from `--seed`.
 
+Money needs one more change. The VM runs with FreeSO's standalone global link
+(`VMTSOGlobalLinkStub`), which settles a Transfer Funds transaction at once but sends its
+answer from a new `System.Threading.Thread`, so the tick the answer arrives on depends on
+thread timing. `SynchronousGlobalLink.cs` is the same stub with that one call made on the
+calling thread, so the answer always arrives on the next tick, as the background thread almost
+always did.
+
 ## The state digest (version 0)
 
 SHA-256 over little-endian values, in this order:

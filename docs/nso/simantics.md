@@ -7,10 +7,12 @@ by tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
-objects use, the scheduler and clock, placing objects and putting them in slots, and 13 of the 49
+objects use, the scheduler and clock, placing objects and putting them in slots, and 14 of the 49
 primitives TSO uses (Expression, Sleep, Refresh, Random Number, Get Distance To, Get Direction To,
-Play Sound, Set To Next, Test Object Type, Create Object Instance, Find Location For, Run Tree By
-Name, and Notify Stack Object Out Of Idle). On the production install, 2,743
+Play Sound, Set To Next, Transfer Funds, Test Object Type, Create Object Instance, Find Location
+For, Run Tree By Name, and Notify Stack Object Out Of Idle). Money is a stand-in for now: each
+entity has a budget, moved as FreeSO's standalone global link moves it, with each answer a tick
+later; NewSO's economy waits for the lot server. On the production install, 2,743
 objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks (the
 [review](../results/nso-review.md) has the latest numbers). Sims, routing, and lot loading come
 later; see the [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
@@ -196,6 +198,7 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 12 | `GetDirectionTo` | The direction from another object to the stack object, in eighths of a turn |
 | 16 | `FindLocationFor` | Places the stack object near a reference, out of the world, or along a facing |
 | 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
+| 25 | `TransferFunds` | Moves money between the caller, the stack object, owners, and the game; waits a tick for the answer, or only tests in a check tree |
 | 28 | `RunTreeByName` | Runs one of the stack object's routines, found by a name from a string table: pushed, or to completion on the caller's or the stack object's thread |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |

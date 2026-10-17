@@ -59,6 +59,7 @@ public struct PrimitiveTable: Sendable {
         table.register(Primitives.NotifyStackObjectOutOfIdle.self)
         table.register(Primitives.GetDistanceTo.self)
         table.register(Primitives.GetDirectionTo.self)
+        table.register(Primitives.TransferFunds.self)
         return table
     }()
 

@@ -118,7 +118,8 @@ options:
         {
             // The VM, built the way LotContainer.ResetVM builds it on the lot server.
             VM.UseWorld = false;
-            var driver = new VMServerDriver(new VMTSOGlobalLinkStub());
+            // FreeSO answers transactions from a background thread; this answers them by the next tick.
+            var driver = new VMServerDriver(new SynchronousGlobalLink());
             // FreeSO seeds the VM from an unseeded Random. A fixed seed makes runs repeatable;
             // in multiplayer the server's seed is authoritative in the same way.
             var context = new VMContext(null) { RandomSeed = seed };

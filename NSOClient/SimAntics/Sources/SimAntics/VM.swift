@@ -13,6 +13,8 @@ public final class VM {
     public var clock = VMClock()
     /// The lot's category (`VMTSOLotState.PropertyCategory`), which some objects require.
     public var propertyCategory: UInt8 = 0
+    /// The persist ID of the lot's owner (`VMTSOLotState.OwnerID`); 0 on a blueprint lot.
+    public var lotOwnerID: UInt32 = 0
     public let content: GameContent
     /// The global every object can call.
     public let global: GlobalResource
@@ -61,6 +63,11 @@ public final class VM {
         }
     }
     private var nextTickID: UInt32 = 1
+    /// Answers for waiting threads, as FreeSO's queued `VMNetAsyncResponseCmd`s: each is delivered
+    /// at the start of the first tick that begins after `queuedIn`, the number of ticks started then.
+    private var answers: [(objectID: Int16, state: BlockingState, queuedIn: Int)] = []
+    private var ticksStarted = 0
+    private var isLoading = false
     private var routines: [RoutineKey: Routine] = [:]
 
     private struct RoutineKey: Hashable {
@@ -114,6 +121,9 @@ public final class VM {
     ///   an object's init or entry point throws.
     @discardableResult
     public func load(_ blueprint: Blueprint) throws(SimAnticsError) -> [LeftOut] {
+        // The lot server loads inside a command, in a tick: anything answered meanwhile waits a tick more.
+        isLoading = true
+        defer { isLoading = false }
         globalState[11] = -1
         do {
             architecture = try blueprint.architecture()
@@ -351,6 +361,8 @@ public final class VM {
     /// Advances the lot one tick, as the server driver and `VM.InternalTick` do: the clock moves,
     /// the clock globals are copied, and the scheduled entities run. Tick IDs start at 1.
     public func tick() {
+        deliverAnswers()
+        ticksStarted += 1
         let tick = nextTickID
         nextTickID &+= 1
         scheduler.beginTick(tick)
@@ -365,6 +377,29 @@ public final class VM {
             updateRooms()
         }
         scheduler.runTick(self)
+    }
+
+    /// Queues an answer for an entity's waiting thread (`VMNetAsyncResponseCmd`).
+    func queueAnswer(_ state: BlockingState, for objectID: Int16) {
+        answers.append((objectID, state, isLoading ? ticksStarted + 1 : ticksStarted))
+    }
+
+    /// Hands each due answer to its thread, if the thread is still waiting on the same kind of
+    /// thing; otherwise it's dropped, as `VMNetAsyncResponseCmd` drops it.
+    private func deliverAnswers() {
+        guard !answers.isEmpty else { return }
+        var later: [(objectID: Int16, state: BlockingState, queuedIn: Int)] = []
+        for answer in answers {
+            guard answer.queuedIn < ticksStarted + 1 else {
+                later.append(answer)
+                continue
+            }
+            guard let entity = entity(id: answer.objectID), let waiting = entity.thread.blockingState else { continue }
+            switch (waiting, answer.state) {
+            case (.transferFunds, .transferFunds): entity.thread.blockingState = answer.state
+            }
+        }
+        answers = later
     }
 
     func report(_ error: SimAnticsError, by entity: Entity) {
