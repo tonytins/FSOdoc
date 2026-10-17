@@ -124,7 +124,7 @@ import TSOFiles
 
         #expect(command.noteDifferences(between: installs, date: Date(timeIntervalSince1970: 0)))
         let written = try String(contentsOf: notes, encoding: .utf8)
-        #expect(written.contains("on 1970-01-01, comparing the install in `TSO_GAME_DIR`"))
+        #expect(written.contains("`TSO_GAME_DIR` and `TSO_BETA_DIR` name") && written.contains("wrote this on\n1970-01-01."))
         #expect(written.contains("## Only in `TSO_GAME_DIR`\n\n- `objectdata/new.txt`"))
 
         // A second run leaves the notes alone, even when the installs change.

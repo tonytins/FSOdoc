@@ -1,11 +1,14 @@
 # Install differences
 
-Written once by `tsofiles-check` on 2026-10-16, comparing the install in `TSO_GAME_DIR` with the one in
-`TSO_BETA_DIR`. It names files, archive entries, IFF chunks, and object GUIDs; it holds no game data.
-Delete this file and run `tsofiles-check` with both variables set to compare again.
+How two installed copies of *The Sims Online* differ, file by file. `TSO_GAME_DIR` and `TSO_BETA_DIR` name
+the environment variables that pointed `tsofiles-check` at them: by the project's convention,
+`TSO_GAME_DIR` is a production release and `TSO_BETA_DIR` a beta. `tsofiles-check` wrote this on
+2026-10-16. It names files, archive entries, IFF chunks (the resources inside the game's object files),
+and object IDs (GUIDs); it holds none of the game's own data.
 
-Use it for backwards-compatibility notes: when NSOClient or the oracle behaves differently on
-the two installs, look here for what the files change before calling it a port bug.
+When NSOClient, or FreeSO (which NSOClient is checked against), behaves differently on the two
+copies, this shows what changed in the game's files, before anyone looks for a bug in the code.
+It's written once: delete it and run `tsofiles-check` with both variables set to write it again.
 
 ## Summary
 

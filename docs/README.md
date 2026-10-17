@@ -1,16 +1,48 @@
 # Documentation
 
-This folder documents two things: the FreeSO source code as of August 9, 2017 (the snapshot in
-[`TSOClient/`](../TSOClient/)), and NSOClient, a new Swift reimplementation of its engine-free libraries (in
-[`NSOClient/`](../NSOClient/)). It also holds a copy of the community SimAntics reference.
+SimsCraft is rebuilding the engine of *The Sims Online* in Swift. This folder documents both sides
+of that work:
+
+- **FreeSO**, the open-source C# reimplementation of the game that SimsCraft learns from, as its
+  source stood on August 9, 2017. That copy of the code is in [`TSOClient/`](../TSOClient/).
+- **NSOClient**, the new Swift code, in [`NSOClient/`](../NSOClient/). It covers the parts of
+  FreeSO that don't depend on a game engine (no graphics, sound, user interface, or networking):
+  reading the game's files, loading its content, and running its object behavior.
+
+It also holds a copy of the community SimAntics reference, which explains the scripting language
+the game's objects are written in.
+
+New here? Read [Terms](#terms) below, then pick a starting point. The rules for changing the code
+are in [`AGENTS.md`](../AGENTS.md); they apply to people and AI assistants alike.
 
 ## Where to start
 
 - **To understand FreeSO's code:** [fso/README.md](fso/README.md), then
   [fso/architecture.md](fso/architecture.md).
 - **To understand how NSOClient's code behaves:** [nso/README.md](nso/README.md).
-- **To see where NSOClient stands:** the [scorecard](scorecard.md) for what's done and how we know,
-  and the [roadmap](roadmap.md) for what comes next.
+- **To see where NSOClient stands:** the [scorecard](scorecard.md) for what's done and the evidence
+  for it, the [roadmap](roadmap.md) for what comes next, and the [results](results/README.md) for how
+  closely NSOClient matches FreeSO.
+
+## Terms
+
+| Term | Meaning |
+| --- | --- |
+| *The Sims Online* (TSO) | Maxis and EA's online Sims game, released in 2002 and renamed *EA-Land* before it closed in 2008 |
+| FreeSO | An open-source C# reimplementation of TSO, built on MonoGame. NSOClient is checked against it |
+| NSOClient | SimsCraft's Swift reimplementation of FreeSO's engine-independent libraries (also called NewSO) |
+| Install | A copy of TSO's game files on disk (a `TSOClient` folder). The repository holds none; tests that need one read the `TSO_GAME_DIR` environment variable, or use [`NSOClient/MockInstall`](../NSOClient/MockInstall/README.md), a tiny made-up install |
+| Production, beta | The two installs the project is tested on: a 2002 production release and a 2002 beta. FreeSO was built against a 2003 release |
+| SimAntics | The virtual machine that runs object behavior in The Sims games |
+| Routine (`BHAV`), primitive | A routine is a small program an object runs; each of its instructions is either a call to another routine or a primitive, one of the VM's built-in operations |
+| IFF, chunk | Maxis's resource file format. An object's IFF holds chunks: its definition (`OBJD`), routines (`BHAV`), strings (`STR#`), sprites, and so on |
+| FAR, DBPF | Archive formats that bundle many files, such as all the objects' IFFs |
+| PIFF | FreeSO's patch format: a file of changes to apply to one of the game's IFFs |
+| GUID | The 32-bit number that identifies an object type |
+| Semi-global | A library of routines shared by a family of objects, such as all chairs |
+| Lot, tick | A property Sims live on and objects are placed on; one step of the simulation |
+| Oracle | `fso-oracle` runs FreeSO's code and `nso-oracle` runs NSOClient's, on the same install; comparing their output is how NSOClient is checked |
+
 - **To look up what a SimAntics primitive, scope, or data field means:**
   [simantics/README.md](simantics/README.md).
 
@@ -20,7 +52,7 @@ This folder documents two things: the FreeSO source code as of August 9, 2017 (t
 
 Scope, the alpha gate (the end-to-end jobs NSOClient must do before alpha), current focus,
 milestones (named after The Sims Online's unused cities) with estimates and progress, the ranked
-next milestones, the critical path, decisions for the owner, risks, and the revision history.
+next milestones, the critical path, decisions for the maintainer, risks, and the revision history.
 
 ### [scorecard.md](scorecard.md): NSOClient status with evidence
 
@@ -31,7 +63,9 @@ scorecard and the roadmap disagree, the scorecard wins.
 
 ### [nso/](nso/README.md): how NSOClient works
 
-How the Swift libraries behave today, with code examples (the oracle and SimsScript aren't covered).
+How the Swift libraries behave today, with code examples. `fso-oracle` (see
+[its README](../NSOClient/Oracle/README.md)) and SimsScript, an experimental scripting language,
+aren't covered.
 
 | Page | Covers |
 | --- | --- |
@@ -46,13 +80,14 @@ How the Swift libraries behave today, with code examples (the oracle and SimsScr
 
 | Page | Covers |
 | --- | --- |
-| [nso-review.md](results/nso-review.md) | `fso-oracle` and `nso-oracle` run side by side on each install, compared: matches, mismatches, what's not ported yet, and timings. Written after a phase or milestone, for sessions and public peer review |
-| [install-differences.md](results/install-differences.md) | How the owner's two installs (2002 production, 2002 beta) differ: files, archive entries, IFF chunks, and object GUIDs, with no game data. Written once by `tsofiles-check`; the reference for backwards compatibility with the beta |
+| [nso-review.md](results/nso-review.md) | `fso-oracle` and `nso-oracle` run side by side on each install, compared: matches, mismatches, what NSOClient doesn't support yet, and timings. Written after each phase of the roadmap |
+| [install-differences.md](results/install-differences.md) | How the production and beta installs differ: files, archive entries, IFF chunks, and object GUIDs, with no game data. The reference for keeping NSOClient working on the beta |
 
-### [fso/](fso/README.md): the 2017 FreeSO snapshot
+### [fso/](fso/README.md): FreeSO's code, as of 2017
 
-Written from reading the source. Each page says how the code works in the 2017 snapshot. The "Modern .NET
-rewrite" sections are from an earlier goal and kept only for reference.
+Written from reading the source in `TSOClient/`. Each page explains how one part of FreeSO works.
+The "Modern .NET rewrite" sections are from an earlier plan to modernize FreeSO itself, which
+SimsCraft dropped in favor of NSOClient; they're kept for reference.
 
 | Page | Covers |
 | --- | --- |

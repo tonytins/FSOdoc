@@ -58,7 +58,7 @@ The report lists files only in one install, then, for each file that differs:
 
 It holds names, sizes, chunk IDs, and GUIDs, never game data, so it can be committed. It's the
 reference for backwards compatibility: when something behaves differently on the beta, check
-there what the files change before calling it a port bug.
+there what the files change before calling it a bug in NSOClient.
 
 ## nso-oracle
 
@@ -74,14 +74,16 @@ there what the files change before calling it a port bug.
 
 Where NSOClient can't answer yet, `run-objects` adds an `unsupported` line naming what isn't
 ported; comparisons count those as skipped, ranked, so they show what to port next.
-`run-primitive` and `run-lot` follow once NSOClient can load a lot by itself (phase D).
+`run-primitive` and `run-lot` follow once NSOClient can load a lot by itself (phase D of the
+current milestone on the [roadmap](../roadmap.md)).
 
 ```sh
 cut -f1 objects.tsv | swift run --package-path NSOClient/NSOOracle nso-oracle run-objects --ticks 30 --every 10
 ```
 
-`NSOClient/scripts/oracle-review.sh [--review]` runs both oracles on every install it's given
-(`TSO_GAME_DIR` as "production", `TSO_BETA_DIR` as "beta") and compares them. With `--review` it
-writes [docs/results/nso-review.md](../results/nso-review.md); do that after a phase or milestone,
+`NSOClient/scripts/oracle-review.sh [--review | --mock]` runs both oracles on every install it's
+given (`TSO_GAME_DIR` as "production", `TSO_BETA_DIR` as "beta") and compares them; `--mock` uses
+`NSOClient/MockInstall` instead, as CI does. With `--review` it writes
+[docs/results/nso-review.md](../results/nso-review.md); do that only after a phase of the roadmap,
 since it reruns every object. The same comparisons run as NSOOracle's tests against the oracle
 fixtures, sharing the same code, so the tests and the review can't disagree.

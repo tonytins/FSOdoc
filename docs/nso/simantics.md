@@ -2,16 +2,17 @@
 
 SimAntics is the virtual machine that runs The Sims Online's object behavior. Every object's
 logic is a set of routines (`BHAV` chunks) built from primitives: compare and assign variables,
-sleep, find another object, play a sound, and about 70 more. The port runs those routines tick by
-tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case by case.
+sleep, find another object, play a sound, and about 70 more. NSOClient runs those routines tick
+by tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case by case.
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
-objects use, the scheduler and clock, and 8 of the 49 primitives TSO uses (Expression, Sleep,
-Refresh, Random Number, Play Sound, Set To Next, Test Object Type, and Create Object Instance).
-2,597 objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks. Sims,
-routing, placement, slots, and lot loading come later; see the
-[roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
+objects use, the scheduler and clock, placing objects and putting them in slots, and 9 of the 49
+primitives TSO uses (Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, Test
+Object Type, Create Object Instance, and Find Location For). On the production install, 2,743
+objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks (the
+[review](../results/nso-review.md) has the latest numbers). Sims, routing, and lot loading come
+later; see the [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
 [lot.md](lot.md).
 
 ## The VM
@@ -105,7 +106,7 @@ if let table = try vm.createObject(guid: tableGUID) {        // a multi-tile mas
 entity list, the queries, and the schedule, and its ID is free again. While entities are running,
 deletion waits until the tick ends, after the random seed has counted the entity. What the object
 held leaves its slots and is placed nearby (or out of the world, if the object was). That's how
-FreeSO deletes an object whose routines fail twice within 10 ticks, and the port does the same.
+FreeSO deletes an object whose routines fail twice within 10 ticks, and NSOClient does the same.
 
 ## Threads and routines
 
@@ -152,7 +153,7 @@ than 500,000 instructions in one tick fails as an infinite loop.
 | `content(_:)` | content that couldn't load |
 | `unsupported(_:)` | nothing: behavior not ported yet |
 
-`unsupported` never stands for a FreeSO failure, so tests can tell a gap in the port from a
+`unsupported` never stands for a FreeSO failure, so tests can tell a gap in NSOClient from a
 behavior that matches. An unported primitive throws it when it runs; it never silently takes a
 branch. Opcodes FreeSO itself has no implementation for take the true branch, as they do there.
 
@@ -236,5 +237,5 @@ let custom = try VM(content: content, seed: 1, primitives: table)
 
 `StateDigest.hex(of:)` hashes the VM state (seed, entities, positions, object data, stacks) the
 same way `fso-oracle run-objects` and `run-lot` do. Equal digests after the same ticks mean the
-two VMs agree. This is how the 2,597 single-object runs are checked; when a run differs, the first
+two VMs agree. This is how the single-object runs are checked; when a run differs, the first
 tick whose digest differs points at the problem.

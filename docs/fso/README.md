@@ -5,6 +5,7 @@ snapshot in [`TSOClient/`](../../TSOClient/)), the reference that NSOClient's
 Swift reimplementation draws on. **How it works (2017)** describes the code as
 it is. The **Modern .NET rewrite** sections come from an earlier goal of
 rewriting FreeSO on .NET; they're kept for reference and no longer maintained.
+Unfamiliar terms are explained in the [docs index](../README.md#terms).
 
 Everything here comes from reading the source. Nothing was built or run.
 Claims that couldn't be confirmed in the code are marked **Unverified**.
@@ -13,9 +14,9 @@ Claims that couldn't be confirmed in the code are marked **Unverified**.
 
 1. [Architecture overview](./architecture.md): layers, project
    dependencies, runtime flows, and cross-cutting patterns.
-2. [Modernization guide](./modernization.md): target layout, dependency
-   replacements, cross-platform blockers, phased plan, decisions, and
-   risks.
+2. [Modernization guide](./modernization.md) (shelved): target layout,
+   dependency replacements, cross-platform blockers, phased plan,
+   decisions, and risks.
 
 ## Subsystems
 

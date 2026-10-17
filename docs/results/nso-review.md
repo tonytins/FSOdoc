@@ -1,13 +1,40 @@
 # NSOClient review
 
-`fso-oracle` runs FreeSO's code (the 2017 snapshot) and `nso-oracle` runs NSOClient, on the
-same install and the same questions. This page compares their answers, one section per
-install, for sessions picking up the work and for public peer review. It's written by
-`NSOClient/scripts/oracle-review.sh --review` after a phase or milestone; earlier reviews are
-in its git history. It holds counts, GUIDs, case IDs, and values, never game data.
+SimsCraft is rebuilding the engine of *The Sims Online* (Maxis and EA, 2002) in Swift, as
+NSOClient. Its reference is FreeSO, an open-source C# reimplementation of the same game, as it
+stood in 2017 (the copy in `TSOClient/`). NSOClient counts as correct when it gives the same
+results as FreeSO on the same game files. Neither project ships those files: each run reads a copy
+of the game installed on the machine running it.
 
-The primitive-by-primitive comparisons run as tests (scorecard FID-9) until `nso-oracle` can
-load a lot by itself.
+Two command-line programs make the check. `fso-oracle` runs FreeSO's own code, and `nso-oracle`
+runs NSOClient's. Both read the same installed copy of the game and report the same things:
+
+- **Content:** every object the game lists, whether it loads, and what it's made of: its name, the
+  file it comes from, the shared library of routines it uses, and how many routines and tuning
+  values it has.
+- **Entry points:** for each object, which routine runs on each event, such as being created,
+  each tick of the simulation, or being used.
+- **Objects run alone:** each object placed by itself on an empty lot and simulated for 30 ticks.
+  The whole simulation's state is compared, as a checksum, every 10 ticks.
+- **Room maps:** for each test lot, how its walls divide it into rooms. The lots are generated
+  layouts, FreeSO's empty lot, and a house built in-game.
+
+Each section below covers one copy of the game. *Production* is a 2002 release of the game
+(FreeSO was built against a 2003 one), and *beta* is a 2002 beta. In each table:
+
+- **Matched:** both programs gave the same answer.
+- **Mismatched:** their answers differ. Each mismatch is listed, with both answers.
+- **Skipped:** cases left out, by reason: FreeSO itself failed, or NSOClient doesn't support
+  something yet (such as one of the game's instructions, its *primitives*).
+- **Answered where FreeSO failed:** objects NSOClient loads that FreeSO can't.
+
+The last table shows how long each program took for each command.
+
+`NSOClient/scripts/oracle-review.sh --review` writes this page after each phase of work; earlier
+reviews are in its git history. It holds only counts, IDs, and values, never the game's own data.
+Finer checks, instruction by instruction, run as tests in the repository (scorecard FID-9) until
+`nso-oracle` can load a whole lot by itself.
+
 
 <!-- install: production -->
 ## Production

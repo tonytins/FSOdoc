@@ -2,8 +2,8 @@
 
 The lot model is where things are on a lot: positions and facings, which objects share a tile,
 and the walls, floors, and rooms that SimAntics code asks about. It's part of the SimAntics
-package. Positions, the tile index, rooms, multi-tile groups, and placement are done; slots and
-loading a lot's objects come next. How objects are created and grouped is in
+package. Positions, the tile index, rooms, multi-tile groups, placement, and slots are done;
+loading a lot's objects comes next. How objects are created and grouped is in
 [simantics.md](simantics.md#creating-and-deleting-objects).
 
 ## Positions and facings
@@ -180,5 +180,5 @@ throws `BlueprintError.offLot`, where FreeSO fails with an index out of range. L
 tiles a side. The lot's objects aren't loaded yet.
 
 All of this matches FreeSO exactly: `fso-oracle room-maps` dumps FreeSO's room maps and rooms, and
-all 62 lots compared (FreeSO's empty lot, the owner's house in `NSOClient/Lots`, and 60 synthetic
+all 62 lots compared (FreeSO's empty lot, a house built in-game, in `NSOClient/Lots`, and 60 synthetic
 ones with walls, fences, diagonals, pools, and upper floors) match entry for entry.

@@ -145,5 +145,5 @@ and several need XNA Game Studio, which isn't available anymore.
 - `FSO.Server.Framework` (only a placeholder class).
 - The uncompiled WinForms tools in `FSO.UI/Debug`.
 
-Deleting is a judgment call for the owner. Moving these to an archive
+Deleting is a judgment call for the maintainer. Moving these to an archive
 branch keeps the history without carrying them into the new solution.

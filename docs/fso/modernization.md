@@ -1,5 +1,10 @@
 # Modernization guide
 
+> **Status: shelved.** SimsCraft chose to reimplement FreeSO's libraries in Swift (NSOClient)
+> instead of modernizing FreeSO itself. This plan is kept for its survey of FreeSO's dependencies
+> and platform blockers, which still applies to the code in `TSOClient/`. Nothing in it is being
+> worked on.
+
 This guide plans a rewrite of the 2017 FreeSO snapshot onto modern,
 cross-platform .NET. It collects the "Modern .NET rewrite" sections of
 the other pages into one plan. It follows the
@@ -19,7 +24,7 @@ Nothing here has been built. Every code and project sample is a sketch.
   formats (with synthetic data), protocol, data service, and SimAntics
   replay.
 - Behavior stays the same unless a change is recorded as a decision (see
-  [Decisions for the owner](#decisions-for-the-owner)).
+  [Decisions for the maintainer](#decisions-for-the-maintainer)).
 
 Not goals: new gameplay, a new renderer design, or new server features.
 Those come after the port.
@@ -136,7 +141,7 @@ every remaining trimming problem at build time.
 | ScintillaNET, Be.Windows.Forms.HexBox | Server packet inspector | Dropped with the WinForms tool |
 | Application Insights (in FSO.Server.Api) | Telemetry | OpenTelemetry, if wanted |
 
-Every new package is a suggestion for the owner to approve.
+Every new package is a suggestion for the maintainer to approve.
 
 ## Cross-platform blockers
 
@@ -166,7 +171,7 @@ something real to test against.
   `.editorconfig`, and empty projects for the layout above.
 - CI on Windows, Linux, and macOS (x64 and ARM64) that runs build and
   tests.
-- Decide the [open decisions](#decisions-for-the-owner) that affect
+- Decide the [open decisions](#decisions-for-the-maintainer) that affect
   phase 1 (at least wire and save compatibility).
 - Bring in the `FSOMonoGame` and `FSOMina.NET` submodules (read-only) to
   list what the forks change, since they are not checked out in this
@@ -229,7 +234,7 @@ something real to test against.
 - [ ] Phase 5: rendering, UI, and client
 - [ ] Phase 6: tools and cleanup
 
-## Decisions for the owner
+## Decisions for the maintainer
 
 These change compatibility or scope. Each one needs an explicit choice
 before the phase that depends on it.

@@ -33,6 +33,26 @@ As a reimplementation of The Sims Online, FreeSO is a complex project that uses 
 FSOdoc seeks to fix this documentation gap by utilizing AI to aid in generating comments and documentation for the previously uncommented sections of the code. The AI-powered commenting process provides a better understanding of the logic behind each individual method, which in turn helps to improve comprehension of the project as a whole. With FSOdoc, I finally have a means to address the lack of documentation without spending excessive hours and resources.
  --->
 
+## Getting around
+
+| Folder | Holds |
+| --- | --- |
+| [`NSOClient/`](./NSOClient/) | The Swift code: independent Swift packages for the file formats (TSOFiles), content (TSOContent), and the SimAntics VM (SimAntics), plus tools and SimsScript |
+| [`TSOClient/`](./TSOClient/) | FreeSO's C# source as of August 9, 2017, the reference NSOClient is checked against. It's read, never changed |
+| [`docs/`](./docs/README.md) | How FreeSO and NSOClient work, the plan, and the results, with a glossary of terms |
+
+To build and test, you need Swift 6 (and the .NET 10 SDK to compare with FreeSO). You don't need
+the game: tests run on [`NSOClient/MockInstall`](./NSOClient/MockInstall/README.md), a tiny made-up
+install, and skip what needs the real one.
+
+```sh
+swift test --package-path NSOClient/SimAntics
+```
+
+Start with [docs/README.md](./docs/README.md). The rules for changing the code, for people and AI
+assistants alike, are in [AGENTS.md](./AGENTS.md). The game's files are EA's and never go in the
+repository.
+
 ## Licensing
 
 SimsCraft, like its parent project FreeSO, is licensed under the MPL-2.0 (Mozilla Public License 2.0). This open-source license allows for free use, modification, and distribution of the codebase.
