@@ -394,6 +394,39 @@ def transfer_funds_cases(lot_guids):
                                {"operand": operand, "caller": caller, "stackObject": stack_object, "tempXL": [70000, 3]})
 
 
+# MARK: Remove Object Instance and Set Balloon Headline
+
+def remove_object_instance_cases(lot_guids):
+    """The caller or the stack object, with and without cleanup-all, from each of the first lot
+    objects, with no stack object and with each lot object as it (so multi-tile parts show)."""
+    count = min(len(lot_guids), 13)
+    for caller in range(1, min(count, 3) + 1):
+        for stack_object in range(0, count + 1):
+            for target in (0, 1, -1):
+                for flags in (0, 1, 2, 3):
+                    operand = struct.pack("<hB", target, flags).hex()
+                    yield (f"caller{caller}-stack{stack_object}-target{target}-flags{flags}",
+                           {"operand": operand, "caller": caller, "stackObject": stack_object})
+
+
+def set_balloon_headline_cases(lot_guids):
+    """Caller or stack object, cleared or shown, every kind of index and group, indexed by temp 0,
+    durations in ticks and loops, and algorithmic icons from the stack object or a local."""
+    count = min(len(lot_guids), 13)
+    for stack_object in (0, 1, 2) if count > 1 else (0, 1):
+        for of_stack in (0, 1):
+            for local in (0, 2, 9):
+                flags2 = (local << 1) | of_stack
+                for index in (-1, 0, 1, 3):
+                    for group in (0, 1, 7):
+                        for duration in (0, 5, -1):
+                            for flags in (0, 0x08, 0x10):
+                                operand = struct.pack("<HbBhBB", flags2, index, group, duration, 0, flags).hex()
+                                yield (f"stack{stack_object}-of{of_stack}-local{local}-index{index}-group{group}-for{duration}-flags{flags}",
+                                       {"operand": operand, "caller": 1, "stackObject": stack_object,
+                                        "temps": [2], "locals": [2, 0, 1]})
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -409,6 +442,8 @@ GENERATORS = {
     "get_distance_to": (11, True, lambda guids: get_distance_to_cases(guids[0])),
     "get_direction_to": (12, True, lambda guids: get_direction_to_cases(guids[0])),
     "transfer_funds": (25, True, lambda guids: transfer_funds_cases(guids[0])),
+    "remove_object_instance": (18, True, lambda guids: remove_object_instance_cases(guids[0])),
+    "set_balloon_headline": (41, True, lambda guids: set_balloon_headline_cases(guids[0])),
 }
 
 

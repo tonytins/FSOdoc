@@ -67,6 +67,8 @@ public final class VM {
     /// at the start of the first tick that begins after `queuedIn`, the number of ticks started then.
     private var answers: [(objectID: Int16, state: BlockingState, queuedIn: Int)] = []
     private var ticksStarted = 0
+    /// Entities deleted since the last tick began, whose stacks are dropped when the next one starts.
+    private var deleted: [Entity] = []
     private var isLoading = false
     private var routines: [RoutineKey: Routine] = [:]
 
@@ -166,6 +168,7 @@ public final class VM {
 
     deinit {
         // Frames hold entities and entities hold their threads; break the cycles.
+        for entity in deleted { entity.thread.stack.removeAll() }
         for entity in entities {
             entity.thread.stack.removeAll()
             entity.group.removeAll()
@@ -281,8 +284,9 @@ public final class VM {
             try place(held.group, at: .outOfWorld, facing: held.direction)
             if !entity.position.isOutOfWorld { _ = try findLocation(for: held, near: entity, flags: []) }
         }
-        // A deleted entity never runs again; dropping its stack breaks the frames' references to it.
-        entity.thread.stack.removeAll()
+        // A deleted entity never runs again. Its stack stays as FreeSO leaves it until the next tick
+        // starts, when nothing can still be running it; dropping it then breaks the frames' references.
+        deleted.append(entity)
     }
 
     /// `VMFindLocationFor.FindLocationFor`: places an object at the reference's position in each
@@ -361,6 +365,8 @@ public final class VM {
     /// Advances the lot one tick, as the server driver and `VM.InternalTick` do: the clock moves,
     /// the clock globals are copied, and the scheduled entities run. Tick IDs start at 1.
     public func tick() {
+        for entity in deleted { entity.thread.stack.removeAll() }
+        deleted.removeAll()
         deliverAnswers()
         ticksStarted += 1
         let tick = nextTickID

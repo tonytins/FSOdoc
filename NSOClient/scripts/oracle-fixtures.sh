@@ -43,7 +43,7 @@ empty_lot="$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xm
 # Kept in step with the NSOOracle tests (lotRunsMatchFreeSO).
 lot_ticks=1800
 lot_every=300
-primitives=(expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance find_location_for run_tree_by_name stackobj_notify_out_of_idle get_distance_to get_direction_to transfer_funds)
+primitives=(expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance find_location_for run_tree_by_name stackobj_notify_out_of_idle get_distance_to get_direction_to transfer_funds remove_object_instance set_balloon_headline)
 
 mkdir -p "$output"
 rm -f "$output/timings.tsv" "$output/lots.digests" "$output/lots.leftout"

@@ -97,7 +97,7 @@ struct FixtureComparisonTests {
     /// Every generated case of each ported primitive, on the lot `fso-oracle run-primitive`
     /// loaded: the lot as loaded, the exit code, registers, and every effect.
     @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number",
-                      "play_sound", "create_object_instance", "find_location_for", "run_tree_by_name", "stackobj_notify_out_of_idle", "get_distance_to", "get_direction_to", "transfer_funds"])
+                      "play_sound", "create_object_instance", "find_location_for", "run_tree_by_name", "stackobj_notify_out_of_idle", "get_distance_to", "get_direction_to", "transfer_funds", "remove_object_instance", "set_balloon_headline"])
     func primitivesMatchFreeSO(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let lotPath = try lines("primitives.lot").first ?? ""

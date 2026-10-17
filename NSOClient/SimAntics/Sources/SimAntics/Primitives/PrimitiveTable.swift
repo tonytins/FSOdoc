@@ -60,6 +60,8 @@ public struct PrimitiveTable: Sendable {
         table.register(Primitives.GetDistanceTo.self)
         table.register(Primitives.GetDirectionTo.self)
         table.register(Primitives.TransferFunds.self)
+        table.register(Primitives.RemoveObjectInstance.self)
+        table.register(Primitives.SetBalloonHeadline.self)
         return table
     }()
 

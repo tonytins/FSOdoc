@@ -181,7 +181,11 @@ public final class Entity {
 
     /// Whether the entity runs every tick however long it idles: Sims, objects with a headline
     /// or a sound (neither ported yet), and disabled objects.
-    public var runsEveryTick: Bool { disabledFlags != 0 }
+    public var runsEveryTick: Bool { disabledFlags != 0 || headline != nil }
+
+    /// The balloon over the entity, if any (`Headline`), set by Set Balloon Headline. Headless, only
+    /// its countdown matters: while it's up the entity runs every tick, as in FreeSO.
+    public var headline: Headline?
 
     private var isResetting = false
 
@@ -270,6 +274,12 @@ public final class Entity {
         thread.instructionsThisTick = 0
         thread.tick()
         if thread.scheduledTick == 0 { vm.scheduler.scheduleTick(for: self, in: 1) }
+        // The headline counts down after the thread runs (`VMHeadlineRenderer.Update`); a negative
+        // duration lasts until something replaces it.
+        if var shown = headline, shown.duration >= 0 {
+            shown.duration -= 1
+            headline = shown.duration <= 0 ? nil : shown
+        }
     }
 
     // MARK: Dynamic sprites

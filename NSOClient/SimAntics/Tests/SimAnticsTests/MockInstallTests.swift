@@ -105,6 +105,37 @@ let mockRegisterGUID: UInt32 = 0x4D4F_4306
         #expect(register.thread.blockingState != nil && register.thread.stack.first?.instructionPointer == 1)
     }
 
+    /// A headline counts down once per tick of its entity (a duration in loops is 15 ticks each),
+    /// keeps the entity running every tick while it's up, and clears at 0; a negative one stays.
+    @Test func aHeadlineCountsDownAndKeepsItsEntityRunning() throws {
+        let vm = try vm()
+        let chair = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
+        let show = Primitives.SetBalloonHeadline.Operand(index: 2, group: 1, duration: 1, flags: 0x08)  // one loop
+        let (primitive, frame) = try vm.makePrimitiveFrame(opcode: 41, operand: show.encoded(), caller: chair)
+        #expect(try primitive.execute(in: frame) == .gotoTrue)
+        chair.thread.stack.removeAll()
+        #expect(chair.headline?.duration == 15 && chair.runsEveryTick)
+        for _ in 0..<14 { vm.tick() }
+        #expect(chair.headline?.duration == 1)
+        vm.tick()
+        #expect(chair.headline == nil && !chair.runsEveryTick)
+
+        chair.headline = Headline(group: 1, index: 0, duration: -1)
+        for _ in 0..<5 { vm.tick() }
+        #expect(chair.headline?.duration == -1)
+    }
+
+    @Test func removingTheCallerKeepsItsFramesUntilTheNextTick() throws {
+        let vm = try vm()
+        let chair = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
+        let (primitive, frame) = try vm.makePrimitiveFrame(opcode: 18, operand: Primitives.RemoveObjectInstance.Operand(target: 0).encoded(),
+                                                           caller: chair)
+        #expect(try primitive.execute(in: frame) == .gotoTrue)
+        #expect(vm.entity(id: chair.objectID) == nil && !chair.thread.stack.isEmpty)   // as FreeSO leaves them
+        vm.tick()
+        #expect(chair.thread.stack.isEmpty)
+    }
+
     @Test func mainCountsItsRuns() throws {
         let vm = try vm()
         let entity = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
