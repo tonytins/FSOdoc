@@ -606,6 +606,17 @@ public final class VM {
     // MARK: Routines
 
     /// The routine a subroutine call runs, assembled once per BHAV, or `nil` if the file has no such BHAV.
+    /// The routine an object's file or semi-global names `name` (`TreeByName`: labels up to the
+    /// first NUL, the object's own first), assembled once, or `nil` if there's none.
+    func routine(named name: String, in object: GameObject) -> Routine? {
+        guard let bhav = object.resource.treesByName[name] else { return nil }
+        let key = RoutineKey(file: "tree \(object.resource.name) \(name)", id: bhav.id)
+        if let cached = routines[key] { return cached }
+        let routine = Routine(bhav, primitives: primitives)
+        routines[key] = routine
+        return routine
+    }
+
     func routine(opcode: UInt16, codeOwner: GameObject) throws(SimAnticsError) -> Routine? {
         let resource: any IFFResource
         let file: String

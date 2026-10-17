@@ -20,7 +20,7 @@ It follows the layout of a real install, with only what the content system needs
 | --- | --- |
 | `packingslips/objecttable.xml` | The four objects below, by GUID |
 | `packingslips/catalog.xml` | Their catalog entries (made-up prices; the parts aren't for sale) |
-| `objectdata/objects/objiff.far` | `mockchair.iff` and `mocktable.iff` |
+| `objectdata/objects/objiff.far` | `mockchair.iff`, `mocktable.iff`, and `mocklamp.iff` |
 | `objectdata/globals/global.iff` | One global routine (256) that returns true |
 | `objectdata/globals/mockglobals.iff` | The objects' semi-global: one routine (8192) that returns true |
 
@@ -30,6 +30,7 @@ It follows the layout of a real install, with only what the content system needs
 | `0x4D4F4302` | Mock Table | A multi-tile master (master ID 1) |
 | `0x4D4F4303` | Mock Table (left) | Its part at offset (0, 0) |
 | `0x4D4F4304` | Mock Table (right) | Its part one tile along x |
+| `0x4D4F4305` | Mock Lamp | A one-tile object whose main runs a routine by name |
 
 The GUIDs spell `MOC` followed by a number, so they can't be mistaken for a real object's.
 
@@ -37,9 +38,14 @@ Every object shares two routines. Init (`BHAV` 4097) lets it stand on floor or b
 floor height (object data 42 and 4). Main (`BHAV` 4096) counts its runs in attribute 0. Each
 object uses the `mockglobals` semi-global.
 
+The lamp's main is its own instead. It makes the lamp the stack object, then uses Run Tree By
+Name with string table 300 (`STR#` 300: "mock tree", "no such tree") to run "mock tree" (`BHAV`
+4098, which adds 1 to attribute 1) on its own stack and on the stack object's, to look up the name
+it doesn't have, and to push "mock tree" as a subroutine.
+
 `Lots/mock-lot.xml` is a made-up lot for it: a closed 3 by 3 room with floor, a chair out of
-the world, a chair in the room, two tables outside (one facing south, with a group ID), and one
-GUID the install doesn't have, which both oracles leave out.
+the world, a chair in the room, two tables outside (one facing south, with a group ID), the lamp in the
+room, and one GUID the install doesn't have, which both oracles leave out.
 
 `fso-oracle` reads it too: its game overlay adds placeholders for what FreeSO loads and
 NSOClient doesn't (audio, tuning, wall and floor globals, and so on). CI runs both oracles on

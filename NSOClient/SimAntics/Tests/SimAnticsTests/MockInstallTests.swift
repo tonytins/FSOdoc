@@ -7,7 +7,7 @@ import TSOContent
 let mockInstall = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().appendingPathComponent("../../../MockInstall/TSOClient").standardizedFileURL
 let mockChairGUID: UInt32 = 0x4D4F_4301, mockTableGUID: UInt32 = 0x4D4F_4302
-let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304
+let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, mockLampGUID: UInt32 = 0x4D4F_4305
 
 /// The VM on the mock install's objects (see its README): init sets object data 42 and 4,
 /// and main counts its runs in attribute 0.
@@ -33,6 +33,30 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304
         #expect(table.leadObject?.object.guid == mockLeftGUID)
     }
 
+    /// The lamp's main makes itself the stack object and runs its "mock tree" (attribute 1 += 1)
+    /// with Run Tree By Name on its own stack, on the stack object's, and pushed, and looks up a
+    /// name it doesn't have.
+    @Test func theLampRunsItsTreeByNameThreeWaysEachTick() throws {
+        let vm = try vm()
+        let lamp = try #require(try vm.createObject(guid: mockLampGUID)?.objects.first)
+        for _ in 0..<4 { vm.tick() }
+        #expect(lamp.attributes.count > 1 && lamp.attributes[1] == 12)
+        #expect(vm.reportedErrors.isEmpty)
+    }
+
+    @Test func aTreeRunOnAnIdleThreadDoesNothingAndLeavesItACheckThread() throws {
+        let vm = try vm()
+        let lamp = try #require(try vm.createObject(guid: mockLampGUID)?.objects.first)
+        let chair = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
+        let routine = try #require(vm.routine(named: "mock tree", in: lamp.object))
+        chair.thread.stack.removeAll()
+        // FreeSO's RunInMyStack takes out the routine it just pushed when nothing else was running.
+        #expect(try chair.thread.runInMyStack(routine, codeOwner: lamp.object, arguments: [0, 0, 0, 0], stackObject: lamp) == false)
+        #expect(chair.thread.isCheck && chair.thread.stack.isEmpty)
+        vm.tick()
+        #expect(chair.thread.stack.isEmpty)       // a check thread doesn't push main
+    }
+
     @Test func mainCountsItsRuns() throws {
         let vm = try vm()
         let entity = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
@@ -50,8 +74,10 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304
         let lot = try Blueprint(xml: try Data(contentsOf: lotFile))
         let leftOut = try vm.load(lot)
         #expect(leftOut.map(\.object.guid) == [0x4D4F_43FF])
+        #expect(vm.entities.last?.object.guid == mockLampGUID)
         #expect(vm.globalState[11] == -1)                                   // the job level
-        #expect(vm.entities.map(\.object.guid) == [mockChairGUID, mockChairGUID, mockLeftGUID, mockRightGUID, mockLeftGUID, mockRightGUID])
+        #expect(vm.entities.map(\.object.guid) == [mockChairGUID, mockChairGUID, mockLeftGUID, mockRightGUID, mockLeftGUID, mockRightGUID,
+                                                  mockLampGUID])
 
         let (outside, inside) = (vm.entities[0], vm.entities[1])
         #expect(outside.position.isOutOfWorld)                              // level 0 stays out of the world

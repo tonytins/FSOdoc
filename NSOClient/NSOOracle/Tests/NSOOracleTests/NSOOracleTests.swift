@@ -13,7 +13,7 @@ let freeSOContent = repository.appendingPathComponent("TSOClient/tso.content/Con
 let onMockInstall = gameDirectory?.standardizedFileURL.path
     == repository.appendingPathComponent("NSOClient/MockInstall/TSOClient").standardizedFileURL.path
 /// The fewest objects a comparison must match: every mock object and FreeSO's own, or most of a real install.
-let leastObjects = onMockInstall ? 8 : 2_000
+let leastObjects = onMockInstall ? 9 : 2_000
 
 /// A blueprint by file name: from the fixtures' synthetic lots, FreeSO's, the repository's, or the mock install's.
 func blueprintFile(_ file: String) throws -> URL {
@@ -97,7 +97,7 @@ struct FixtureComparisonTests {
     /// Every generated case of each ported primitive, on the lot `fso-oracle run-primitive`
     /// loaded: the lot as loaded, the exit code, registers, and every effect.
     @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number",
-                      "play_sound", "create_object_instance", "find_location_for"])
+                      "play_sound", "create_object_instance", "find_location_for", "run_tree_by_name"])
     func primitivesMatchFreeSO(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let lotPath = try lines("primitives.lot").first ?? ""

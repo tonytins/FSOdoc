@@ -315,6 +315,23 @@ def find_location_for_cases():
 
 # Each primitive's opcode, whether its cases name real objects, and its cases given
 # (the lot's GUIDs in object ID order, its multi-tile masters' GUIDs).
+# MARK: Run Tree By Name
+
+def run_tree_by_name_cases(lot_guids):
+    """Every destination, string, and table scope, from every object on the lot (the mock lamp names
+    one of its routines in table 300), with no stack object, itself, and object 1 as the stack object."""
+    for caller in range(1, min(len(lot_guids), 13) + 1):
+        for stack_object in sorted({0, caller, 1}):
+            for table in (128, 129, 300):
+                for scope in (0, 1):
+                    for string in (0, 1, 2, 3):
+                        for destination in (0, 1, 2, 5):
+                            operand = struct.pack("<HBBBB", table, scope, 0, string, destination).hex()
+                            yield (f"caller{caller}-stack{stack_object}-table{table}-scope{scope}-string{string}-to{destination}",
+                                   {"operand": operand, "caller": caller, "stackObject": stack_object,
+                                    "temps": [4, 5, 6, 7, 8]})
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -325,6 +342,7 @@ GENERATORS = {
     "test_object_type": (32, True, lambda guids: test_object_type_cases(guids[0][0], guids[0][1])),
     "create_object_instance": (42, True, lambda guids: create_object_instance_cases(*guids)),
     "find_location_for": (16, False, lambda guids: find_location_for_cases()),
+    "run_tree_by_name": (28, True, lambda guids: run_tree_by_name_cases(guids[0])),
 }
 
 

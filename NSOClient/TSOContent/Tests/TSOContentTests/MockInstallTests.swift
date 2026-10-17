@@ -15,9 +15,9 @@ let mockInstall = URL(fileURLWithPath: #filePath)
         content = try GameContent(.init(gameDirectory: mockInstall))
     }
 
-    @Test func registersTheFourMockObjects() {
-        #expect(content.objects.references.map(\.guid) == [0x4D4F_4301, 0x4D4F_4302, 0x4D4F_4303, 0x4D4F_4304])
-        #expect(content.objects.references.map(\.fileName) == ["mockchair", "mocktable", "mocktable", "mocktable"])
+    @Test func registersTheFiveMockObjects() {
+        #expect(content.objects.references.map(\.guid) == [0x4D4F_4301, 0x4D4F_4302, 0x4D4F_4303, 0x4D4F_4304, 0x4D4F_4305])
+        #expect(content.objects.references.map(\.fileName) == ["mockchair", "mocktable", "mocktable", "mocktable", "mocklamp"])
         #expect(content.objects.duplicates.isEmpty)
     }
 
