@@ -2,7 +2,7 @@ import Foundation
 import SimAntics
 import TSOContent
 
-/// `run-primitive` (protocol version 1, see `NSOClient/Oracle/README.md`): one primitive run on
+/// `run-primitive` (protocol version 1, see `NSOClient/FSO.Oracle/README.md`): one primitive run on
 /// request, on a freshly loaded lot, answered as `fso-oracle run-primitive` answers.
 ///
 /// Ports the oracle's `PrimitiveRunner`. The lot loads as `fso-oracle` loads it (see

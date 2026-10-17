@@ -20,7 +20,7 @@ sections at the end of each page say so.
 | [Walking Animations](walking-animations.md) | Animations the walking engine uses |
 
 The wiki is unfinished, and much of it is marked as guesswork. Treat it as a map, and check
-anything that matters against FreeSO's code or `fso-oracle` (see `NSOClient/Oracle/README.md`).
+anything that matters against FreeSO's code or `fso-oracle` (see `NSOClient/FSO.Oracle/README.md`).
 
 ## License and attribution
 

@@ -13,7 +13,7 @@ and, with `--review`, writes `docs/results/nso-review.md`.
 ## Running it
 
 ```sh
-dotnet run --project NSOClient/Oracle -c Release -- run-lot --ticks 1800 --every 300
+dotnet run --project NSOClient/FSO.Oracle -c Release -- run-lot --ticks 1800 --every 300
 ```
 
 It reads the game from `TSO_GAME_DIR` (or `--game`), loads a lot from blueprint XML
@@ -57,7 +57,7 @@ added in later versions; bump the version when they are.
 ## Single primitives: `run-primitive` (protocol version 1)
 
 ```sh
-dotnet run --project NSOClient/Oracle -c Release -- run-primitive < requests.jsonl
+dotnet run --project NSOClient/FSO.Oracle -c Release -- run-primitive < requests.jsonl
 ```
 
 Loads the same lot as `run-lot` (`--blueprint`, FreeSO's empty lot by default), then reads
@@ -118,7 +118,7 @@ applied first, and the difference is taken from there.
 a regression check for the oracle itself; run it after changing the oracle:
 
 ```sh
-python3 -I NSOClient/Oracle/check_protocol.py
+python3 -I NSOClient/FSO.Oracle/check_protocol.py
 ```
 
 Responses depend on the install, so generated answer files must not be committed.
@@ -130,7 +130,7 @@ contained objects and object lists.
 ## Single objects: `run-objects`
 
 ```sh
-cut -f1 objects.tsv | dotnet run --project NSOClient/Oracle -c Release -- run-objects --ticks 30 --every 10
+cut -f1 objects.tsv | dotnet run --project NSOClient/FSO.Oracle -c Release -- run-objects --ticks 30 --every 10
 ```
 
 Reads object GUIDs (hexadecimal) from standard input, one per line. For each, it loads the
@@ -147,7 +147,7 @@ ranks what to port next.
 ## Rooms: `room-maps`
 
 ```sh
-cat blueprints.txt | dotnet run --project NSOClient/Oracle -c Release -- room-maps > rooms.jsonl
+cat blueprints.txt | dotnet run --project NSOClient/FSO.Oracle -c Release -- room-maps > rooms.jsonl
 ```
 
 Reads blueprint XML paths from standard input, one per line. For each, it loads the lot as
@@ -168,7 +168,7 @@ NSOOracle's tests read each blueprint with the Swift `Blueprint` and compare eve
 ## Content: `list-objects`
 
 ```sh
-dotnet run --project NSOClient/Oracle -c Release -- list-objects > objects.tsv
+dotnet run --project NSOClient/FSO.Oracle -c Release -- list-objects > objects.tsv
 ```
 
 Loads every object registered at startup through FreeSO's content system and prints one
@@ -246,7 +246,7 @@ ban list) goes to a scratch folder inside the overlay, which is deleted on exit.
 If the list of FreeSO projects or their files changes, regenerate the source list:
 
 ```sh
-python3 -I NSOClient/Oracle/generate_sources.py
+python3 -I NSOClient/FSO.Oracle/generate_sources.py
 ```
 
 AGENTS.md allows `dotnet` for this project only.

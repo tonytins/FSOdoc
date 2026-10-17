@@ -83,7 +83,7 @@ TSOClient/                   the 2017 FreeSO snapshot (all paths below are relat
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
-  Oracle/                    fso-oracle: .NET tool that runs FreeSO's SimAntics sources headless, for reference results
+  FSO.Oracle/                fso-oracle: .NET tool that runs FreeSO's SimAntics sources headless, for reference results
   NSOOracle/                 nso-oracle: NSOClient's answers to fso-oracle's questions, and the two compared; depends on ../SimAntics, ../TSOContent, ../TSOFiles, and swift-argument-parser
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
@@ -364,7 +364,7 @@ snapshot doesn't build as-is on Linux, so findings come from reading code,
 project files, and `packages.config`. Use `grep`, `find`, `git`, and
 ordinary shell tools.
 
-**One exception: the SimAntics oracle.** `NSOClient/Oracle/` is a small
+**One exception: the SimAntics oracle.** `NSOClient/FSO.Oracle/` is a small
 .NET console tool that compiles FreeSO's SimAntics, Files, and Content
 sources (linked read-only, never copied or edited) on modern .NET, with
 stubs for the rendering and audio types they touch. It exists only to
@@ -412,8 +412,8 @@ for package in TSOFiles TSOFilesCheck TSOContent SimAntics SimsScript NSOOracle;
 done
 grep -rnE 'try!|as!|fatalError|precondition|preconditionFailure' NSOClient/*/Sources  # must print nothing
 swift run --package-path NSOClient/TSOFilesCheck -c release tsofiles-check  # if you touched a reader; scans TSO_GAME_DIR and TSO_BETA_DIR
-dotnet build NSOClient/Oracle -c Release                               # if you touched the oracle
-python3 -I NSOClient/Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
+dotnet build NSOClient/FSO.Oracle -c Release                               # if you touched the oracle
+python3 -I NSOClient/FSO.Oracle/check_protocol.py                          # if you touched the oracle; needs TSO_GAME_DIR
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR
 TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/NSOOracle  # then compare with FreeSO: content, entry points, objects and lots run, primitives, room maps
 NSOClient/scripts/oracle-review.sh --mock /tmp/review                  # both oracles on NSOClient/MockInstall, as CI runs them

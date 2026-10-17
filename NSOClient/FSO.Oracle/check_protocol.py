@@ -3,7 +3,7 @@
 A regression check for the oracle's protocol, not for the Swift port. Needs TSO_GAME_DIR
 and a built oracle (`dotnet build NSOClient/NSOClient.slnx -c Release`). Exits 1 on failure.
 
-    python3 -I NSOClient/Oracle/check_protocol.py
+    python3 -I NSOClient/FSO.Oracle/check_protocol.py
 """
 
 import json

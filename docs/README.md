@@ -64,7 +64,7 @@ scorecard and the roadmap disagree, the scorecard wins.
 ### [nso/](nso/README.md): how NSOClient works
 
 How the Swift libraries behave today, with code examples. `fso-oracle` (see
-[its README](../NSOClient/Oracle/README.md)) and SimsScript, an experimental scripting language,
+[its README](../NSOClient/FSO.Oracle/README.md)) and SimsScript, an experimental scripting language,
 aren't covered.
 
 | Page | Covers |
@@ -122,6 +122,6 @@ A copy of the community wiki at simantics.wikidot.com, under its own license (CC
 
 ## Elsewhere in the repository
 
-- [`NSOClient/Oracle/README.md`](../NSOClient/Oracle/README.md): `fso-oracle`, which runs FreeSO's
+- [`NSOClient/FSO.Oracle/README.md`](../NSOClient/FSO.Oracle/README.md): `fso-oracle`, which runs FreeSO's
   SimAntics code to produce reference answers for the Swift tests.
 - [`AGENTS.md`](../AGENTS.md): the workspace map and the rules for working in this repository.

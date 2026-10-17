@@ -12,7 +12,7 @@ struct NSOOracle: ParsableCommand {
         abstract: "Answer fso-oracle's questions with NSOClient, and compare the two.",
         discussion: """
             list-objects, run-objects, run-lot, run-primitive, and room-maps answer in the same formats as fso-oracle's \
-            commands of the same names (see NSOClient/Oracle/README.md). compare reads both sides' \
+            commands of the same names (see NSOClient/FSO.Oracle/README.md). compare reads both sides' \
             answers and prints how they agree, and with --review writes docs/results/nso-review.md.
             """,
         subcommands: [ListObjects.self, RunObjects.self, RunLot.self, RunPrimitive.self, RoomMaps.self, Compare.self])

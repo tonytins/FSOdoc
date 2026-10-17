@@ -48,7 +48,7 @@ primitives=(expression sleep test_object_type refresh set_to_next random_number 
 mkdir -p "$output"
 rm -f "$output/timings.tsv" "$output/lots.digests" "$output/lots.leftout"
 oracle() {
-    dotnet run --project "$repository/NSOClient/Oracle" -c Release --no-build -- "$@" --game "$game"
+    dotnet run --project "$repository/NSOClient/FSO.Oracle" -c Release --no-build -- "$@" --game "$game"
 }
 # timed NAME COMMAND...: runs COMMAND and records its seconds in timings.tsv.
 timed() {
@@ -66,7 +66,7 @@ left_out() {
 
 if [[ "${ORACLE_BUILT:-}" != 1 ]]; then
     echo "Building fso-oracle..."
-    dotnet build "$repository/NSOClient/Oracle" -c Release >/dev/null
+    dotnet build "$repository/NSOClient/FSO.Oracle" -c Release >/dev/null
 fi
 
 echo "Listing objects..."

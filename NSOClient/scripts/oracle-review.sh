@@ -39,7 +39,7 @@ lot_ticks=1800
 lot_every=300
 
 echo "Building both oracles..."
-dotnet build "$repository/NSOClient/Oracle" -c Release >/dev/null
+dotnet build "$repository/NSOClient/FSO.Oracle" -c Release >/dev/null
 swift build --package-path "$repository/NSOClient/NSOOracle" -c release >/dev/null
 nso_binary="$(swift build --package-path "$repository/NSOClient/NSOOracle" -c release --show-bin-path)/nso-oracle"
 

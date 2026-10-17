@@ -12,7 +12,7 @@ terms are explained in the [docs index](../README.md#terms).
 
 These pages cover the four libraries and two tools: the file checker and `nso-oracle`. Two things
 are left out: `fso-oracle`, which runs FreeSO's code to produce the answers NSOClient is checked
-against (see [its README](../../NSOClient/Oracle/README.md)), and SimsScript, an experimental
+against (see [its README](../../NSOClient/FSO.Oracle/README.md)), and SimsScript, an experimental
 scripting language.
 
 ## The packages

@@ -4,7 +4,7 @@ Each FreeSO folder holds files its project doesn't compile, so the list comes
 from each project's own <Compile> items, not from a folder wildcard. Run it
 again if the project list below changes:
 
-    python3 -I NSOClient/Oracle/generate_sources.py
+    python3 -I NSOClient/FSO.Oracle/generate_sources.py
 """
 import pathlib
 import re

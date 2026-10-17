@@ -4,7 +4,7 @@ import TSOContent
 import TSOFiles
 
 /// NSOClient's answers to `fso-oracle`'s questions, in `fso-oracle`'s formats (see
-/// `NSOClient/Oracle/README.md`), so the two can be compared line for line.
+/// `NSOClient/FSO.Oracle/README.md`), so the two can be compared line for line.
 ///
 /// Where NSOClient can't answer because something isn't ported yet, it says so with an
 /// `unsupported` line, which `fso-oracle` never prints; comparisons count those as skipped.

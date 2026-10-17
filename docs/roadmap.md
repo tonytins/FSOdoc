@@ -121,7 +121,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 1. **Where the Vitaboy model formats live.** In TSOFiles (they're file formats) or a fourth package
    `Vitaboy` (as in FreeSO). Recommended: TSOFiles, to keep three packages.
 2. **How to record FreeSO replays.** Decided (2026-10-15): an oracle harness. A .NET 10 console tool
-   in `NSOClient/Oracle/` compiles FreeSO's SimAntics, Files, and Content sources (linked read-only)
+   in `NSOClient/FSO.Oracle/` compiles FreeSO's SimAntics, Files, and Content sources (linked read-only)
    with stubs for rendering and audio, and runs the VM headless (`VM.UseWorld = false`, as the lot
    server does). It serves two kinds of reference results: first, per-primitive differential tests
    (the Swift tests send an operand and variables, the oracle runs FreeSO's primitive); later,
