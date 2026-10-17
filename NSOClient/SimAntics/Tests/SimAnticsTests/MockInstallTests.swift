@@ -57,6 +57,22 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, moc
         #expect(chair.thread.stack.isEmpty)       // a check thread doesn't push main
     }
 
+    @Test func anInterruptBringsAFutureRunForwardToTheNextTick() throws {
+        let vm = try vm()
+        let chair = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)
+        vm.tick()
+        vm.scheduler.descheduleTick(for: chair)
+        vm.scheduler.scheduleTick(for: chair, on: vm.scheduler.currentTick + 50)
+        vm.scheduler.rescheduleInterrupt(chair)
+        #expect(vm.scheduler.scheduledObjectIDs(on: vm.scheduler.currentTick + 50).isEmpty)
+        #expect(vm.scheduler.scheduledObjectIDs(on: vm.scheduler.currentTick + 1) == [chair.objectID])
+        // One due this tick is left alone.
+        vm.scheduler.descheduleTick(for: chair)
+        vm.scheduler.scheduleTick(for: chair, on: vm.scheduler.currentTick)
+        vm.scheduler.rescheduleInterrupt(chair)
+        #expect(chair.thread.scheduledTick == vm.scheduler.currentTick)
+    }
+
     @Test func mainCountsItsRuns() throws {
         let vm = try vm()
         let entity = try #require(try vm.createObject(guid: mockChairGUID)?.objects.first)

@@ -332,6 +332,22 @@ def run_tree_by_name_cases(lot_guids):
                                     "temps": [4, 5, 6, 7, 8]})
 
 
+# MARK: Notify Stack Object Out Of Idle
+
+def notify_out_of_idle_cases(lot_guids):
+    """No stack object, and each lot object as the stack object, from the first object and from
+    itself (so the response shows its thread rescheduled and interrupted), at several ticks."""
+    count = min(len(lot_guids), 13)
+    for caller in (1, 2) if count > 1 else (1,):
+        for stack_object in range(0, count + 1):
+            for tick in (None, 0, 1, 7, 500):
+                for interrupt in (False, True):
+                    request = {"caller": caller, "stackObject": stack_object, "interrupt": interrupt, "operand": "ff" * 8}
+                    if tick is not None:
+                        request["currentTick"] = tick
+                    yield f"caller{caller}-stack{stack_object}-tick{tick}-interrupt{interrupt}", request
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -343,6 +359,7 @@ GENERATORS = {
     "create_object_instance": (42, True, lambda guids: create_object_instance_cases(*guids)),
     "find_location_for": (16, False, lambda guids: find_location_for_cases()),
     "run_tree_by_name": (28, True, lambda guids: run_tree_by_name_cases(guids[0])),
+    "stackobj_notify_out_of_idle": (49, True, lambda guids: notify_out_of_idle_cases(guids[0])),
 }
 
 

@@ -7,9 +7,10 @@ by tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
-objects use, the scheduler and clock, placing objects and putting them in slots, and 10 of the 49
+objects use, the scheduler and clock, placing objects and putting them in slots, and 11 of the 49
 primitives TSO uses (Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, Test
-Object Type, Create Object Instance, Find Location For, and Run Tree By Name). On the production install, 2,743
+Object Type, Create Object Instance, Find Location For, Run Tree By Name, and Notify Stack Object
+Out Of Idle). On the production install, 2,743
 objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks (the
 [review](../results/nso-review.md) has the latest numbers). Sims, routing, and lot loading come
 later; see the [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
@@ -197,6 +198,7 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |
 | 42 | `CreateObjectInstance` | Creates an object beside, in front of, or under another, and makes it the stack object |
+| 49 | `NotifyStackObjectOutOfIdle` | Wakes the stack object: brings its next run forward and interrupts its Sleep |
 
 A VM can run its own table, which is how extensions will add primitives without touching the
 ported ones:

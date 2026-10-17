@@ -41,6 +41,22 @@ public final class VMScheduler {
         schedule[tick]?.remove(at: index)
     }
 
+    /// Brings an entity's next run forward after something wakes it (`RescheduleInterrupt`): to
+    /// later in this tick if the scheduler hasn't reached it yet, otherwise to the next tick. An
+    /// entity with no run scheduled, or one due this tick, is left alone.
+    public func rescheduleInterrupt(_ entity: Entity) {
+        let tick = entity.thread.scheduledTick
+        guard tick != currentTick, tick != 0 else { return }
+        descheduleTick(for: entity)
+        // FreeSO checks the list of this tick's entities, which only a running tick can still reach
+        // with a lower object ID than the entity's.
+        if entity.objectID > currentObjectID && schedule[currentTick] != nil {
+            scheduleTick(for: entity, on: currentTick)
+        } else {
+            scheduleTick(for: entity, in: 1)
+        }
+    }
+
     /// Starts a tick. On tick 0 (a fresh VM), runs scheduled for tick 1 move to the new tick.
     func beginTick(_ tick: UInt32) {
         if currentTick == 0, let first = schedule[1] {
