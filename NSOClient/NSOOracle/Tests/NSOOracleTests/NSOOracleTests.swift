@@ -39,8 +39,7 @@ func lines(_ name: String) throws -> [String] {
 }
 
 /// NSOClient against FreeSO's answers from the fixtures: content, entry points, objects run alone,
-/// lots run, and room maps. The primitive comparisons stay in the SimAntics tests, which rebuild the
-/// oracle's lot.
+/// lots run, primitives, and room maps.
 @Suite(.enabled(if: oracleDirectory != nil && gameDirectory != nil, "TSO_ORACLE_DIR or TSO_GAME_DIR is not set"))
 struct FixtureComparisonTests {
     private func answers() throws -> Answers {
@@ -95,6 +94,26 @@ struct FixtureComparisonTests {
         #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
     }
 
+    /// Every generated case of each ported primitive, on the lot `fso-oracle run-primitive`
+    /// loaded: the lot as loaded, the exit code, registers, and every effect.
+    @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number",
+                      "play_sound", "create_object_instance", "find_location_for"])
+    func primitivesMatchFreeSO(primitive: String) throws {
+        let directory = try required(oracleDirectory)
+        let lotPath = try lines("primitives.lot").first ?? ""
+        var lot = try Blueprint(xml: try Data(contentsOf: try blueprintFile(URL(fileURLWithPath: lotPath).lastPathComponent)))
+        let leftOut = Set(((try? lines("primitives.leftout")) ?? []).compactMap { UInt32($0.dropFirst(2), radix: 16) })
+        lot.objects.removeAll { leftOut.contains($0.guid) }
+        let runner = PrimitiveRunner(answers: try answers(), lot: lot)
+        let requests = try String(contentsOf: directory.appendingPathComponent("\(primitive).requests.jsonl"), encoding: .utf8)
+            .split(separator: "\n").map(String.init)
+        let nso = requests.compactMap(runner.answerLine)
+        let comparison = Comparison.primitives(primitive, fso: try lines("\(primitive).responses.jsonl"), nso: nso)
+        print(comparison.summary, comparison.skipsByCount.prefix(4))
+        #expect(comparison.matched > 0)
+        #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
+    }
+
     @Test func roomMapsMatchFreeSO() throws {
         let fso = try lines("rooms.jsonl")
         let nso = try fso.map { line -> String in
@@ -143,6 +162,19 @@ struct FixtureComparisonTests {
         #expect(lots.matched == 1)
         #expect(lots.skipped == ["unsupported: primitive 28 (run_tree_by_name)": 1, "FreeSO couldn't run it": 1])
         #expect(lots.mismatches == ["c.xml: FreeSO tick 0 x NSOClient tick 0 z", "d.xml: FreeSO tick 0 x NSOClient tick 0 w"])
+    }
+
+    @Test func comparesPrimitiveResponsesByID() {
+        let fso = [#"{"id":"a","exit":"GOTO_TRUE","temps":[1],"lot":[[1]]}"#, #"{"id":"b","exit":"GOTO_TRUE","temps":[1]}"#,
+                   #"{"id":"c","requestError":"no object 9"}"#, #"{"id":"d","exception":"NullReferenceException: x","temps":[0]}"#,
+                   #"{"id":"e","exit":"GOTO_TRUE"}"#, #"{"id":"f","exit":"GOTO_TRUE","protocol":1}"#]
+        let nso = [#"{"id":"a","temps":[1],"exit":"GOTO_TRUE","lot":[[1]]}"#, #"{"id":"b","exit":"GOTO_FALSE","temps":[1]}"#,
+                   #"{"id":"d","exception":"nullReference","temps":[0]}"#, #"{"id":"e","unsupported":"primitive 28 (run_tree_by_name)"}"#,
+                   #"{"id":"f","exit":"GOTO_TRUE"}"#]
+        let primitives = Comparison.primitives("Primitive: test", fso: fso, nso: nso)
+        #expect(primitives.matched == 3)   // a, d (both threw), f (protocol isn't compared)
+        #expect(primitives.mismatches == [#""b": exit: FreeSO "GOTO_TRUE" NSOClient "GOTO_FALSE""#])
+        #expect(primitives.skipped == ["FreeSO couldn't run it": 1, "unsupported: primitive 28 (run_tree_by_name)": 1])
     }
 
     @Test func comparesRoomMapsEntryForEntry() {

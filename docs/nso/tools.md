@@ -70,14 +70,14 @@ there what the files change before calling it a bug in NSOClient.
 | `list-objects` | What loads for every registered object: label, resource, semi-global, routine and tuning counts, entry points |
 | `run-objects` | Each GUID on standard input run alone on an empty lot, with a state digest after creation and as it ticks |
 | `run-lot` | One lot (`--blueprint`) loaded with its objects and run, with a state digest after loading and as it ticks; `--leave-out GUID` leaves out an object `fso-oracle` left out, and `--dump` adds every entity's digested fields |
+| `run-primitive` | `fso-oracle`'s JSON requests on standard input, each on a freshly loaded lot (`--blueprint`, `--leave-out`), answered in its format: the lot as loaded, the exit code, registers, and every effect; `unsupported` where a primitive isn't ported |
 | `room-maps` | Each blueprint path on standard input: its room maps and rooms |
 | `compare` | Both sides' answers compared, and with `--review FILE`, that install's section of the review written |
 
 Where NSOClient can't answer yet, `run-objects` adds an `unsupported` line naming what isn't
 ported; comparisons count those as skipped, ranked, so they show what to port next.
 `run-lot` stops at the first tick that reaches something not ported, with `unsupported at tick
-N:` and what. `run-primitive` follows (phase D2 of the current milestone on the
-[roadmap](../roadmap.md)).
+N:` and what.
 
 ```sh
 cut -f1 objects.tsv | swift run --package-path NSOClient/NSOOracle nso-oracle run-objects --ticks 30 --every 10
@@ -85,7 +85,8 @@ cut -f1 objects.tsv | swift run --package-path NSOClient/NSOOracle nso-oracle ru
 
 `NSOClient/scripts/oracle-review.sh [--review | --mock]` runs both oracles on every install it's
 given (`TSO_GAME_DIR` as "production", `TSO_BETA_DIR` as "beta") and compares them; `--mock` uses
-`NSOClient/MockInstall` instead, as CI does. With `--review` it writes
+`NSOClient/MockInstall` instead, as CI does, and fails on any mismatch (`compare --strict`).
+FreeSO's side comes from `oracle-fixtures.sh`. With `--review` it writes
 [docs/results/nso-review.md](../results/nso-review.md); do that only after a phase of the roadmap,
-since it reruns every object. The same comparisons run as NSOOracle's tests against the oracle
-fixtures, sharing the same code, so the tests and the review can't disagree.
+since it reruns every object and primitive case. The same comparisons run as NSOOracle's tests
+against the fixtures, sharing the same code, so the tests and the review can't disagree.

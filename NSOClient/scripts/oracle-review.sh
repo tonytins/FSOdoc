@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Runs fso-oracle (FreeSO) and nso-oracle (NSOClient) side by side on each install, compares their
 # answers, and with --review writes docs/results/nso-review.md. Run it after a phase or milestone,
-# not every session: it reruns every object on every install.
+# not every session: it reruns every object and every primitive case on every install.
 #
 #   NSOClient/scripts/oracle-review.sh [--review | --mock] [OUTPUT_DIR]     (default: $TMPDIR/oracle-review)
 #
 # Installs come from TSO_GAME_DIR ("production") and TSO_BETA_DIR ("beta"); either or both.
-# --mock runs on NSOClient/MockInstall ("mock") alone, as CI does; it never writes the review.
-# Needs the .NET SDK, Swift, and python3. Each install gets OUTPUT_DIR/NAME/{fso,nso}/ with
-# objects.tsv, objects.digests, lots.digests (run-lot on each lot with objects, lines prefixed with
-# the lot's file name), rooms.jsonl, and timings.tsv, plus fso/lots.leftout (the objects fso-oracle
-# left out of each lot, which nso-oracle leaves out too). OUTPUT_DIR/NAME/fso also works as
-# TSO_ORACLE_DIR for `swift test --package-path NSOClient/NSOOracle`.
+# --mock runs on NSOClient/MockInstall ("mock") alone, as CI does: it never writes the review, and
+# it fails if any comparison has a mismatch.
+# Needs the .NET SDK, Swift, and python3. Each install gets OUTPUT_DIR/NAME/fso/, FreeSO's
+# answers from oracle-fixtures.sh (also a TSO_ORACLE_DIR for the NSOOracle tests), and
+# OUTPUT_DIR/NAME/nso/, NSOClient's answers to the same questions in the same files, each with
+# timings.tsv.
 set -euo pipefail
 
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -34,85 +34,64 @@ if (( ${#installs[@]} == 0 )); then
     echo "oracle-review: set TSO_GAME_DIR, TSO_BETA_DIR, or both, or pass --mock" >&2
     exit 2
 fi
+# Kept in step with oracle-fixtures.sh.
+lot_ticks=1800
+lot_every=300
 
 echo "Building both oracles..."
 dotnet build "$repository/NSOClient/Oracle" -c Release >/dev/null
 swift build --package-path "$repository/NSOClient/NSOOracle" -c release >/dev/null
 nso_binary="$(swift build --package-path "$repository/NSOClient/NSOOracle" -c release --show-bin-path)/nso-oracle"
 
-mkdir -p "$output"
-echo "Writing the synthetic lots..."
-python3 -I "$repository/NSOClient/SimAntics/OracleCases/make_blueprints.py" "$output/blueprints" >/dev/null
-# Lots with objects, for run-lot: FreeSO's empty lot (its objects are the lot's mailbox and the
-# like), then the house in NSOClient/Lots, or on the mock install, the mock lots.
-{ echo "$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"
-  if $mock; then ls "$repository"/NSOClient/MockInstall/Lots/*.xml; else ls "$repository"/NSOClient/Lots/*.xml; fi
-} >"$output/lots-run.txt"
-{ cat "$output/blueprints/blueprints.txt"
-  echo "$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"
-  ls "$repository"/NSOClient/Lots/*.xml "$repository"/NSOClient/MockInstall/Lots/*.xml; } >"$output/lots.txt"
-# Kept in step with the run-lot test in NSOClient/NSOOracle (lotRunsMatchFreeSO).
-lot_ticks=1800
-lot_every=300
-
-# timed SIDE NAME OUTPUT COMMAND...: runs COMMAND with standard output to OUTPUT, and records its seconds.
-timed() {
-    local side="$1" name="$2" file="$3"
-    shift 3
-    local start end
-    start=$(date +%s.%N)
-    "$@" >"$file" 2>>"$(dirname "$file")/log.txt"
-    end=$(date +%s.%N)
-    printf '%s\t%s\n' "$name" "$(awk "BEGIN { printf \"%.1f\", $end - $start }")" >>"$(dirname "$file")/timings.tsv"
-}
-
 for install in "${installs[@]}"; do
     name="${install%%=*}"
     game="${install#*=}"
-    folder="$output/$name"
-    mkdir -p "$folder/fso" "$folder/nso"
-    # Each side's folder is then a TSO_ORACLE_DIR for the NSOOracle fixture tests.
-    ln -sfn "$output/blueprints" "$folder/fso/blueprints"
-    rm -f "$folder/fso/timings.tsv" "$folder/nso/timings.tsv" "$folder/fso/log.txt" "$folder/nso/log.txt" \
-        "$folder/fso/lots.digests" "$folder/nso/lots.digests" "$folder/fso/lots.leftout"
-    fso() { dotnet run --project "$repository/NSOClient/Oracle" -c Release --no-build -- "$@" --game "$game"; }
-    nso() { "$nso_binary" "$1" --game "$game" "${@:2}"; }
+    fso_folder="$output/$name/fso"
+    folder="$output/$name/nso"
+    mkdir -p "$folder"
+    rm -f "$folder"/*.jsonl "$folder"/*.digests "$folder"/*.tsv "$folder/log.txt"
 
-    echo "[$name] Listing objects..."
-    timed fso list-objects "$folder/fso/objects.tsv" fso list-objects
-    timed nso list-objects "$folder/nso/objects.tsv" nso list-objects
-    echo "[$name] Running each object alone (a few minutes per side)..."
-    cut -f1 "$folder/fso/objects.tsv" >"$folder/guids.txt"
-    timed fso run-objects "$folder/fso/objects.digests" fso run-objects --ticks 30 --every 10 <"$folder/guids.txt"
-    timed nso run-objects "$folder/nso/objects.digests" nso run-objects --ticks 30 --every 10 <"$folder/guids.txt"
-    echo "[$name] Running each lot..."
-    # run-lot takes one lot; run both sides on each, prefix lines with the lot's file name, and time the whole.
+    echo "[$name] FreeSO's answers..."
+    if $mock; then
+        ORACLE_BUILT=1 "$repository/NSOClient/scripts/oracle-fixtures.sh" --mock "$fso_folder" | sed "s|^|[$name] |"
+    else
+        ORACLE_BUILT=1 TSO_GAME_DIR="$game" "$repository/NSOClient/scripts/oracle-fixtures.sh" "$fso_folder" | sed "s|^|[$name] |"
+    fi
+
+    nso() { "$nso_binary" "$1" --game "$game" "${@:2}"; }
+    # timed NAME COMMAND...: runs COMMAND, with its messages in log.txt, and records its seconds.
+    timed() {
+        local label="$1" start end
+        shift
+        start=$(date +%s.%N)
+        "$@" 2>>"$folder/log.txt"
+        end=$(date +%s.%N)
+        printf '%s\t%s\n' "$label" "$(awk "BEGIN { printf \"%.1f\", $end - $start }")" >>"$folder/timings.tsv"
+    }
+
+    echo "[$name] NSOClient's answers..."
+    timed list-objects nso list-objects >"$folder/objects.tsv"
+    timed run-objects nso run-objects --ticks 30 --every 10 <"$fso_folder/guids.txt" >"$folder/objects.digests"
+    # Each lot with the objects fso-oracle left out of it left out here too.
     run_lots() {
-        local side="$1" lot file guids
+        local lot file leave
         while read -r lot; do
             file="$(basename "$lot")"
-            if [[ "$side" == fso ]]; then
-                fso run-lot --blueprint "$lot" --ticks "$lot_ticks" --every "$lot_every" 2>"$folder/fso/lot-err.txt" | sed "s|^|$file |"
-                cat "$folder/fso/lot-err.txt" >>"$folder/fso/log.txt"
-                grep -o 'object 0x[0-9A-Fa-f]*; left out' "$folder/fso/lot-err.txt" | awk -v f="$file" '{ print f "\t" substr($2, 1, length($2) - 1) }' \
-                    >>"$folder/fso/lots.leftout" || true
-            else
-                guids=()
-                while IFS=$'\t' read -r leftFile guid; do
-                    [[ "$leftFile" == "$file" ]] && guids+=(--leave-out "$guid")
-                done <"$folder/fso/lots.leftout"
-                nso run-lot --blueprint "$lot" --ticks "$lot_ticks" --every "$lot_every" "${guids[@]}" | sed "s|^|$file |"
-            fi
-        done <"$output/lots-run.txt"
+            mapfile -t leave < <(awk -F'\t' -v f="$file" '$1 == f { print "--leave-out"; print $2 }' "$fso_folder/lots.leftout")
+            nso run-lot --blueprint "$lot" --ticks "$lot_ticks" --every "$lot_every" "${leave[@]}" | sed "s|^|$file |"
+        done <"$fso_folder/lots.run"
     }
-    touch "$folder/fso/lots.leftout"
-    timed fso run-lot "$folder/fso/lots.digests" run_lots fso
-    timed nso run-lot "$folder/nso/lots.digests" run_lots nso
-    echo "[$name] Room maps..."
-    timed fso room-maps "$folder/fso/rooms.jsonl" fso room-maps <"$output/lots.txt"
-    timed nso room-maps "$folder/nso/rooms.jsonl" "$nso_binary" room-maps <"$output/lots.txt"
+    timed run-lot run_lots >"$folder/lots.digests"
+    mapfile -t leave < <(awk '{ print "--leave-out"; print $1 }' "$fso_folder/primitives.leftout")
+    for requests in "$fso_folder"/*.requests.jsonl; do
+        primitive="$(basename "$requests" .requests.jsonl)"
+        timed "run-primitive $primitive" nso run-primitive --blueprint "$(cat "$fso_folder/primitives.lot")" "${leave[@]}" \
+            <"$requests" >"$folder/$primitive.responses.jsonl"
+    done
+    timed room-maps "$nso_binary" room-maps <"$fso_folder/rooms.lots" >"$folder/rooms.jsonl"
 
-    arguments=(compare --fso "$folder/fso" --nso "$folder/nso" --install "$name")
+    arguments=(compare --fso "$fso_folder" --nso "$folder" --install "$name")
+    if $mock; then arguments+=(--strict); fi
     if $review; then
         arguments+=(--review "$repository/docs/results/nso-review.md"
                     --commit "$(git -C "$repository" rev-parse --short HEAD)")

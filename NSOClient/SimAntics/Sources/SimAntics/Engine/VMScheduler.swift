@@ -5,8 +5,8 @@
 /// tick. After each tick the random seed advances by the number of entities, as FreeSO does
 /// to make clients desync quickly when their entity counts differ.
 public final class VMScheduler {
-    /// The current tick (`CurrentTickID`).
-    public internal(set) var currentTick: UInt32 = 0
+    /// The current tick (`CurrentTickID`). Settable, as in FreeSO, for tools that set up a lot's state.
+    public var currentTick: UInt32 = 0
     /// Whether entities are being run (`RunningNow`); check threads then share their entity's temps.
     public private(set) var isRunning = false
     /// The entity being run, or `Int16.max` between runs (`CurrentObjectID`).

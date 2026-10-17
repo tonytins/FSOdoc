@@ -47,6 +47,9 @@ public enum Review {
           simulated for 1,800 ticks, compared every 300. The lots are FreeSO's empty lot (which holds a
           mailbox and other fixtures) and a house built in-game. Where NSOClient reaches something it
           doesn't support yet, the run stops there; it's skipped if every comparison before that matched.
+        - **Primitives:** thousands of generated cases for each ported primitive (one of the game's
+          built-in instructions), each run once on a freshly loaded lot with the state the case sets up.
+          The lot as loaded, the result, and every change the primitive makes are compared.
         - **Room maps:** for each test lot, how its walls divide it into rooms. The lots are generated
           layouts, FreeSO's empty lot, a house built in-game, and a small made-up lot.
 
@@ -63,8 +66,8 @@ public enum Review {
 
         `NSOClient/scripts/oracle-review.sh --review` writes this page after each phase of work; earlier
         reviews are in its git history. It holds only counts, IDs, and values, never the game's own data.
-        Finer checks, instruction by instruction, run as tests in the repository (scorecard FID-9) until
-        `nso-oracle` can load a whole lot by itself.
+        The same comparisons also run as tests in the repository, and on every change, continuous
+        integration runs them all on a small made-up install.
 
 
 

@@ -60,8 +60,8 @@ added in later versions; bump the version when they are.
 dotnet run --project NSOClient/Oracle -c Release -- run-primitive < requests.jsonl
 ```
 
-Loads the same lot as `run-lot`, then reads JSON requests from standard input, one
-per line, and writes one JSON response per line. Blank lines and lines starting
+Loads the same lot as `run-lot` (`--blueprint`, FreeSO's empty lot by default), then reads
+JSON requests from standard input, one per line, and writes one JSON response per line. Blank lines and lines starting
 with `#` are skipped. Each request runs on a freshly loaded lot, so requests never
 see each other's effects. [Examples/expression.jsonl](Examples/expression.jsonl)
 has annotated examples.
@@ -140,8 +140,9 @@ lot with every object taken out, creates the object out of the world as
 `--every` ticks, and at the end. It prints `guid missing` if FreeSO can't create the object and
 `guid error Type` if creating or ticking throws; the full exception goes to standard error.
 
-The SimAntics tests run each object the same way and compare every line. Objects that reach
-behavior the port doesn't have yet are counted by what stopped them, which ranks what to port next.
+`nso-oracle run-objects` runs each object the same way, and NSOOracle's tests compare every line.
+Objects that reach behavior NSOClient doesn't have yet are counted by what stopped them, which
+ranks what to port next.
 
 ## Rooms: `room-maps`
 
@@ -162,7 +163,7 @@ Reads blueprint XML paths from standard input, one per line. For each, it loads 
 If loading throws, the line is `{"file":…,"error":Type}` and the full exception goes to standard
 error. FreeSO's blueprints have floors but no walls, so `NSOClient/SimAntics/OracleCases/make_blueprints.py`
 writes synthetic ones (no game data) with walls, fences, diagonals, pools, and upper floors. The
-SimAntics tests read each blueprint with the Swift `Blueprint` and compare every field.
+NSOOracle's tests read each blueprint with the Swift `Blueprint` and compare every field.
 
 ## Content: `list-objects`
 
@@ -179,26 +180,28 @@ tab-separated line per GUID, sorted by GUID:
 | no `OBJD` with the GUID | `missing` |
 | loading threw | `error` and the exception type; the full exception goes to standard error |
 
-The TSOContent real-install tests compare each line with the Swift content system.
+NSOOracle's tests compare each line with what NSOClient's content system loads.
 
 ## Fixtures for the Swift tests
 
-`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every FreeSO answer the
-Swift tests compare against into one folder (by default `$TMPDIR/fso-oracle-fixtures`):
-`objects.tsv` from `list-objects`, `objects.digests` from `run-objects`, for each ported
-primitive its cases from `NSOClient/SimAntics/OracleCases/make_cases.py` with their
-`run-primitive` answers, and the synthetic blueprints in `blueprints/` with `rooms.jsonl` from
-`room-maps`. Point the tests at it:
+`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every FreeSO answer NSOClient
+is compared on into one folder (by default `$TMPDIR/fso-oracle-fixtures`): `objects.tsv` from
+`list-objects`, `objects.digests` from `run-objects`, `lots.digests` from `run-lot` on each lot
+with objects (and `lots.leftout`, the objects it left out), for each ported primitive its cases
+from `NSOClient/SimAntics/OracleCases/make_cases.py` with their `run-primitive` answers, and
+`rooms.jsonl` from `room-maps` on the synthetic blueprints in `blueprints/` and the repository's
+lots. `--mock` uses `NSOClient/MockInstall` and its lots instead of `TSO_GAME_DIR`; the cases are
+then written for the mock lot, leaving out any that set up an object it doesn't have. NSOOracle's
+tests compare NSOClient with all of it:
 
 ```sh
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle
-TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/TSOContent
-TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics
+TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/NSOOracle
 ```
 
-The answers depend on the install, so don't commit them. Two more variables help when a comparison fails:
-`TSO_ORACLE_MISMATCHES=FOLDER` writes every mismatch to `FOLDER/PRIMITIVE.mismatches.txt`, and
-`TSO_ORACLE_CASE=ID` runs only the case with that ID.
+`NSOClient/scripts/oracle-review.sh` uses the same script for FreeSO's side of the review. The
+answers depend on the install, so don't commit them. To look into one primitive case, run its
+request line through both oracles' `run-primitive` and compare the two responses.
 
 ## How it stands in for FreeSO's build
 

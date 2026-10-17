@@ -40,7 +40,8 @@ public final class VMThread {
     /// The error that ended the last tick, if one did.
     public private(set) var lastError: SimAnticsError?
     /// The tick the current wait started on, or 0 (`ScheduleIdleStart`). Sleep counts from it.
-    public internal(set) var idleStartTick: UInt32 = 0
+    /// Settable, as in FreeSO, for tools that set up a thread's state.
+    public var idleStartTick: UInt32 = 0
     /// Set when something wakes the thread early (`Interrupt`); Sleep then ends at once.
     public var isInterrupted = false
     /// The tick the entity is scheduled to run next, or 0 (`ScheduleIdleEnd`).

@@ -1,4 +1,5 @@
 import Foundation
+import Testing
 import SimAntics
 import TSOContent
 import TSOFiles
@@ -192,4 +193,18 @@ extension VM {
         defer { caller.thread.stack.removeAll() }
         return (try primitive.execute(in: frame), frame)
     }
+}
+
+/// The TSO install named by `TSO_GAME_DIR`, or `nil` when it isn't set.
+let gameDirectory: URL? = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].map { URL(fileURLWithPath: $0) }
+
+struct MissingFixtureValue: Error, CustomStringConvertible {
+    var description: String
+}
+
+/// Unwraps a value a test needs; unlike `#require`, it nests.
+func required<Value>(_ value: Value?, _ what: @autoclosure () -> String = "a fixture value",
+                     sourceLocation: SourceLocation = #_sourceLocation) throws -> Value {
+    guard let value else { throw MissingFixtureValue(description: "missing \(what()) at \(sourceLocation)") }
+    return value
 }

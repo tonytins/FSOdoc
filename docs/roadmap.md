@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase D1: lot loading and `run-lot`) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase D2: `nso-oracle run-primitive`) · **Target:** behavior parity with FreeSO's engine-free libraries at the 2017-08-09 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -57,12 +57,13 @@ In order:
    - [x] Mock install wiring: TSOContent and SimAntics tests read `NSOClient/MockInstall` (focused
      edge-case fixtures stay in code), fso-oracle loads it, and CI runs both oracles on it
      (`oracle-review.sh --mock`). Primitive fixtures on the mock wait for a mock lot, in D2.
-   - [ ] D. In two steps:
+   - [x] D. In two steps:
      - [x] D1. Lot loading from blueprint XML with its objects, seeded loading in `fso-oracle`, and
        `nso-oracle run-lot`, with digests compared tick by tick (the mock lot matches; real lots
        match until Run Tree By Name).
-     - [ ] D2. `nso-oracle run-primitive`, on the lot `fso-oracle run-primitive` loads, and primitive
-       fixtures on the mock lot.
+     - [x] D2. `nso-oracle run-primitive`, on the lot `fso-oracle run-primitive` loads, and primitive
+       fixtures on the mock lot. Every case matches on both installs, the lot as loaded included;
+       the primitive comparisons moved from the SimAntics tests into NSOOracle's and the review.
 2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
 
 ## Milestones
@@ -88,7 +89,7 @@ criteria met, not lines written.
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: FreeSO SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single FreeSO primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
-| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 56% | 72–118 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), C1 (multi-tile groups, creation, deletion), C2 (placement), C3 (slots and containment), and D1 (lot loading) are done. |
+| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 56% | 72–118 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), C1 (multi-tile groups, creation, deletion), C2 (placement), C3 (slots and containment), and D (lot loading, `run-lot`, and `run-primitive`) are done. |
 | Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 18% | 70–111 | Expression, Sleep, Refresh, Random Number, Find Location For, Play Sound, Set To Next, Test Object Type, and Create Object Instance done. `run-objects` ranks the rest by how many objects each blocks; the biggest blockers now are Run Tree By Name and Transfer Funds. |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
 | Terra Tablante | Saves: marshals, version 19 read and write, hollow saves | 1,572 | 20–30 | 0% | 20–30 | Must read saves written by FreeSO servers. |
@@ -163,6 +164,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-16 | minor | Phase D2: `nso-oracle run-primitive` answers `fso-oracle`'s requests on a lot it loads itself, and every case of the 9 ported primitives matches on both installs, the loaded lot included; that comparison found and fixed that created objects weren't listed under category 0. `oracle-fixtures.sh` is now FreeSO's side of the review (with `--mock`, cases for the mock lot), the SimAntics rebuild harness is retired, and CI fails on any mismatch (`compare --strict`). |
 | 2026-10-16 | minor | Phase D split into D1 and D2. D1: lots load with their objects as the lot server loads them (`VM.load`, `Blueprint.objects`); `fso-oracle` loads lots seeded (`LotLoader`), since FreeSO's own load drew from an unseeded generator; `nso-oracle run-lot` and a lot comparison; a mock lot that matches tick for tick. Real lots match until Run Tree By Name. CI's oracle job moved to its own workflow, and the mock install is wired into tests and CI. |
 | 2026-10-16 | minor | `nso-oracle` (NSOClient/NSOOracle) answers `fso-oracle`'s `list-objects`, `run-objects`, and `room-maps` by running NSOClient, and `compare` sets the two side by side; `oracle-review.sh --review` writes `docs/results/nso-review.md`, per install, after a phase or milestone. The content, entry point, single-object, and room-map comparisons moved into NSOOracle's tests, sharing the review's code. First review: 0 mismatches on the 2002 production copy and the 2002 beta. The install differences moved to `docs/results/`. |
 | 2026-10-16 | minor | Queen Margaret's third pass, phase C3: container slots and what they hold (`placeInSlot`, the containment object data, the slot scopes), contents moving with their container and placed nearby when it's deleted, stacking onto a slot when placing, the buildable-area check (empty on blueprint lots, as in FreeSO), and Find Location For (16). Objects running alone and matching FreeSO went from 2,597 to 2,743; Expression now runs all 3,809 cases, Create Object Instance 1,245 of 1,255, and Find Location For all 1,538, every one matching. `run-primitive` reports each lot object's slots. |

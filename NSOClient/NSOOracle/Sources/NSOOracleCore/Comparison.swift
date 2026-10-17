@@ -149,6 +149,58 @@ public struct Comparison: Sendable, Equatable {
         return result
     }
 
+    /// The `run-primitive` response fields both sides must agree on: the lot as loaded, the exit
+    /// code (or, for an exception, only that there was one), and the state after.
+    static let primitiveFields = ["primitive", "noPrimitive", "exit", "temps", "tempXL", "locals", "args", "stackObject",
+                                  "seed", "thread", "frames", "globals", "objects", "created", "removed",
+                                  "lot", "lotSize", "groups", "callerGUID", "stackObjectGUID"]
+
+    /// `run-primitive`: each response by its `id`. Requests FreeSO couldn't run are skipped, and
+    /// so are those NSOClient answered with `unsupported`, by what. A mismatch names the first
+    /// field that differs.
+    public static func primitives(_ name: String, fso: [String], nso: [String]) -> Comparison {
+        var result = Comparison(name: name)
+        func responses(_ lines: [String]) -> [(String, [String: Any])] {
+            lines.compactMap { line in
+                guard let object = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any] else { return nil }
+                return (plain(object["id"]), object)
+            }
+        }
+        let ours = Dictionary(responses(nso), uniquingKeysWith: { first, _ in first })
+        for (id, theirs) in responses(fso) {
+            guard theirs["requestError"] == nil else {
+                result.skip("FreeSO couldn't run it")
+                continue
+            }
+            guard let mine = ours[id] else {
+                result.mismatches.append("\(id): NSOClient has no answer")
+                continue
+            }
+            if let reason = mine["unsupported"] as? String {
+                result.skip("unsupported: \(reason)")
+                continue
+            }
+            if let error = mine["requestError"] {
+                result.mismatches.append("\(id): NSOClient couldn't run it: \(error)")
+                continue
+            }
+            func fields(_ response: [String: Any]) -> [String: Any] {
+                var fields = response.filter { primitiveFields.contains($0.key) }
+                if response["exception"] != nil { fields["exception"] = true }
+                return fields
+            }
+            let (expected, actual) = (fields(theirs), fields(mine))
+            let keys = Set(expected.keys).union(actual.keys).sorted()
+            if let key = keys.first(where: { canonical(expected[$0]) != canonical(actual[$0]) }) {
+                let show = { (value: Any?) in value == nil ? "nothing" : String(plain(value).prefix(200)) }
+                result.mismatches.append("\(id): \(key): FreeSO \(show(expected[key])) NSOClient \(show(actual[key]))")
+            } else {
+                result.matched += 1
+            }
+        }
+        return result
+    }
+
     /// `room-maps`: each lot's size, room maps, and rooms, entry for entry.
     public static func roomMaps(fso: [String], nso: [String]) -> Comparison {
         var result = Comparison(name: "Room maps")
@@ -182,6 +234,14 @@ public struct Comparison: Sendable, Equatable {
     }
 
     // MARK: Parsing
+
+    /// A JSON value as text, with sorted keys, or `null`.
+    private static func plain(_ value: Any?) -> String {
+        guard let value, let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .fragmentsAllowed]) else {
+            return "null"
+        }
+        return String(decoding: data, as: UTF8.self)
+    }
 
     /// A JSON value written with sorted keys, so equal values compare equal.
     private static func canonical(_ value: Any?) -> Data? {

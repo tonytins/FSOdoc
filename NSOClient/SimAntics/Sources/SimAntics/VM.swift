@@ -42,8 +42,9 @@ public final class VM {
     public var lotSize: (width: Int, height: Int) { (architecture.width, architecture.height) }
     /// Objects by tile, in object ID order (`VMObjectQueries.TileToObjects`), keyed as FreeSO does.
     private var tileIndex: [Int: [Entity]] = [:]
-    /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). An object
-    /// is listed once its category is set through object data, not when it's created.
+    /// Objects by category, in object ID order (`VMObjectQueries.ObjectsByCategory`). A created
+    /// object is listed under its category at once (usually 0) and moves when object data sets it;
+    /// one added with ``addObject(guid:id:)`` is listed only once its category is set.
     private var categoryIndex: [Int16: [Entity]] = [:]
     /// Each room's entities, in object ID order (`VMRoomInfo.Entities`), for the rooms of
     /// `roomListsGeneration`.
@@ -215,10 +216,13 @@ public final class VM {
                 let entity = try Entity(objectID: freeObjectID(), object: partObject, vm: self, group: group)
                 entity.masterDefinition = definition
                 register(entity)
+                listUnderCategory(entity)
             }
         } else {
             group = MultitileGroup(isMultiTile: false)
-            register(try Entity(objectID: freeObjectID(), object: object, vm: self, group: group))
+            let entity = try Entity(objectID: freeObjectID(), object: object, vm: self, group: group)
+            register(entity)
+            listUnderCategory(entity)
         }
 
         for entity in group.objects {
@@ -375,7 +379,7 @@ public final class VM {
         return matches.isEmpty ? nil : matches
     }
 
-    /// Objects whose category was set to `category`, in object ID order, or `nil` if there are none.
+    /// Objects listed under `category`, in object ID order, or `nil` if there are none.
     public func objects(inCategory category: Int16) -> [Entity]? {
         categoryIndex[category]
     }
@@ -561,6 +565,12 @@ public final class VM {
         guard !position.isOutOfWorld else { return -1 }
         return Int(position.tileX) + Int(position.tileY) * lotSize.width
             + (Int(position.level) - 1) * lotSize.width * lotSize.height
+    }
+
+    /// Lists a new object under its category, as `VM.AddEntity` does through
+    /// `VMObjectQueries.NewObject`: before its init runs, so usually under 0.
+    private func listUnderCategory(_ entity: Entity) {
+        changeCategory(of: entity, from: nil, to: entity.objectData[Int(ObjectVariable.category.rawValue)])
     }
 
     /// Moves an object between categories, as `RemoveCategory` and `RegisterCategory` do.

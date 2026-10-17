@@ -342,6 +342,14 @@ def main():
         print(f"{sys.argv[1]} cases name real objects and need ORACLE_GUIDS", file=sys.stderr)
         return 2
     cases = list(generate(guids))
+    if guids is not None:
+        # A smaller lot, such as the mock install's, has fewer objects than FreeSO's empty lot, whose
+        # IDs the cases name; leave out the cases that set up an object the lot doesn't have.
+        count = len(guids[0])
+        def fits(request):
+            named = [request.get("caller", 1), request.get("stackObject", 0)] + [int(key) for key in request.get("objects", {})]
+            return all(object_id <= count for object_id in named)
+        cases = [(case_id, request) for case_id, request in cases if fits(request)]
     lines = [json.dumps({"id": case_id, "opcode": opcode, **request}, separators=(",", ":")) for case_id, request in cases]
     assert len({case_id for case_id, _ in cases}) == len(cases), "case IDs must be unique"
     path = pathlib.Path(sys.argv[2])

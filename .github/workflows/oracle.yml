@@ -37,12 +37,7 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Run both oracles on the mock install
+      - name: Run both oracles on the mock install and compare them
         shell: bash
+        # --mock compares strictly: any mismatch fails the job.
         run: NSOClient/scripts/oracle-review.sh --mock "$RUNNER_TEMP/oracle"
-
-      - name: Compare NSOClient with FreeSO
-        shell: bash
-        run: |
-          TSO_GAME_DIR="$PWD/NSOClient/MockInstall/TSOClient" TSO_ORACLE_DIR="$RUNNER_TEMP/oracle/mock/fso" \
-            swift test --package-path NSOClient/NSOOracle
