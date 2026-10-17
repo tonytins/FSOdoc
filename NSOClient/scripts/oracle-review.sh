@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs fso-oracle (FreeSO) and nso-oracle (NSOClient) side by side on each install, compares their
-# answers, and with --review writes docs/results/nso-review.md. Run it after a phase or milestone,
+# Runs the same experiments through fso-oracle (FreeSO) and nso-oracle (NSOClient) on each install,
+# reports whether their records agree, and with --review writes docs/results/nso-review.md. Run it after a phase or milestone,
 # not every session: it reruns every object and every primitive case on every install.
 #
 #   NSOClient/scripts/oracle-review.sh [--review | --mock] [OUTPUT_DIR]     (default: $TMPDIR/oracle-review)
@@ -9,8 +9,8 @@
 # --mock runs on NSOClient/MockInstall ("mock") alone, as CI does: it never writes the review, and
 # it fails if any comparison has a mismatch.
 # Needs the .NET SDK, Swift, and python3. Each install gets OUTPUT_DIR/NAME/fso/, FreeSO's
-# answers from oracle-fixtures.sh (also a TSO_ORACLE_DIR for the NSOOracle tests), and
-# OUTPUT_DIR/NAME/nso/, NSOClient's answers to the same questions in the same files, each with
+# records from oracle-fixtures.sh (also a TSO_ORACLE_DIR for the NSOOracle tests), and
+# OUTPUT_DIR/NAME/nso/, NSOClient's records of the same experiments in the same files, each with
 # timings.tsv.
 set -euo pipefail
 
@@ -51,7 +51,7 @@ for install in "${installs[@]}"; do
     mkdir -p "$folder"
     rm -f "$folder"/*.jsonl "$folder"/*.digests "$folder"/*.tsv "$folder/log.txt"
 
-    echo "[$name] FreeSO's answers..."
+    echo "[$name] FreeSO's side..."
     if $mock; then
         ORACLE_BUILT=1 "$repository/NSOClient/scripts/oracle-fixtures.sh" --mock "$fso_folder" | sed "s|^|[$name] |"
     else
@@ -69,7 +69,7 @@ for install in "${installs[@]}"; do
         printf '%s\t%s\n' "$label" "$(awk "BEGIN { printf \"%.1f\", $end - $start }")" >>"$folder/timings.tsv"
     }
 
-    echo "[$name] NSOClient's answers..."
+    echo "[$name] NSOClient's side..."
     timed list-objects nso list-objects >"$folder/objects.tsv"
     timed run-objects nso run-objects --ticks 30 --every 10 <"$fso_folder/guids.txt" >"$folder/objects.digests"
     # Each lot with the objects fso-oracle left out of it left out here too.

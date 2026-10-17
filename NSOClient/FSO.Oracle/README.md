@@ -1,14 +1,21 @@
 # SimAntics oracle
 
-`fso-oracle` runs FreeSO's SimAntics VM (the update-46 snapshot) headless on modern .NET, to produce
-reference results for the Swift port (roadmap decision 2, the West Darrington
-milestone). It compiles FreeSO's SimAntics, Files, Content, LotView, HIT, and
+`fso-oracle` runs FreeSO's SimAntics VM (FreeSO beta/update-46, August 2017) headless on modern
+.NET, and records how it behaves: one side of the experiments that test whether NSOClient behaves
+like FreeSO (roadmap decision 2, the West Darrington milestone). It compiles FreeSO's SimAntics, Files, Content, LotView, HIT, and
 Vitaboy sources unchanged: `SnapshotSources.props` links them read-only from
 `TSOClient/`, and nothing under `TSOClient/` is ever edited.
 
-Its Swift counterpart, `nso-oracle` (`NSOClient/NSOOracle`), answers the same questions in the same
-formats by running NSOClient, and compares the two; `NSOClient/scripts/oracle-review.sh` runs both
-and, with `--review`, writes `docs/results/nso-review.md`.
+Its Swift counterpart, `nso-oracle` (`NSOClient/NSOOracle`), runs the same experiments on
+NSOClient and records the results in the same formats. Neither side is the answer key: comparing
+the two records asks whether they agree, and a disagreement is a finding to explain, which may
+turn out to be NSOClient's bug, FreeSO's quirk, or a deliberate difference.
+`NSOClient/scripts/oracle-review.sh` runs both and, with `--review`, writes the report,
+`docs/results/nso-review.md`.
+
+The experiments must be repeatable: the same install, inputs, and seed give the same records.
+Where FreeSO's own code isn't, the oracle makes the smallest change that makes it so, and says
+which below (lot loading, and money transactions' timing).
 
 ## Running it
 
@@ -121,14 +128,14 @@ Response fields:
 `objects` and `globals` hold only the primitive's effects: the requested state is
 applied first, and the difference is taken from there.
 
-[check_protocol.py](check_protocol.py) runs the examples and checks the answers. It's
+[check_protocol.py](check_protocol.py) runs the examples and checks the responses. It's
 a regression check for the oracle itself; run it after changing the oracle:
 
 ```sh
 python3 -I NSOClient/FSO.Oracle/check_protocol.py
 ```
 
-Responses depend on the install, so generated answer files must not be committed.
+Responses depend on the install, so generated records must not be committed.
 
 Not covered yet: avatars (the default lot has none, so person data, motives, and
 relationships can't be tested), and state outside the fields above, such as
@@ -189,17 +196,17 @@ tab-separated line per GUID, sorted by GUID:
 
 NSOOracle's tests compare each line with what NSOClient's content system loads.
 
-## Fixtures for the Swift tests
+## FreeSO's records, for the comparisons
 
-`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and writes every FreeSO answer NSOClient
-is compared on into one folder (by default `$TMPDIR/fso-oracle-fixtures`): `objects.tsv` from
+`NSOClient/scripts/oracle-fixtures.sh` builds the oracle and runs every experiment on FreeSO,
+writing its records into one folder (by default `$TMPDIR/fso-oracle-fixtures`): `objects.tsv` from
 `list-objects`, `objects.digests` from `run-objects`, `lots.digests` from `run-lot` on each lot
 with objects (and `lots.leftout`, the objects it left out), for each ported primitive its cases
-from `NSOClient/SimAntics/OracleCases/make_cases.py` with their `run-primitive` answers, and
+from `NSOClient/SimAntics/OracleCases/make_cases.py` with their `run-primitive` responses, and
 `rooms.jsonl` from `room-maps` on the synthetic blueprints in `blueprints/` and the repository's
 lots. `--mock` uses `NSOClient/MockInstall` and its lots instead of `TSO_GAME_DIR`; the cases are
 then written for the mock lot, leaving out any that set up an object it doesn't have. NSOOracle's
-tests compare NSOClient with all of it:
+tests run the same experiments on NSOClient and check that the two still agree:
 
 ```sh
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle
@@ -207,7 +214,7 @@ TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/NSOOracle
 ```
 
 `NSOClient/scripts/oracle-review.sh` uses the same script for FreeSO's side of the review. The
-answers depend on the install, so don't commit them. To look into one primitive case, run its
+records depend on the install, so don't commit them. To look into one primitive case, run its
 request line through both oracles' `run-primitive` and compare the two responses.
 
 ## How it stands in for FreeSO's build

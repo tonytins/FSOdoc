@@ -42,7 +42,7 @@ are in [`AGENTS.md`](../AGENTS.md); they apply to people and AI assistants alike
 | GUID | The 32-bit number that identifies an object type |
 | Semi-global | A library of routines shared by a family of objects, such as all chairs |
 | Lot, tick | A property Sims live on and objects are placed on; one step of the simulation |
-| Oracle | `fso-oracle` runs FreeSO's code and `nso-oracle` runs NSOClient's, on the same install; comparing their output is how NSOClient is checked |
+| Oracle | `fso-oracle` runs FreeSO's code and `nso-oracle` runs NSOClient's, through the same experiments on the same install; the report on whether their records agree is how NSOClient is measured |
 
 - **To look up what a SimAntics primitive, scope, or data field means:**
   [simantics/README.md](simantics/README.md).
@@ -81,7 +81,7 @@ aren't covered.
 
 | Page | Covers |
 | --- | --- |
-| [nso-review.md](results/nso-review.md) | `fso-oracle` and `nso-oracle` run side by side on each install, compared: matches, mismatches, what NSOClient doesn't support yet, and timings. Written after each phase of the roadmap |
+| [nso-review.md](results/nso-review.md) | A report for peer review on whether NSOClient and FreeSO behave the same: `fso-oracle` and `nso-oracle` run the same experiments on each install, with agreements, every disagreement, what's inconclusive, and timings. Written after each phase of the roadmap |
 | [install-differences.md](results/install-differences.md) | How the production and beta installs differ: files, archive entries, IFF chunks, and object GUIDs, with no game data. The reference for keeping NSOClient working on the beta |
 
 ### [fso/](fso/README.md): FreeSO's code, at update-46
@@ -125,5 +125,5 @@ A copy of the community wiki at simantics.wikidot.com, under its own license (CC
 ## Elsewhere in the repository
 
 - [`NSOClient/FSO.Oracle/README.md`](../NSOClient/FSO.Oracle/README.md): `fso-oracle`, which runs FreeSO's
-  SimAntics code to produce reference answers for the Swift tests.
+  SimAntics code through the experiments NSOClient is measured against.
 - [`AGENTS.md`](../AGENTS.md): the workspace map and the rules for working in this repository.

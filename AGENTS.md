@@ -86,8 +86,8 @@ TSOClient/                   the update-46 FreeSO snapshot (all paths below are 
   FreeSO.sln                 the main solution (36 projects, including ../Other/libs)
   GlobalSettings.*           shared settings designer file
 NSOClient/                   Swift reimplementation of the engine-free libraries (independent SwiftPM packages)
-  FSO.Oracle/                fso-oracle: .NET tool that runs FreeSO's SimAntics sources headless, for reference results
-  NSOOracle/                 nso-oracle: NSOClient's answers to fso-oracle's questions, and the two compared; depends on ../SimAntics, ../TSOContent, ../TSOFiles, and swift-argument-parser
+  FSO.Oracle/                fso-oracle: .NET tool that runs FreeSO's SimAntics sources headless, recording FreeSO's side of the experiments
+  NSOOracle/                 nso-oracle: NSOClient's side of the same experiments, and the report on whether the two agree; depends on ../SimAntics, ../TSOContent, ../TSOFiles, and swift-argument-parser
   NSOClient.slnx             solution for the oracle only (pick this one in VS Code)
   TSOFiles/                  file format readers; no dependencies
   TSOFilesCheck/             tsofiles-check, which scans an install; depends on ../TSOFiles and swift-argument-parser
@@ -232,9 +232,11 @@ These apply to everything under [NSOClient/](./NSOClient/).
    two baselines:
    - **FreeSO.** Match the results FreeSO's update-46 snapshot gives, not its
      code. On valid input and on TSO's 2003 production files, which FreeSO
-     targets, the observable behavior must agree, including quirks that
-     change results (SimAntics state, what loads and how), and `fso-oracle`
-     checks it wherever FreeSO has an answer. How the Swift gets there is
+     targets, the observable behavior should agree, including quirks that
+     change results (SimAntics state, what loads and how). The oracles
+     measure whether it does wherever FreeSO has a result, without assuming
+     it (see "The oracles" below); an unexplained disagreement is a finding
+     to investigate before calling either side wrong. How the Swift gets there is
      ours: choose the structure, names, and algorithms that suit Swift, and
      take creative liberties where they reach the same results more simply.
      Say in the doc comment which FreeSO type a Swift type corresponds to, so
@@ -371,12 +373,30 @@ ordinary shell tools.
 .NET console tool that compiles FreeSO's SimAntics, Files, and Content
 sources (linked read-only, never copied or edited) on modern .NET, with
 stubs for the rendering and audio types they touch. It exists only to
-produce reference results for the Swift port (roadmap decision 2). `dotnet`
+record FreeSO's side of the experiments NSOClient is measured against
+(roadmap decision 2). `dotnet`
 may be run for that project and nothing else, either directly or through
 `NSOClient/NSOClient.slnx`, which contains only the oracle. Don't add other
 projects to that solution. The exception doesn't cover
 building or running FreeSO's solution itself, and the oracle must never
 change a file under `TSOClient/`.
+
+#### The oracles
+
+Treat `fso-oracle` and `nso-oracle` as two sides of an experiment, not as an answer key and a
+student. Each runs the same experiments on the same install and records what it observes; the
+report (`docs/results/nso-review.md`) asks whether the records agree, for peer review:
+
+- **A disagreement is a finding,** not a failure. Explain it before fixing it: it may be a bug in
+  NSOClient, a quirk or bug of FreeSO's, or a deliberate difference (the scorecard's "Known
+  differences from FreeSO").
+- **Inconclusive isn't agreement.** A case one side couldn't measure (FreeSO failed, or NSOClient
+  doesn't support it yet) is counted as inconclusive, by reason, never as a pass.
+- **Keep the experiments repeatable.** When FreeSO's own code isn't (as its lot loading and
+  transaction timing weren't), change the oracle as little as possible to make it so, and document
+  the change in its README.
+- **The checks are a gate, not the goal.** CI (`compare --strict`) and NSOOracle's tests stop on a
+  new disagreement so that someone looks at it; they don't make agreement the definition of done.
 
 ## 3. Code style
 

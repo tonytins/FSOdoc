@@ -4,16 +4,16 @@ import NSOOracleCore
 import SimAntics
 import TSOContent
 
-/// `nso-oracle`: NSOClient's answers to `fso-oracle`'s questions, and the two compared.
+/// `nso-oracle`: NSOClient's side of the experiments `fso-oracle` runs on FreeSO, and the two compared.
 @main
 struct NSOOracle: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "nso-oracle",
-        abstract: "Answer fso-oracle's questions with NSOClient, and compare the two.",
+        abstract: "Run fso-oracle's experiments on NSOClient, and compare the two sides' records.",
         discussion: """
-            list-objects, run-objects, run-lot, run-primitive, and room-maps answer in the same formats as fso-oracle's \
+            list-objects, run-objects, run-lot, run-primitive, and room-maps record their results in the same formats as fso-oracle's \
             commands of the same names (see NSOClient/FSO.Oracle/README.md). compare reads both sides' \
-            answers and prints how they agree, and with --review writes docs/results/nso-review.md.
+            records and reports whether they agree, and with --review writes docs/results/nso-review.md.
             """,
         subcommands: [ListObjects.self, RunObjects.self, RunLot.self, RunPrimitive.self, RoomMaps.self, Compare.self])
 }
@@ -130,7 +130,7 @@ extension NSOOracle {
     struct RunPrimitive: ParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "run-primitive",
-            abstract: "Answer fso-oracle run-primitive requests on standard input, one JSON line each, on a freshly loaded lot.")
+            abstract: "Run fso-oracle run-primitive requests on standard input, one JSON line each, on a freshly loaded lot.")
         @OptionGroup var install: InstallOptions
         @OptionGroup var lotOptions: LotOptions
 
@@ -158,7 +158,7 @@ extension NSOOracle {
 
     struct Compare: ParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Compare fso-oracle's and nso-oracle's answers, and optionally write the review.",
+            abstract: "Report whether fso-oracle's and nso-oracle's records agree, and optionally write the review.",
             discussion: """
                 Each folder holds the same files from its side: objects.tsv (list-objects), \
                 objects.digests (run-objects), lots.digests (run-lot, each line prefixed with the lot's \
@@ -166,13 +166,13 @@ extension NSOOracle {
                 (command, tab, seconds). Missing files are left out of the comparison.
                 """)
 
-        @Option(help: "fso-oracle's answers.") var fso: String
-        @Option(help: "nso-oracle's answers.") var nso: String
+        @Option(help: "fso-oracle's records.") var fso: String
+        @Option(help: "nso-oracle's records.") var nso: String
         @Option(help: "The install's name in the review, such as production or beta.") var install = "production"
         @Option(help: "Write this install's section of the review to this file (such as docs/results/nso-review.md).")
         var review: String?
-        @Option(help: "The commit the answers came from, for the review.") var commit = "unknown"
-        @Flag(help: "Exit with an error if any comparison has a mismatch, as CI runs it.") var strict = false
+        @Option(help: "The commit the records came from, for the review.") var commit = "unknown"
+        @Flag(help: "Exit with an error on any disagreement, so a person looks at it first (as CI runs it).") var strict = false
 
         func run() throws {
             func lines(_ folder: String, _ file: String) -> [String]? {
@@ -203,10 +203,10 @@ extension NSOOracle {
             if strict {
                 let mismatched = comparisons.filter { !$0.mismatches.isEmpty }
                 for comparison in mismatched {
-                    for mismatch in comparison.mismatches.prefix(5) { print("\(comparison.name) mismatch: \(mismatch)") }
+                    for mismatch in comparison.mismatches.prefix(5) { print("\(comparison.name) disagreement: \(mismatch)") }
                 }
                 if !mismatched.isEmpty { throw ExitCode.failure }
-                if comparisons.isEmpty { throw ValidationError("no answers to compare in \(fso) and \(nso)") }
+                if comparisons.isEmpty { throw ValidationError("no records to compare in \(fso) and \(nso)") }
             }
 
             guard let review else { return }

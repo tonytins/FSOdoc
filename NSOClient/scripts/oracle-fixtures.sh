@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Writes FreeSO's answers, from fso-oracle, to every question NSOClient is compared on: the
+# Runs every experiment on FreeSO, through fso-oracle, and writes its records: the
 # fixtures the NSOOracle tests read (TSO_ORACLE_DIR) and the FreeSO side of oracle-review.sh.
-# The answers depend on the install, so they stay out of the repository.
+# The records depend on the install, so they stay out of the repository.
 #
 #   NSOClient/scripts/oracle-fixtures.sh [--mock] [OUTPUT_DIR]     (default: $TMPDIR/fso-oracle-fixtures)
 #   TSO_ORACLE_DIR=OUTPUT_DIR swift test --package-path NSOClient/NSOOracle
@@ -15,7 +15,7 @@
 #                                 its file name)
 #   lots.leftout                  the objects fso-oracle left out of each (file name, tab, GUID)
 #   PRIMITIVE.requests.jsonl      generated cases for each ported primitive (OracleCases/make_cases.py)
-#   PRIMITIVE.responses.jsonl     run-primitive answers to them
+#   PRIMITIVE.responses.jsonl     run-primitive responses to them
 #   primitives.lot, primitives.leftout   the lot run-primitive loads, and the objects it left out
 #   blueprints/, rooms.lots       synthetic lots (OracleCases/make_blueprints.py), and every lot
 #                                 room-maps reads

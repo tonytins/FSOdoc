@@ -1,8 +1,8 @@
 name: Oracle
 
 # Runs fso-oracle (FreeSO's code) and nso-oracle (NSOClient) on NSOClient/MockInstall,
-# a made-up install with no game data, and fails if NSOClient's answers differ from
-# FreeSO's. The unit tests are in swift.yml. Real installs are compared by hand with
+# a made-up install with no game data, and stops on any disagreement between the two
+# sides' records, so someone looks at it before the change goes in. The unit tests are in swift.yml. Real installs are compared by hand with
 # NSOClient/scripts/oracle-review.sh, since no game data may be stored here.
 
 on:

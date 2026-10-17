@@ -11,7 +11,7 @@ import TSOContent
 /// the caller's thread, with the caller as the callee and code owner. The exit code is reported,
 /// not acted on. The response holds the lot before running and only the primitive's effects.
 ///
-/// Where NSOClient can't answer, the response says so with `unsupported`, which `fso-oracle`
+/// Where NSOClient can't take the measurement, the response says so with `unsupported`, which `fso-oracle`
 /// never writes: a primitive not ported yet, or a lot whose loading reached one.
 public struct PrimitiveRunner {
     public static let protocolVersion = 1

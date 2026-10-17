@@ -1,29 +1,32 @@
 import Foundation
 
-/// How one kind of answer from `fso-oracle` and `nso-oracle` compares.
+/// One experiment's outcome: how `fso-oracle`'s and `nso-oracle`'s records of it compare.
+///
+/// Neither side is assumed right. A disagreement is a finding, listed with both records for
+/// someone to explain; an inconclusive case is one where a side couldn't take the measurement.
 public struct Comparison: Sendable, Equatable {
     public var name: String
-    /// Cases where both agree.
+    /// Cases where both recorded the same result.
     public var matched = 0
-    /// Cases where they disagree, each described with both answers.
+    /// Cases where the results differ, each described with both.
     public var mismatches: [String] = []
-    /// Cases left out, by why: NSOClient can't answer yet, or FreeSO couldn't either.
+    /// Inconclusive cases, by why: NSOClient can't take the measurement yet, or FreeSO couldn't.
     public var skipped: [String: Int] = [:]
-    /// Cases NSOClient answers that FreeSO couldn't, such as an object FreeSO fails to load.
+    /// Cases NSOClient measures where FreeSO couldn't, such as an object FreeSO fails to load.
     public var recovered = 0
 
     public init(name: String) {
         self.name = name
     }
 
-    /// The skip reasons, most common first, then by name.
+    /// Why cases were inconclusive, most common first, then by name.
     public var skipsByCount: [(reason: String, count: Int)] {
         skipped.map { (reason: $0.key, count: $0.value) }.sorted { ($0.count, $1.reason) > ($1.count, $0.reason) }
     }
 
     public var summary: String {
         let skips = skipped.values.reduce(0, +)
-        return "\(name): \(matched) matched, \(mismatches.count) mismatched, \(skips) skipped"
+        return "\(name): \(matched) agree, \(mismatches.count) disagree, \(skips) inconclusive"
             + (recovered > 0 ? ", \(recovered) answered where FreeSO failed" : "")
     }
 
@@ -119,9 +122,9 @@ public struct Comparison: Sendable, Equatable {
     }
 
     /// `run-lot`: every digest line of each lot, prefixed with the lot's file name. A lot
-    /// matches if every line does. One where NSOClient stopped at something not ported is
-    /// skipped, by what, if every digest before it matches; otherwise, as for any other
-    /// difference, the mismatch names the first line that differs.
+    /// agrees if every line does. One where NSOClient stopped at something not ported is
+    /// inconclusive, by what, if every digest before it agrees; otherwise, as for any other
+    /// difference, the disagreement names the first line that differs.
     public static func lotRuns(fso: [String], nso: [String]) -> Comparison {
         var result = Comparison(name: "Lots run")
         let (expected, order) = groupedByGUID(fso)
@@ -155,9 +158,9 @@ public struct Comparison: Sendable, Equatable {
                                   "seed", "thread", "frames", "globals", "objects", "created", "removed",
                                   "lot", "lotSize", "groups", "callerGUID", "stackObjectGUID"]
 
-    /// `run-primitive`: each response by its `id`. Requests FreeSO couldn't run are skipped, and
-    /// so are those NSOClient answered with `unsupported`, by what. A mismatch names the first
-    /// field that differs.
+    /// `run-primitive`: each response by its `id`. Requests FreeSO couldn't run are inconclusive,
+    /// and so are those NSOClient answered with `unsupported`, by what. A disagreement names the
+    /// first field that differs.
     public static func primitives(_ name: String, fso: [String], nso: [String]) -> Comparison {
         var result = Comparison(name: name)
         func responses(_ lines: [String]) -> [(String, [String: Any])] {

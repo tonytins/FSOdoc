@@ -56,7 +56,7 @@ room, the register in the room, and one GUID the install doesn't have, which bot
 
 `fso-oracle` reads it too: its game overlay adds placeholders for what FreeSO loads and
 NSOClient doesn't (audio, tuning, wall and floor globals, and so on). CI runs both oracles on
-it and compares them:
+it and reports whether they agree:
 
 ```sh
 NSOClient/scripts/oracle-review.sh --mock /tmp/oracle

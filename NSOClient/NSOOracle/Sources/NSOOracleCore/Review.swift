@@ -29,12 +29,20 @@ public enum Review {
 
         SimsCraft is rebuilding the engine of *The Sims Online* (Maxis and EA, 2002) in Swift, as
         NSOClient. Its reference is FreeSO, an open-source C# reimplementation of the same game, as it
-        stood at its beta/update-46 build, August 2017 (the copy in `TSOClient/`). NSOClient counts as correct when it gives the same
-        results as FreeSO on the same game files. Neither project ships those files: each run reads a copy
-        of the game installed on the machine running it.
+        stood at its beta/update-46 build, August 2017 (the copy in `TSOClient/`). Neither project ships
+        the game's files: each run reads a copy of the game installed on the machine running it.
 
-        Two command-line programs make the check. `fso-oracle` runs FreeSO's own code, and `nso-oracle`
-        runs NSOClient's. Both read the same installed copy of the game and report the same things:
+        This page is a report for peer review. It asks one question: **given the same game files and the
+        same inputs, do NSOClient and FreeSO behave the same?** It doesn't assume they do. NSOClient aims
+        to agree with FreeSO, whose results are its source of truth for the simulation, but each
+        experiment below measures whether it does, and a disagreement is a finding to explain, not a
+        foregone failure. Some findings even go NSOClient's way, as where it loads objects FreeSO can't.
+
+        ## Method
+
+        Two command-line programs run the same experiments. `fso-oracle` runs FreeSO's own code, and
+        `nso-oracle` runs NSOClient's. Both read the same installed copy of the game, take the same inputs,
+        and record what they observe in the same formats:
 
         - **Content:** every object the game lists, whether it loads, and what it's made of: its name, the
           file it comes from, the shared library of routines it uses, and how many routines and tuning
@@ -42,32 +50,41 @@ public enum Review {
         - **Entry points:** for each object, which routine runs on each event, such as being created,
           each tick of the simulation, or being used.
         - **Objects run alone:** each object placed by itself on an empty lot and simulated for 30 ticks.
-          The whole simulation's state is compared, as a checksum, every 10 ticks.
+          The whole simulation's state is recorded, as a checksum, every 10 ticks.
         - **Lots run:** each lot loaded with all its objects, as the game's lot server loads it, and
-          simulated for 1,800 ticks, compared every 300. The lots are FreeSO's empty lot (which holds a
+          simulated for 1,800 ticks, recorded every 300. The lots are FreeSO's empty lot (which holds a
           mailbox and other fixtures) and a house built in-game. Where NSOClient reaches something it
-          doesn't support yet, the run stops there; it's skipped if every comparison before that matched.
+          doesn't support yet, its run stops there.
         - **Primitives:** thousands of generated cases for each ported primitive (one of the game's
           built-in instructions), each run once on a freshly loaded lot with the state the case sets up.
-          The lot as loaded, the result, and every change the primitive makes are compared.
+          The lot as loaded, the result, and every change the primitive makes are recorded.
         - **Room maps:** for each test lot, how its walls divide it into rooms. The lots are generated
           layouts, FreeSO's empty lot, a house built in-game, and a small made-up lot.
+
+        Every experiment is repeatable: the same install, inputs, and random seed give the same records.
+        Where FreeSO's own code wasn't (its lot loading, and its money transactions' timing), `fso-oracle`
+        makes the smallest change that makes it so; its README describes each.
+
+        ## Reading the results
 
         Each section below covers one copy of the game. *Production* is a 2002 release of the game
         (FreeSO was built against a 2003 one), and *beta* is a 2002 beta. In each table:
 
-        - **Matched:** both programs gave the same answer.
-        - **Mismatched:** their answers differ. Each mismatch is listed, with both answers.
-        - **Skipped:** cases left out, by reason: FreeSO itself failed, or NSOClient doesn't support
-          something yet (such as one of the game's instructions, its *primitives*).
+        - **Agree:** both programs recorded the same result.
+        - **Disagree:** their results differ. Each disagreement is listed with both results, for
+          someone to explain: a bug in NSOClient, a quirk of FreeSO, or a deliberate difference.
+        - **Inconclusive:** cases where one side couldn't take the measurement, by reason: FreeSO itself
+          failed, or NSOClient doesn't support something yet (such as one of the game's instructions, its
+          *primitives*). Agreement on these is unknown, not assumed.
         - **Answered where FreeSO failed:** objects NSOClient loads that FreeSO can't.
 
-        The last table shows how long each program took for each command.
+        The last table shows how long each program took for each experiment.
 
         `NSOClient/scripts/oracle-review.sh --review` writes this page after each phase of work; earlier
-        reviews are in its git history. It holds only counts, IDs, and values, never the game's own data.
-        The same comparisons also run as tests in the repository, and on every change, continuous
-        integration runs them all on a small made-up install.
+        reports are in its git history. It holds only counts, IDs, and values, never the game's own data.
+        The same experiments also run as checks in the repository: on every change, continuous
+        integration runs them on a small made-up install and stops the change when a new disagreement
+        appears, so that someone looks at it first.
 
 
 
@@ -89,26 +106,26 @@ public enum Review {
                                               formatOptions: [.withFullDate])
         var lines = ["<!-- install: \(run.install) -->", "## \(run.install.prefix(1).uppercased() + run.install.dropFirst())", "",
                      "Run on \(day) at commit `\(run.commit)`.", "",
-                     "| Comparison | Matched | Mismatched | Skipped | Answered where FreeSO failed |",
+                     "| Experiment | Agree | Disagree | Inconclusive | Answered where FreeSO failed |",
                      "| --- | ---: | ---: | ---: | ---: |"]
         for comparison in run.comparisons {
             lines.append("| \(comparison.name) | \(comparison.matched) | \(comparison.mismatches.count) | "
                          + "\(comparison.skipped.values.reduce(0, +)) | \(comparison.recovered) |")
         }
         for comparison in run.comparisons where !comparison.skipped.isEmpty {
-            lines += ["", "**\(comparison.name), skipped:**", ""]
+            lines += ["", "**\(comparison.name), inconclusive:**", ""]
             lines += comparison.skipsByCount.prefix(15).map { "- \($0.count): \(escaped($0.reason))" }
             if comparison.skipped.count > 15 { lines.append("- and \(comparison.skipped.count - 15) more reasons") }
         }
         for comparison in run.comparisons where !comparison.mismatches.isEmpty {
-            lines += ["", "**\(comparison.name), mismatched:**", ""]
+            lines += ["", "**\(comparison.name), disagreements:**", ""]
             lines += comparison.mismatches.prefix(listedMismatches).map { "- \(escaped($0))" }
             if comparison.mismatches.count > listedMismatches {
                 lines.append("- and \(comparison.mismatches.count - listedMismatches) more")
             }
         }
         if !run.timings.isEmpty {
-            lines += ["", "| Command | Seconds |", "| --- | ---: |"]
+            lines += ["", "| Experiment and side | Seconds |", "| --- | ---: |"]
             lines += run.timings.sorted { $0.key < $1.key }.map { "| `\($0.key)` | \(String(format: "%.1f", $0.value)) |" }
         }
         lines += ["<!-- end install -->", ""]

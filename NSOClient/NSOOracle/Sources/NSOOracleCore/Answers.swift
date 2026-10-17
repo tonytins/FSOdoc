@@ -3,11 +3,11 @@ import SimAntics
 import TSOContent
 import TSOFiles
 
-/// NSOClient's answers to `fso-oracle`'s questions, in `fso-oracle`'s formats (see
-/// `NSOClient/FSO.Oracle/README.md`), so the two can be compared line for line.
+/// NSOClient's side of the experiments `fso-oracle` runs on FreeSO, recorded in `fso-oracle`'s
+/// formats (see `NSOClient/FSO.Oracle/README.md`), so the two can be compared line for line.
 ///
-/// Where NSOClient can't answer because something isn't ported yet, it says so with an
-/// `unsupported` line, which `fso-oracle` never prints; comparisons count those as skipped.
+/// Where NSOClient can't take a measurement because something isn't ported yet, it says so with
+/// an `unsupported` line, which `fso-oracle` never prints; comparisons count those as inconclusive.
 public struct Answers {
     public let content: GameContent
 

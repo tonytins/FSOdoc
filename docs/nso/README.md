@@ -11,7 +11,7 @@ the [scorecard](../scorecard.md); for what comes next, the [roadmap](../roadmap.
 terms are explained in the [docs index](../README.md#terms).
 
 These pages cover the four libraries and two tools: the file checker and `nso-oracle`. Two things
-are left out: `fso-oracle`, which runs FreeSO's code to produce the answers NSOClient is checked
+are left out: `fso-oracle`, which runs FreeSO's code through the experiments NSOClient is measured
 against (see [its README](../../NSOClient/FSO.Oracle/README.md)), and SimsScript, an experimental
 scripting language.
 
@@ -33,7 +33,7 @@ TSOFiles  ──▶  TSOContent  ──▶  SimAntics
 | SimAntics | Runs object behavior: the VM, entities, threads, primitives, and variables | [simantics.md](simantics.md) |
 | SimAntics (lot model) | Positions, the tile index, walls, floors, rooms, and blueprints | [lot.md](lot.md) |
 | TSOFilesCheck | `tsofiles-check`, which opens everything in one or two installs and compares them | [tools.md](tools.md) |
-| NSOOracle | `nso-oracle`, which answers `fso-oracle`'s questions with NSOClient and compares the two | [tools.md](tools.md#nso-oracle) |
+| NSOOracle | `nso-oracle`, which runs `fso-oracle`'s experiments on NSOClient and reports whether the two agree | [tools.md](tools.md#nso-oracle) |
 
 ## How the code behaves
 
@@ -73,7 +73,7 @@ environment variables:
 | --- | --- |
 | `TSO_GAME_DIR` | An install's `TSOClient` folder, normally the production release |
 | `TSO_BETA_DIR` | The 2002 beta's `TSOClient` folder, for the tools that compare the two |
-| `TSO_ORACLE_DIR` | A folder of FreeSO's answers, written by `NSOClient/scripts/oracle-fixtures.sh` (or `oracle-review.sh`), for the tests that compare NSOClient with FreeSO |
+| `TSO_ORACLE_DIR` | A folder of FreeSO's records of the experiments, written by `NSOClient/scripts/oracle-fixtures.sh` (or `oracle-review.sh`), for the tests that compare NSOClient with FreeSO |
 
 ```sh
 NSOClient/scripts/oracle-review.sh --mock /tmp/review     # both oracles on the mock install, as CI runs them
