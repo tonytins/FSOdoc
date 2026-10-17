@@ -57,6 +57,8 @@ public struct PrimitiveTable: Sendable {
         table.register(Primitives.FindLocationFor.self)
         table.register(Primitives.RunTreeByName.self)
         table.register(Primitives.NotifyStackObjectOutOfIdle.self)
+        table.register(Primitives.GetDistanceTo.self)
+        table.register(Primitives.GetDirectionTo.self)
         return table
     }()
 

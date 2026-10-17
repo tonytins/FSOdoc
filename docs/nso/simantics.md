@@ -7,10 +7,10 @@ by tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
-objects use, the scheduler and clock, placing objects and putting them in slots, and 11 of the 49
-primitives TSO uses (Expression, Sleep, Refresh, Random Number, Play Sound, Set To Next, Test
-Object Type, Create Object Instance, Find Location For, Run Tree By Name, and Notify Stack Object
-Out Of Idle). On the production install, 2,743
+objects use, the scheduler and clock, placing objects and putting them in slots, and 13 of the 49
+primitives TSO uses (Expression, Sleep, Refresh, Random Number, Get Distance To, Get Direction To,
+Play Sound, Set To Next, Test Object Type, Create Object Instance, Find Location For, Run Tree By
+Name, and Notify Stack Object Out Of Idle). On the production install, 2,743
 objects created alone on an empty lot match FreeSO's state tick for tick over 30 ticks (the
 [review](../results/nso-review.md) has the latest numbers). Sims, routing, and lot loading come
 later; see the [roadmap](../roadmap.md). The lot model (positions, walls, and rooms) has its own page,
@@ -192,6 +192,8 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 2 | `Expression` | Compares, assigns, does arithmetic and flag operations, pushes and pops lists |
 | 7 | `Refresh` | Refreshes graphics, lighting, or room score (headless: changes nothing yet) |
 | 8 | `RandomNumber` | Draws a number below a limit into a variable |
+| 11 | `GetDistanceTo` | The distance from the stack object to another object, in whole tiles, into a temp |
+| 12 | `GetDirectionTo` | The direction from another object to the stack object, in eighths of a turn |
 | 16 | `FindLocationFor` | Places the stack object near a reference, out of the world, or along a facing |
 | 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
 | 28 | `RunTreeByName` | Runs one of the stack object's routines, found by a name from a string table: pushed, or to completion on the caller's or the stack object's thread |

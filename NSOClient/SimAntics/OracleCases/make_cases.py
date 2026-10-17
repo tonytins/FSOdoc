@@ -348,6 +348,35 @@ def notify_out_of_idle_cases(lot_guids):
                     yield f"caller{caller}-stack{stack_object}-tick{tick}-interrupt{interrupt}", request
 
 
+# MARK: Get Distance To and Get Direction To
+
+def between_objects(lot_guids):
+    """Callers 1 and 2; each lot object (or none) as the stack object; each lot object, a missing
+    one, and 0 as the other object, by literal; and flag 1 set or clear (clear means the caller)."""
+    count = min(len(lot_guids), 13)
+    for caller in (1, 2) if count > 1 else (1,):
+        for stack_object in range(0, count + 1):
+            for other in range(0, count + 2):
+                for flags in (0, 1):
+                    yield caller, stack_object, other, flags
+
+
+def get_distance_to_cases(lot_guids):
+    for caller, stack_object, other, flags in between_objects(lot_guids):
+        for temp in (0, 7, 19, 20):
+            operand = struct.pack("<HBBh", temp, flags, LITERAL, other).hex()
+            yield (f"caller{caller}-stack{stack_object}-other{other}-flags{flags}-temp{temp}",
+                   {"operand": operand, "caller": caller, "stackObject": stack_object})
+
+
+def get_direction_to_cases(lot_guids):
+    for caller, stack_object, other, flags in between_objects(lot_guids):
+        for result_scope, result_data in ((TEMPS, 3), (LOCAL, 0), (MY_OBJECT, 21)):
+            operand = struct.pack("<hHBBh", result_data, result_scope, flags, LITERAL, other).hex()
+            yield (f"caller{caller}-stack{stack_object}-other{other}-flags{flags}-into{result_scope}.{result_data}",
+                   {"operand": operand, "caller": caller, "stackObject": stack_object, "locals": [0]})
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -360,6 +389,8 @@ GENERATORS = {
     "find_location_for": (16, False, lambda guids: find_location_for_cases()),
     "run_tree_by_name": (28, True, lambda guids: run_tree_by_name_cases(guids[0])),
     "stackobj_notify_out_of_idle": (49, True, lambda guids: notify_out_of_idle_cases(guids[0])),
+    "get_distance_to": (11, True, lambda guids: get_distance_to_cases(guids[0])),
+    "get_direction_to": (12, True, lambda guids: get_direction_to_cases(guids[0])),
 }
 
 

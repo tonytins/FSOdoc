@@ -104,4 +104,32 @@ let mockLeftGUID: UInt32 = 0x4D4F_4303, mockRightGUID: UInt32 = 0x4D4F_4304, moc
         #expect(vm.entities[2...3].allSatisfy { $0.objectData[Int(ObjectVariable.groupID.rawValue)] == 9 })
         #expect(vm.entities[4...5].allSatisfy { $0.objectData[Int(ObjectVariable.groupID.rawValue)] == 0 })
     }
+
+    /// The chair (tile 3, 3) and the lamp (tile 4, 2) are a tile apart diagonally: one tile away,
+    /// the lamp is northeast (1) of the chair, and the chair southwest (5) of the lamp.
+    @Test func measuresDistanceAndDirectionBetweenLotObjects() throws {
+        let vm = try VM(content: try GameContent(.init(gameDirectory: mockInstall)), seed: 1)
+        try vm.load(try Blueprint(xml: try Data(contentsOf: lotFile)))
+        let chair = vm.entities[1], lamp = try #require(vm.entities.last)
+        #expect(chair.position == .center(ofTileX: 3, y: 3, level: 1) && lamp.position == .center(ofTileX: 4, y: 2, level: 1))
+        let toLamp = try vm.makePrimitiveFrame(opcode: 12, operand: Primitives.GetDirectionTo.Operand(
+            result: Variable(.temps, 0), flags: 0, object: Variable(.literal, 0)).encoded(), caller: chair, stackObjectID: lamp.objectID)
+        #expect(try toLamp.0.execute(in: toLamp.1) == .gotoTrue && chair.thread.tempRegisters[0] == 1)
+        let toChair = try vm.makePrimitiveFrame(opcode: 12, operand: Primitives.GetDirectionTo.Operand(
+            result: Variable(.temps, 1), flags: 1, object: Variable(.literal, lamp.objectID)).encoded(), caller: chair,
+            stackObjectID: chair.objectID)
+        #expect(try toChair.0.execute(in: toChair.1) == .gotoTrue && chair.thread.tempRegisters[1] == 5)
+        let distance = try vm.makePrimitiveFrame(opcode: 11, operand: Primitives.GetDistanceTo.Operand(
+            temp: 2, flags: 0, object: Variable(.literal, 0)).encoded(), caller: chair, stackObjectID: lamp.objectID)
+        #expect(try distance.0.execute(in: distance.1) == .gotoTrue && chair.thread.tempRegisters[2] == 1)
+        let tooFar = try vm.makePrimitiveFrame(opcode: 11, operand: Primitives.GetDistanceTo.Operand(
+            temp: 20, flags: 0, object: Variable(.literal, 0)).encoded(), caller: chair, stackObjectID: lamp.objectID)
+        #expect(throws: SimAnticsError.self) { try tooFar.0.execute(in: tooFar.1) }
+    }
+
+    @Test func roundsDirectionsAsFreeSODoes() {
+        #expect(Primitives.GetDirectionTo.positiveModulo(-1, 4) == 3)
+        #expect(Primitives.GetDirectionTo.normalized(3 * .pi) == .pi)
+        #expect(Primitives.GetDirectionTo.normalized(-.pi / 2) == -.pi / 2)
+    }
 }
