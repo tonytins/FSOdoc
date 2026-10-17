@@ -52,7 +52,7 @@ public enum Review {
         - **Objects run alone:** each object placed by itself on an empty lot and simulated for 30 ticks.
           The whole simulation's state is recorded, as a checksum, every 10 ticks.
         - **Lots run:** each lot loaded with all its objects, as the game's lot server loads it, and
-          simulated for 1,800 ticks, recorded every 300. The lots are FreeSO's empty lot (which holds a
+          simulated for a full in-game day (216,000 ticks), recorded every game hour (9,000). The lots are FreeSO's empty lot (which holds a
           mailbox and other fixtures) and a house built in-game. Where NSOClient reaches something it
           doesn't support yet, its run stops there.
         - **Primitives:** thousands of generated cases for each ported primitive (one of the game's

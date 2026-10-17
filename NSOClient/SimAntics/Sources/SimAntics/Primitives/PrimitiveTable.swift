@@ -62,6 +62,11 @@ public struct PrimitiveTable: Sendable {
         table.register(Primitives.TransferFunds.self)
         table.register(Primitives.RemoveObjectInstance.self)
         table.register(Primitives.SetBalloonHeadline.self)
+        table.register(Primitives.IdleForInput.self)
+        table.register(Primitives.Breakpoint.self)
+        table.register(Primitives.SpecialEffect.self)
+        table.register(Primitives.StopAllSounds.self)
+        table.register(Primitives.GetTerrainInfo.self)
         return table
     }()
 

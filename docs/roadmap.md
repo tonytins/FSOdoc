@@ -1,6 +1,6 @@
 # NSOClient roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (Queen Margaret's third pass, phase D2: `nso-oracle run-primitive`) · **Target:** behavior parity with FreeSO's engine-free libraries at the beta/update-46 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-10-16 · **Change:** minor (21 primitives; both real lots run a full in-game day in step with FreeSO; next: Sims) · **Target:** behavior parity with FreeSO's engine-free libraries at the beta/update-46 snapshot (FSO.Files, FSO.Content, FSO.SimAntics)
 
 Forward-looking: the milestones, the current focus, and what comes next for the Swift packages in
 [`NSOClient/`](../NSOClient/). The evidence behind every status is in [scorecard.md](scorecard.md).
@@ -35,7 +35,7 @@ is `partial, not blocking`.
 | Open every FAR1, FAR3, DBPF, and IFF file in a TSO install | yes | `tsofiles-check` on a real install: 94 containers, 82,131 entries, 0 failures (scorecard FID-1). The first run found `packingslips.dat` repeating file IDs across types; FAR3 now looks entries up by full asset ID (scorecard DIFF-5) | 0 |
 | Load one object with its behavior, strings, tuning, and sprites | partial, not blocking | `GameContent` loads every object on the beta with its patches, tuning, semi-global, and routines by name, matching FreeSO on all 2,649 objects FreeSO loads (scorecard FID-8). Sprite IFFs load but sprites don't decode yet | 25–40 (Hyde Park) |
 | Load one avatar: mesh, skeleton, animation, outfit, appearance | no | Not started | 50–75 (Nichol's Notch, Ocean's Edge in part) |
-| Run a lot headless for one in-game day without a SimAntics error | no | Objects are created (multi-tile ones included), initialize, run `main` tick by tick, and are deleted when they keep failing; the 2,743 that need no unported primitive match FreeSO's digests over 30 ticks (scorecard FID-10). Rooms, multi-tile groups, placement, and slots are ported; no lot loading yet, and 40 of 49 primitives missing | 255–420 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
+| Run a lot headless for one in-game day without a SimAntics error | partial | Lots load from blueprint XML and run: both real lots (FreeSO's empty lot and the house) agree with FreeSO at every game hour over a full in-game day, on both installs (scorecard FID-5, FID-13), and 2,782 objects run alone agree over 30 ticks (FID-10). Blocking: no Sims yet, so a lot people play on can't run; 28 of 49 primitives missing, most of them Sims' | 255–420 (Queen Margaret's to Shannopolis, Virginia Islands in part) |
 | Save and reload a lot (VMMarshal version 19) | no | Not started | 20–30 (Terra Tablante) |
 | Replay a recorded FreeSO session to an identical state hash | no | No recording harness (decision 2) | 15–30 (West Darrington) plus everything above |
 
@@ -64,7 +64,15 @@ In order:
      - [x] D2. `nso-oracle run-primitive`, on the lot `fso-oracle run-primitive` loads, and primitive
        fixtures on the mock lot. Every case matches on both installs, the lot as loaded included;
        the primitive comparisons moved from the SimAntics tests into NSOOracle's and the review.
-2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
+   - [x] Every primitive that blocked objects or lots without Sims: Run Tree By Name, Notify Stack
+     Object Out Of Idle, Get Distance To and Get Direction To, Transfer Funds, Remove Object Instance,
+     Set Balloon Headline, Idle For Input, Breakpoint, Special Effect, Stop All Sounds, and Get
+     Terrain Info. Both real lots run a full in-game day in step with FreeSO.
+2. **Queen Margaret's, fourth pass: Sims.** `VMAvatar`, person data and motives, the interaction
+   queue, and the primitives that only Sims reach (Snap, Relationship, animation). It pulls in the
+   avatar formats (Nichol's Notch) for the animations whose events drive timing, and routing
+   (Shannopolis). To be planned in phases with the owner, as the third pass was.
+3. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
 
 ## Milestones
 
@@ -89,8 +97,8 @@ criteria met, not lines written.
 | Nichol's Notch | Vitaboy model formats: mesh, skeleton, animation, appearance, binding, outfit, hand groups, BCF/CFP | 1,511 | 10–15 | 0% | 10–15 | Package placement is decision 1. |
 | Ocean's Edge | TSOContent: game locator, case-insensitive file index, providers and codecs, object and avatar catalogs, TS1 hybrid | 5,819 | 39–58 | 40% | 23–35 | Object path done: `GameLocator`, `GameFileIndex`, `GlobalProvider`, `ObjectProvider`, and `GameContent` (no singleton), checked object for object against `fso-oracle list-objects`. Left: FAR3 providers with a bounded cache, avatar providers, walls, floors, roofs and other assets, the catalog, async initialization with progress, TS1 hybrid. |
 | West Darrington | Oracle harness and replays: FreeSO SimAntics on modern .NET, differential tests per primitive, then whole-lot replays with a shared state digest | new | 20–40 | 70% | 6–12 | Phases 1 and 2 done. `fso-oracle run-lot` loads a lot headless against the 2002 beta and prints repeatable state digests (version 0). `fso-oracle run-primitive` runs single FreeSO primitives from JSON requests on a fresh lot each, reporting the exit code, registers, and every changed global and object value (protocol version 1, regression-checked by `check_protocol.py`). Phase 3, after Terra Tablante: lot recordings and replays. |
-| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 56% | 72–118 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), C1 (multi-tile groups, creation, deletion), C2 (placement), C3 (slots and containment), and D (lot loading, `run-lot`, and `run-primitive`) are done. |
-| Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 18% | 70–111 | Expression, Sleep, Refresh, Random Number, Find Location For, Play Sound, Set To Next, Test Object Type, and Create Object Instance done. `run-objects` ranks the rest by how many objects each blocks; the biggest blockers now are Run Tree By Name and Transfer Funds. |
+| Queen Margaret's | SimAntics core: VM, context, threads, stack frames, memory scopes, scheduler, translator, entities, lot model | 13,368 | 165–270 | 75% | 40–68 | Two passes done (the core with Expression, then the runtime: entry points, init and reset, check threads, error handling, the clock, the scheduler, definition fields, state digests). Third pass, the lot model, in four phases; A (positions, facings, the tile index), B (architecture and rooms), C1 (multi-tile groups, creation, deletion), C2 (placement), C3 (slots and containment), and D (lot loading, `run-lot`, and `run-primitive`) are done. A fourth pass, Sims (`VMAvatar`), is next. |
+| Rancho Rizzo | Primitives (49 in TSO) | 6,665 | 85–135 | 43% | 48–77 | 21 done, each agreeing with FreeSO on every case: Sleep, Expression, Refresh, Random Number, Get Distance To, Get Direction To, Breakpoint, Find Location For, Idle For Input, Remove Object Instance, Play Sound, Transfer Funds, Run Tree By Name, Set To Next, Test Object Type, Special Effect, Set Balloon Headline, Create Object Instance, Stop All Sounds, Notify Stack Object Out Of Idle, and Get Terrain Info. `run-objects` ranks the rest by how many objects each blocks; nearly all of what's left needs Sims (Snap, Relationship, animation, routing, interactions). |
 | Shannopolis | Routing: `VMRoutingFrame`, `VMRectRouter`, obstacles | 1,586 | 20–32 | 0% | 20–32 | Floating point here must be checked for determinism. |
 | Terra Tablante | Saves: marshals, version 19 read and write, hollow saves | 1,572 | 20–30 | 0% | 20–30 | Must read saves written by FreeSO servers. |
 | The Billabong | Lockstep: net commands, ticks, server and client drivers, resync | 3,987 | 50–80 | 0% | 50–80 | Byte-level compatibility with FreeSO commands is decision 3. |
@@ -164,6 +172,7 @@ chunks) can land whenever TS1 hybrid mode is needed; nothing in TSO mode waits o
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-17 | minor | Ported every primitive that blocked objects or lots without Sims (21 of 49 now agree with FreeSO on every case). Both real lots agree with FreeSO at every game hour over a full in-game day on both installs, and the lot experiment now runs a full day. Re-estimated Rancho Rizzo (43%) and Queen Margaret's (75%); Sims are next. |
 | 2026-10-16 | minor | Phase D2: `nso-oracle run-primitive` answers `fso-oracle`'s requests on a lot it loads itself, and every case of the 9 ported primitives matches on both installs, the loaded lot included; that comparison found and fixed that created objects weren't listed under category 0. `oracle-fixtures.sh` is now FreeSO's side of the review (with `--mock`, cases for the mock lot), the SimAntics rebuild harness is retired, and CI fails on any mismatch (`compare --strict`). |
 | 2026-10-16 | minor | Phase D split into D1 and D2. D1: lots load with their objects as the lot server loads them (`VM.load`, `Blueprint.objects`); `fso-oracle` loads lots seeded (`LotLoader`), since FreeSO's own load drew from an unseeded generator; `nso-oracle run-lot` and a lot comparison; a mock lot that matches tick for tick. Real lots match until Run Tree By Name. CI's oracle job moved to its own workflow, and the mock install is wired into tests and CI. |
 | 2026-10-16 | minor | `nso-oracle` (NSOClient/NSOOracle) answers `fso-oracle`'s `list-objects`, `run-objects`, and `room-maps` by running NSOClient, and `compare` sets the two side by side; `oracle-review.sh --review` writes `docs/results/nso-review.md`, per install, after a phase or milestone. The content, entry point, single-object, and room-map comparisons moved into NSOOracle's tests, sharing the review's code. First review: 0 mismatches on the 2002 production copy and the 2002 beta. The install differences moved to `docs/results/`. |

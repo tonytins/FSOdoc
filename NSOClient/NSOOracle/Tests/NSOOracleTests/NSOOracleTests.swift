@@ -71,7 +71,7 @@ struct FixtureComparisonTests {
     }
 
     /// Each lot `oracle-review.sh` ran, with the objects `fso-oracle` left out left out here too, for
-    /// the ticks the script runs (1,800, a digest every 300).
+    /// the ticks the script runs (a full in-game day, 216,000, with a digest every game hour, 9,000).
     @Test func lotRunsMatchFreeSO() throws {
         let fso = try lines("lots.digests")
         let leftOut = (try? lines("lots.leftout")) ?? []
@@ -85,7 +85,7 @@ struct FixtureComparisonTests {
                 return UInt32(fields[1].dropFirst(2), radix: 16)
             })
             lot.objects.removeAll { guids.contains($0.guid) }
-            nso += answers.lotRun(lot, ticks: 1800, every: 300).map { "\(file) \($0)" }
+            nso += answers.lotRun(lot, ticks: 216_000, every: 9_000).map { "\(file) \($0)" }
         }
         let comparison = Comparison.lotRuns(fso: fso, nso: nso)
         print(comparison.summary, comparison.skipsByCount.prefix(8))
@@ -97,7 +97,7 @@ struct FixtureComparisonTests {
     /// Every generated case of each ported primitive, on the lot `fso-oracle run-primitive`
     /// loaded: the lot as loaded, the exit code, registers, and every effect.
     @Test(arguments: ["expression", "sleep", "test_object_type", "refresh", "set_to_next", "random_number",
-                      "play_sound", "create_object_instance", "find_location_for", "run_tree_by_name", "stackobj_notify_out_of_idle", "get_distance_to", "get_direction_to", "transfer_funds", "remove_object_instance", "set_balloon_headline"])
+                      "play_sound", "create_object_instance", "find_location_for", "run_tree_by_name", "stackobj_notify_out_of_idle", "get_distance_to", "get_direction_to", "transfer_funds", "remove_object_instance", "set_balloon_headline", "idle_for_input", "breakpoint", "special_effect", "stop_all_sounds", "get_terrain_info"])
     func primitivesMatchFreeSO(primitive: String) throws {
         let directory = try required(oracleDirectory)
         let lotPath = try lines("primitives.lot").first ?? ""

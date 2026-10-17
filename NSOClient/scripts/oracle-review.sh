@@ -35,8 +35,9 @@ if (( ${#installs[@]} == 0 )); then
     exit 2
 fi
 # Kept in step with oracle-fixtures.sh.
-lot_ticks=1800
-lot_every=300
+# A full in-game day (150 ticks a game minute), compared every game hour.
+lot_ticks=216000
+lot_every=9000
 
 echo "Building both oracles..."
 dotnet build "$repository/NSOClient/FSO.Oracle" -c Release >/dev/null

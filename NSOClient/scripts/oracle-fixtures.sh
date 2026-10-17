@@ -41,9 +41,10 @@ else
 fi
 empty_lot="$repository/TSOClient/tso.content/Content/Blueprints/empty_lot_fso.xml"
 # Kept in step with the NSOOracle tests (lotRunsMatchFreeSO).
-lot_ticks=1800
-lot_every=300
-primitives=(expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance find_location_for run_tree_by_name stackobj_notify_out_of_idle get_distance_to get_direction_to transfer_funds remove_object_instance set_balloon_headline)
+# A full in-game day (150 ticks a game minute), compared every game hour.
+lot_ticks=216000
+lot_every=9000
+primitives=(expression sleep test_object_type refresh set_to_next random_number play_sound create_object_instance find_location_for run_tree_by_name stackobj_notify_out_of_idle get_distance_to get_direction_to transfer_funds remove_object_instance set_balloon_headline idle_for_input breakpoint special_effect stop_all_sounds get_terrain_info)
 
 mkdir -p "$output"
 rm -f "$output/timings.tsv" "$output/lots.digests" "$output/lots.leftout"

@@ -215,3 +215,10 @@ public struct Architecture: Sendable {
         return level - 1
     }
 }
+
+extension Architecture {
+    /// The ground's height at a tile's corner (`VMArchitecture.GetTerrainHeight`), in FreeSO's units
+    /// (TSO's times 10). Terrain isn't ported: every height is 0, as on every blueprint lot, which
+    /// FreeSO loads flat; only build-mode terrain tools raise it.
+    public func terrainHeight(atX x: Int, y: Int) -> Int16 { 0 }
+}

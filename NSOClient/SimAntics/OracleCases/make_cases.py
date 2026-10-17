@@ -427,6 +427,43 @@ def set_balloon_headline_cases(lot_guids):
                                         "temps": [2], "locals": [2, 0, 1]})
 
 
+# MARK: Idle For Input, Breakpoint, Special Effect, Stop All Sounds, Get Terrain Info
+
+def idle_for_input_cases():
+    """Counts that run out or go on, idle starts before, at, and after the current tick,
+    interrupts, both push modes, and an argument past the frame's."""
+    for argument in (0, 2, 4):
+        for count in (-1, 0, 1, 5, 300):
+            for allow_push in (0, 1):
+                for idle_start in (None, 0, 90, 100, 120):
+                    for interrupt in (False, True):
+                        request = {"operand": struct.pack("<hH", argument, allow_push).hex(), "args": [count, 7, count, 3],
+                                   "currentTick": 100, "interrupt": interrupt}
+                        if idle_start is not None:
+                            request["idleStart"] = idle_start
+                        yield f"arg{argument}-count{count}-push{allow_push}-idle{idle_start}-interrupt{interrupt}", request
+
+
+def no_op_cases(lot_guids):
+    """A few operands, with and without a stack object; these primitives change nothing."""
+    count = min(len(lot_guids), 13)
+    for stack_object in (0, 1, 2) if count > 1 else (0, 1):
+        for operand in ("", "01", "ff" * 8, "0208000000000000"):
+            yield f"stack{stack_object}-operand{operand or 'zero'}", {"operand": operand, "stackObject": stack_object}
+
+
+def get_terrain_info_cases(lot_guids):
+    """Every mode, from the caller or the stack object, for each lot object, in or out of the world."""
+    count = min(len(lot_guids), 13)
+    for caller in (1, 2) if count > 1 else (1,):
+        for stack_object in range(0, count + 1):
+            for mode in range(6):
+                for flags in (0, 2):
+                    operand = struct.pack("<BBB5s", mode, 0, flags, bytes(5)).hex()
+                    yield (f"caller{caller}-stack{stack_object}-mode{mode}-flags{flags}",
+                           {"operand": operand, "caller": caller, "stackObject": stack_object, "temps": [9] * 6})
+
+
 GENERATORS = {
     "expression": (2, False, lambda guids: expression_cases()),
     "sleep": (0, False, lambda guids: sleep_cases()),
@@ -444,6 +481,11 @@ GENERATORS = {
     "transfer_funds": (25, True, lambda guids: transfer_funds_cases(guids[0])),
     "remove_object_instance": (18, True, lambda guids: remove_object_instance_cases(guids[0])),
     "set_balloon_headline": (41, True, lambda guids: set_balloon_headline_cases(guids[0])),
+    "idle_for_input": (17, False, lambda guids: idle_for_input_cases()),
+    "breakpoint": (15, True, lambda guids: no_op_cases(guids[0])),
+    "special_effect": (35, True, lambda guids: no_op_cases(guids[0])),
+    "stop_all_sounds": (48, True, lambda guids: no_op_cases(guids[0])),
+    "get_terrain_info": (63, True, lambda guids: get_terrain_info_cases(guids[0])),
 }
 
 

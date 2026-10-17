@@ -7,11 +7,11 @@ by tick and gets the same results as FreeSO's VM, which `fso-oracle` checks case
 
 What runs today: the VM core, entities and their entry points, creating and deleting objects
 (multi-tile ones included), threads with subroutine calls and check threads, every variable scope
-objects use, the scheduler and clock, placing objects and putting them in slots, and 16 of the 49
-primitives TSO uses (Expression, Sleep, Refresh, Random Number, Get Distance To, Get Direction To,
-Find Location For, Remove Object Instance, Play Sound, Transfer Funds, Run Tree By Name, Set To
-Next, Test Object Type, Set Balloon Headline, Create Object Instance, and Notify Stack Object Out
-Of Idle). Balloon headlines aren't drawn, but each counts down and keeps its entity running every
+objects use, the scheduler and clock, placing objects and putting them in slots, and 21 of the 49
+primitives TSO uses (Sleep, Expression, Refresh, Random Number, Get Distance To, Get Direction To,
+Breakpoint, Find Location For, Idle For Input, Remove Object Instance, Play Sound, Transfer Funds,
+Run Tree By Name, Set To Next, Test Object Type, Special Effect, Set Balloon Headline, Create
+Object Instance, Stop All Sounds, Notify Stack Object Out Of Idle, and Get Terrain Info). Balloon headlines aren't drawn, but each counts down and keeps its entity running every
 tick while it's up, as in FreeSO. Money is a stand-in for now: each
 entity has a budget, moved as FreeSO's standalone global link moves it, with each answer a tick
 later; NewSO's economy waits for the lot server. On the production install, 2,743
@@ -198,16 +198,21 @@ ones; FreeSO's names of all 49 TSO primitives are in `PrimitiveTable.fsoCompat`.
 | 8 | `RandomNumber` | Draws a number below a limit into a variable |
 | 11 | `GetDistanceTo` | The distance from the stack object to another object, in whole tiles, into a temp |
 | 12 | `GetDirectionTo` | The direction from another object to the stack object, in eighths of a turn |
+| 15 | `Breakpoint` | A debugger breakpoint; FreeSO's doesn't stop, so it's always true |
 | 16 | `FindLocationFor` | Places the stack object near a reference, out of the world, or along a facing |
+| 17 | `IdleForInput` | Waits a number of ticks, or until an interaction or an interrupt (no interaction queue yet) |
 | 18 | `RemoveObjectInstance` | Deletes the caller or the stack object, or every part of it |
 | 23 | `PlaySound` | Plays a sound event (headless, as on FreeSO's server: changes nothing) |
 | 25 | `TransferFunds` | Moves money between the caller, the stack object, owners, and the game; waits a tick for the answer, or only tests in a check tree |
 | 28 | `RunTreeByName` | Runs one of the stack object's routines, found by a name from a string table: pushed, or to completion on the caller's or the stack object's thread |
 | 31 | `SetToNext` | Finds the next object, by ID, GUID, category, tile, or neighbor |
 | 32 | `TestObjectType` | Tests whether an object has a GUID |
+| 35 | `SpecialEffect` | A visual effect; on a TSO lot it does nothing |
 | 41 | `SetBalloonHeadline` | Shows or clears a balloon over the caller or the stack object (headless: it counts down) |
 | 42 | `CreateObjectInstance` | Creates an object beside, in front of, or under another, and makes it the stack object |
+| 48 | `StopAllSounds` | Stops an object's sounds; headless, nothing plays |
 | 49 | `NotifyStackObjectOutOfIdle` | Wakes the stack object: brings its next run forward and interrupts its Sleep |
+| 63 | `GetTerrainInfo` | The ground's heights, slope, or an object's tile and level, into temps (terrain is flat: not ported) |
 
 A VM can run its own table, which is how extensions will add primitives without touching the
 ported ones:
