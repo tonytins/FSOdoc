@@ -46,14 +46,24 @@ integration runs them all on a small made-up install.
 <!-- install: production -->
 ## Production
 
-Run on 2026-10-16 at commit `6711e871`.
+Run on 2026-10-17 at commit `285b2708`.
 
 | Comparison | Matched | Mismatched | Skipped | Answered where FreeSO failed |
 | --- | ---: | ---: | ---: | ---: |
 | Content | 2833 | 0 | 0 | 44 |
 | Entry points | 2833 | 0 | 0 | 0 |
 | Objects run alone | 2743 | 0 | 134 | 0 |
-| Room maps | 62 | 0 | 0 | 0 |
+| Lots run | 0 | 0 | 2 | 0 |
+| Primitive: create_object_instance | 1245 | 0 | 10 | 0 |
+| Primitive: expression | 3809 | 0 | 0 | 0 |
+| Primitive: find_location_for | 1538 | 0 | 0 | 0 |
+| Primitive: play_sound | 160 | 0 | 0 | 0 |
+| Primitive: random_number | 71 | 0 | 0 | 0 |
+| Primitive: refresh | 40 | 0 | 0 | 0 |
+| Primitive: set_to_next | 225 | 0 | 0 | 0 |
+| Primitive: sleep | 135 | 0 | 0 | 0 |
+| Primitive: test_object_type | 48 | 0 | 0 | 0 |
+| Room maps | 63 | 0 | 0 | 0 |
 
 **Objects run alone, skipped:**
 
@@ -72,27 +82,65 @@ Run on 2026-10-16 at commit `6711e871`.
 - 1: unsupported: primitive 48 (stop_all_sounds)
 - 1: unsupported: primitive 63 (get_terrain_info)
 
+**Lots run, skipped:**
+
+- 2: unsupported: primitive 28 (run_tree_by_name)
+
+**Primitive: create_object_instance, skipped:**
+
+- 10: unsupported: an interaction callback on a new object needs interactions
+
 | Command | Seconds |
 | --- | ---: |
-| `fso list-objects` | 3.5 |
-| `fso room-maps` | 3.8 |
-| `fso run-objects` | 25.8 |
-| `nso list-objects` | 1.7 |
+| `fso list-objects` | 3.0 |
+| `fso room-maps` | 3.0 |
+| `fso run-lot` | 4.8 |
+| `fso run-objects` | 23.3 |
+| `fso run-primitive create_object_instance` | 12.2 |
+| `fso run-primitive expression` | 30.3 |
+| `fso run-primitive find_location_for` | 14.9 |
+| `fso run-primitive play_sound` | 4.2 |
+| `fso run-primitive random_number` | 3.3 |
+| `fso run-primitive refresh` | 3.0 |
+| `fso run-primitive set_to_next` | 5.5 |
+| `fso run-primitive sleep` | 4.0 |
+| `fso run-primitive test_object_type` | 3.0 |
+| `nso list-objects` | 1.9 |
 | `nso room-maps` | 0.9 |
-| `nso run-objects` | 9.6 |
+| `nso run-lot` | 0.5 |
+| `nso run-objects` | 17.5 |
+| `nso run-primitive create_object_instance` | 10.8 |
+| `nso run-primitive expression` | 39.4 |
+| `nso run-primitive find_location_for` | 13.1 |
+| `nso run-primitive play_sound` | 1.5 |
+| `nso run-primitive random_number` | 0.7 |
+| `nso run-primitive refresh` | 0.5 |
+| `nso run-primitive set_to_next` | 2.0 |
+| `nso run-primitive sleep` | 1.3 |
+| `nso run-primitive test_object_type` | 0.6 |
 <!-- end install -->
 
 <!-- install: beta -->
 ## Beta
 
-Run on 2026-10-16 at commit `6711e871`.
+Run on 2026-10-17 at commit `285b2708`.
 
 | Comparison | Matched | Mismatched | Skipped | Answered where FreeSO failed |
 | --- | ---: | ---: | ---: | ---: |
 | Content | 2650 | 0 | 0 | 44 |
 | Entry points | 2649 | 0 | 0 | 0 |
 | Objects run alone | 2559 | 0 | 135 | 0 |
-| Room maps | 62 | 0 | 0 | 0 |
+| Lots run | 0 | 0 | 2 | 0 |
+| Primitive: create_object_instance | 1185 | 0 | 10 | 0 |
+| Primitive: expression | 3809 | 0 | 0 | 0 |
+| Primitive: find_location_for | 1538 | 0 | 0 | 0 |
+| Primitive: play_sound | 160 | 0 | 0 | 0 |
+| Primitive: random_number | 71 | 0 | 0 | 0 |
+| Primitive: refresh | 40 | 0 | 0 | 0 |
+| Primitive: set_to_next | 225 | 0 | 0 | 0 |
+| Primitive: sleep | 135 | 0 | 0 | 0 |
+| Primitive: test_object_type | 48 | 0 | 0 | 0 |
+| Room maps | 63 | 0 | 0 | 0 |
 
 **Objects run alone, skipped:**
 
@@ -111,12 +159,40 @@ Run on 2026-10-16 at commit `6711e871`.
 - 1: unsupported: primitive 48 (stop_all_sounds)
 - 1: unsupported: primitive 63 (get_terrain_info)
 
+**Lots run, skipped:**
+
+- 2: unsupported: primitive 28 (run_tree_by_name)
+
+**Primitive: create_object_instance, skipped:**
+
+- 10: unsupported: an interaction callback on a new object needs interactions
+
 | Command | Seconds |
 | --- | ---: |
-| `fso list-objects` | 3.5 |
-| `fso room-maps` | 3.1 |
-| `fso run-objects` | 25.4 |
-| `nso list-objects` | 1.6 |
+| `fso list-objects` | 3.8 |
+| `fso room-maps` | 3.0 |
+| `fso run-lot` | 5.2 |
+| `fso run-objects` | 22.8 |
+| `fso run-primitive create_object_instance` | 14.5 |
+| `fso run-primitive expression` | 29.0 |
+| `fso run-primitive find_location_for` | 15.3 |
+| `fso run-primitive play_sound` | 4.1 |
+| `fso run-primitive random_number` | 3.1 |
+| `fso run-primitive refresh` | 2.7 |
+| `fso run-primitive set_to_next` | 4.8 |
+| `fso run-primitive sleep` | 3.9 |
+| `fso run-primitive test_object_type` | 2.8 |
+| `nso list-objects` | 1.5 |
 | `nso room-maps` | 0.9 |
-| `nso run-objects` | 9.1 |
+| `nso run-lot` | 0.5 |
+| `nso run-objects` | 16.6 |
+| `nso run-primitive create_object_instance` | 9.7 |
+| `nso run-primitive expression` | 35.8 |
+| `nso run-primitive find_location_for` | 12.4 |
+| `nso run-primitive play_sound` | 1.4 |
+| `nso run-primitive random_number` | 0.7 |
+| `nso run-primitive refresh` | 0.5 |
+| `nso run-primitive set_to_next` | 2.0 |
+| `nso run-primitive sleep` | 1.2 |
+| `nso run-primitive test_object_type` | 0.5 |
 <!-- end install -->
