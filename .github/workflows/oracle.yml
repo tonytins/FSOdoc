@@ -1,0 +1,48 @@
+name: Oracle
+
+# Runs fso-oracle (FreeSO's code) and nso-oracle (NSOClient) on NSOClient/MockInstall,
+# a made-up install with no game data, and fails if NSOClient's answers differ from
+# FreeSO's. The unit tests are in swift.yml. Real installs are compared by hand with
+# NSOClient/scripts/oracle-review.sh, since no game data may be stored here.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "NSOClient/**"
+      - "TSOClient/**"
+      - ".github/workflows/oracle.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "NSOClient/**"
+      - "TSOClient/**"
+      - ".github/workflows/oracle.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  oracle:
+    name: Oracles on the mock install
+    runs-on: ubuntu-latest
+    container: swift:6.3
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install what the .NET SDK and the scripts need
+        run: apt-get update && apt-get install -y --no-install-recommends libicu-dev python3 curl ca-certificates
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Run both oracles on the mock install
+        shell: bash
+        run: NSOClient/scripts/oracle-review.sh --mock "$RUNNER_TEMP/oracle"
+
+      - name: Compare NSOClient with FreeSO
+        shell: bash
+        run: |
+          TSO_GAME_DIR="$PWD/NSOClient/MockInstall/TSOClient" TSO_ORACLE_DIR="$RUNNER_TEMP/oracle/mock/fso" \
+            swift test --package-path NSOClient/NSOOracle

@@ -389,6 +389,7 @@ python3 -I NSOClient/Oracle/check_protocol.py                          # if you 
 NSOClient/scripts/oracle-fixtures.sh /tmp/oracle                       # if you touched content, SimAntics, or the oracle; needs TSO_GAME_DIR
 TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/SimAntics  # then compare with FreeSO: primitives
 TSO_ORACLE_DIR=/tmp/oracle swift test --package-path NSOClient/NSOOracle  # content, entry points, objects run alone, room maps
+NSOClient/scripts/oracle-review.sh --mock /tmp/review                  # both oracles on NSOClient/MockInstall, as CI runs them
 NSOClient/scripts/oracle-review.sh --review                            # only after a phase or milestone, or when asked
 git status --short -- TSOClient                                        # must print nothing
 ```

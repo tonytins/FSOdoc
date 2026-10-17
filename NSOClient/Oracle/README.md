@@ -221,6 +221,10 @@ each one on standard error:
   `floors4`);
 - `packingslips/objecttable.xml` and `catalog.xml` copies with display names
   filled in from file names, since the beta's tables have none;
+- for an install with only what NSOClient reads, such as `NSOClient/MockInstall`: empty
+  tuning, audio archives with one track, sound groups, a data definition, wall and floor
+  globals with build-mode string tables, the first wall and floor archives, and an empty
+  `cities` folder;
 - blueprint objects the install doesn't have, or that FreeSO can't load (such as one whose FreeSO patch doesn't fit the install), are left out of the lot and reported.
 
 The install is never written to. FreeSO's user data (such as the sandbox

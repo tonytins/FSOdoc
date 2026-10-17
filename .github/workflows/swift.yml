@@ -3,7 +3,8 @@ name: Swift
 # Builds and tests the NSOClient packages. Each package is independent, so
 # each one builds and tests on its own, as AGENTS.md section 4 asks.
 # Real-install tests skip themselves here: CI has no TSO_GAME_DIR, and no
-# game data may be stored in the repository.
+# game data may be stored in the repository. oracle.yml compares NSOClient
+# with FreeSO on NSOClient/MockInstall, a made-up install, instead.
 
 on:
   push:

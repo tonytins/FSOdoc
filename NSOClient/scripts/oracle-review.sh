@@ -3,26 +3,33 @@
 # answers, and with --review writes docs/results/nso-review.md. Run it after a phase or milestone,
 # not every session: it reruns every object on every install.
 #
-#   NSOClient/scripts/oracle-review.sh [--review] [OUTPUT_DIR]     (default: $TMPDIR/oracle-review)
+#   NSOClient/scripts/oracle-review.sh [--review | --mock] [OUTPUT_DIR]     (default: $TMPDIR/oracle-review)
 #
 # Installs come from TSO_GAME_DIR ("production") and TSO_BETA_DIR ("beta"); either or both.
+# --mock runs on NSOClient/MockInstall ("mock") alone, as CI does; it never writes the review.
 # Needs the .NET SDK, Swift, and python3. Each install gets OUTPUT_DIR/NAME/{fso,nso}/ with
-# objects.tsv, objects.digests, rooms.jsonl, and timings.tsv.
+# objects.tsv, objects.digests, rooms.jsonl, and timings.tsv; OUTPUT_DIR/NAME/fso also works as
+# TSO_ORACLE_DIR for `swift test --package-path NSOClient/NSOOracle`.
 set -euo pipefail
 
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 review=false
-if [[ "${1:-}" == "--review" ]]; then
-    review=true
-    shift
-fi
+mock=false
+case "${1:-}" in
+    --review) review=true; shift ;;
+    --mock) mock=true; shift ;;
+esac
 output="${1:-${TMPDIR:-/tmp}/oracle-review}"
 
 installs=()
-[[ -n "${TSO_GAME_DIR:-}" ]] && installs+=("production=$TSO_GAME_DIR")
-[[ -n "${TSO_BETA_DIR:-}" ]] && installs+=("beta=$TSO_BETA_DIR")
+if $mock; then
+    installs+=("mock=$repository/NSOClient/MockInstall/TSOClient")
+else
+    [[ -n "${TSO_GAME_DIR:-}" ]] && installs+=("production=$TSO_GAME_DIR")
+    [[ -n "${TSO_BETA_DIR:-}" ]] && installs+=("beta=$TSO_BETA_DIR")
+fi
 if (( ${#installs[@]} == 0 )); then
-    echo "oracle-review: set TSO_GAME_DIR, TSO_BETA_DIR, or both" >&2
+    echo "oracle-review: set TSO_GAME_DIR, TSO_BETA_DIR, or both, or pass --mock" >&2
     exit 2
 fi
 
@@ -54,6 +61,8 @@ for install in "${installs[@]}"; do
     game="${install#*=}"
     folder="$output/$name"
     mkdir -p "$folder/fso" "$folder/nso"
+    # Each side's folder is then a TSO_ORACLE_DIR for the NSOOracle fixture tests.
+    ln -sfn "$output/blueprints" "$folder/fso/blueprints"
     rm -f "$folder/fso/timings.tsv" "$folder/nso/timings.tsv" "$folder/fso/log.txt" "$folder/nso/log.txt"
     fso() { dotnet run --project "$repository/NSOClient/Oracle" -c Release --no-build -- "$@" --game "$game"; }
     nso() { "$nso_binary" "$1" --game "$game" "${@:2}"; }

@@ -19,6 +19,7 @@ It follows the layout of a real install, with only what the content system needs
 | File | Holds |
 | --- | --- |
 | `packingslips/objecttable.xml` | The four objects below, by GUID |
+| `packingslips/catalog.xml` | Their catalog entries (made-up prices; the parts aren't for sale) |
 | `objectdata/objects/objiff.far` | `mockchair.iff` and `mocktable.iff` |
 | `objectdata/globals/global.iff` | One global routine (256) that returns true |
 | `objectdata/globals/mockglobals.iff` | The objects' semi-global: one routine (8192) that returns true |
@@ -35,6 +36,15 @@ The GUIDs spell `MOC` followed by a number, so they can't be mistaken for a real
 Every object shares two routines. Init (`BHAV` 4097) lets it stand on floor or bare ground at
 floor height (object data 42 and 4). Main (`BHAV` 4096) counts its runs in attribute 0. Each
 object uses the `mockglobals` semi-global.
+
+`fso-oracle` reads it too: its game overlay adds placeholders for what FreeSO loads and
+NSOClient doesn't (audio, tuning, wall and floor globals, and so on). CI runs both oracles on
+it and compares them:
+
+```sh
+NSOClient/scripts/oracle-review.sh --mock /tmp/oracle
+TSO_GAME_DIR="$PWD/NSOClient/MockInstall/TSOClient" TSO_ORACLE_DIR=/tmp/oracle/mock/fso swift test --package-path NSOClient/NSOOracle
+```
 
 ## Changing it
 

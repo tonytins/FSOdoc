@@ -9,6 +9,11 @@ let oracleDirectory = ProcessInfo.processInfo.environment["TSO_ORACLE_DIR"].map 
 let gameDirectory = ProcessInfo.processInfo.environment["TSO_GAME_DIR"].map { URL(fileURLWithPath: $0) }
 let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../..").standardizedFileURL
 let freeSOContent = repository.appendingPathComponent("TSOClient/tso.content/Content")
+/// Whether the install is NSOClient/MockInstall, which has a handful of objects, not thousands.
+let onMockInstall = gameDirectory?.standardizedFileURL.path
+    == repository.appendingPathComponent("NSOClient/MockInstall/TSOClient").standardizedFileURL.path
+/// The fewest objects a comparison must match: every mock object and FreeSO's own, or most of a real install.
+let leastObjects = onMockInstall ? 8 : 2_000
 
 struct MissingFixture: Error {
     var what: String
@@ -37,7 +42,7 @@ struct FixtureComparisonTests {
         let fso = try lines("objects.tsv"), nso = try answers().objectListing()
         for comparison in [Comparison.content(fso: fso, nso: nso), .entryPoints(fso: fso, nso: nso)] {
             print(comparison.summary)
-            #expect(comparison.matched > 2_000)
+            #expect(comparison.matched >= leastObjects)
             #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
         }
     }
@@ -54,7 +59,7 @@ struct FixtureComparisonTests {
         }
         let comparison = Comparison.objectRuns(fso: fso, nso: nso)
         print(comparison.summary, comparison.skipsByCount.prefix(8))
-        #expect(comparison.matched > 2_000)
+        #expect(comparison.matched >= leastObjects)
         #expect(comparison.mismatches.isEmpty, "\(comparison.mismatches.prefix(5))")
     }
 

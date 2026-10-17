@@ -54,9 +54,9 @@ In order:
        Create Object Instance primitive out of the world.
      - [x] C2. Placement in the world: footprints, placement checks, and the placement entry point.
      - [x] C3. Slots and containment, and Find Location For.
-   - [ ] Mock install wiring: unit tests read `NSOClient/MockInstall` instead of building fixtures in
-     code, the oracle loads it (its install overlay can't find the object table yet), and CI runs
-     the oracle comparisons against it.
+   - [x] Mock install wiring: TSOContent and SimAntics tests read `NSOClient/MockInstall` (focused
+     edge-case fixtures stay in code), fso-oracle loads it, and CI runs both oracles on it
+     (`oracle-review.sh --mock`). Primitive fixtures on the mock wait for a mock lot, in D.
    - [ ] D. Lot loading from blueprint XML, then `run-lot` digests compared with FreeSO tick by tick, and
      `nso-oracle run-primitive` and `run-lot`.
 2. **Hyde Park:** sprite formats (`SPR2`, `SPR#`, `DGRP`), so the last part of loading one object works.
