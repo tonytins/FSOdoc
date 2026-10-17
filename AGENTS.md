@@ -1,10 +1,12 @@
 # AGENTS.md: guide for AI agents and contributors
 
-SimsCraft started as a documentation fork of [FreeSO](https://github.com/riperiperi/FreeSO),
-a reimplementation of The Sims Online in **C#** on a forked MonoGame. It keeps
-FreeSO's source frozen at a single snapshot (August 9, 2017), written for
-classic **.NET Framework** (mostly 4.5) and Visual Studio 2017 on Windows, and
-builds on it. Write the name as **SimsCraft** in prose. The upstream game is
+SimsCraft is rebuilding the engine of The Sims Online in **Swift**, so the game can be played
+again. It started as a documentation fork of [FreeSO](https://github.com/riperiperi/FreeSO),
+a reimplementation of The Sims Online in **C#** on a forked MonoGame, and keeps FreeSO's source
+frozen at a single snapshot (August 9, 2017), written for classic **.NET Framework** (mostly
+4.5) and Visual Studio 2017 on Windows. FreeSO's own servers have since shut down; what its
+creator left the public is a replayable snapshot of its city as it closed. The new game is
+**NewSO**, built from the NSOClient packages. Write the name as **SimsCraft** in prose. The upstream game is
 **FreeSO**, and the original game is **The Sims Online** (TSO).
 
 **"FreeSO" means the snapshot.** In this repository, in prose, comments, and
@@ -20,20 +22,34 @@ suffix the same way for anything kept only for the TSO beta.
 
 The project's goals:
 
-1. Explain FreeSO's codebase: what each project does, how the pieces fit,
+1. **Play The Sims Online again.** NewSO is the end goal: the game, playable with friends,
+   small-scale and LAN-friendly by default (see [Scale](#scale-small-and-lan-first)).
+   FreeSO is the guide and the source of truth on the way there, not the limit.
+2. **Explain FreeSO's codebase:** what each project does, how the pieces fit,
    and how data flows through the client, the simulation, and the servers.
    This is the reference the reimplementation draws on.
-2. Reimplement the engine-free parts in **Swift** as independent packages
+3. **Reimplement the engine-free parts first,** in **Swift**, as independent packages
    under [NSOClient/](./NSOClient/): TSOFiles (file formats), TSOContent
    (the content system), and SimAntics (the VM). This is a new
    implementation, not a line-by-line port: it must reach the same results
    as FreeSO and keep the TSO beta working (see Library rules, rule 2), and
-   it's free to get there its own way.
-3. Go past that baseline: extend SimAntics (such as the
+   it's free to get there its own way. This is the current stage, not the end.
+4. **Then the rest of the game,** later: a lot server of our own (useful for testing even
+   before there's a renderer), LAN play, and the client.
+5. **Go past that baseline:** extend SimAntics (such as the
    [scripting proof of concept](./NSOClient/SimsScript/README.md)) and,
    later, support older games' data, such as The Sims 1.
 
-The first goal produces Markdown under [docs/](./docs/README.md). The
+### Scale: small and LAN first
+
+TSO was an MMOG, and FreeSO tried to run it as one. NewSO doesn't assume that. Its default is a
+handful of players on one machine or a LAN, with nothing that depends on central accounts or
+services, which keeps the code easy to test and playing with friends simple. MMOG scale may come,
+but only as an opt-in, never as an assumption a default setup pays for. When a FreeSO design
+exists only to serve a public city at scale (its database, city server, and web API), treat it
+as reference, not as the plan.
+
+The second goal produces Markdown under [docs/](./docs/README.md). The
 others produce Swift packages, planned in [docs/roadmap.md](./docs/roadmap.md) and
 tracked in [docs/scorecard.md](./docs/scorecard.md). This is solo work held to
 production standards. Read this file first, then
@@ -223,6 +239,18 @@ These apply to everything under [NSOClient/](./NSOClient/).
      crash, reject hostile input, fix a clear bug, or replace a FreeSO
      workaround), record it in the doc comment and in the scorecard's
      "Known differences from FreeSO".
+   - **Where parity ends.** Where FreeSO is faithful to TSO (the file formats,
+     content loading, and the SimAntics VM and lot simulation), its results are
+     the source of truth and the oracles check them. Where FreeSO struggled,
+     patched, or invented (its PIFF patches, server-side systems, its own
+     workarounds), NewSO may choose its own way, as it does for deleting an
+     object a Sim is using. Make those choices with the owner, and record each
+     one as a known difference.
+   - **PIFF patches.** Keep applying FreeSO's PIFFs by default, for parity and for
+     compatibility with FreeSO's content. PIFF is a cheap extension of IFF with
+     plenty of existing content, so it stays supported. But NewSO treats FreeSO's
+     own patches as optional and replaceable: content shouldn't depend on any one
+     of them being there, and NewSO may ship its own fixes instead.
    - **The TSO beta.** The owner's 2002 beta install must keep working.
      Where its files differ from production, degrade gracefully: skip what
      doesn't fit, report it, and keep going, never fail outright.
